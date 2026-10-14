@@ -53,20 +53,27 @@ function validateAuthorizationBinding(response, options = {}) {
 
   const receipt = response && response.decision_receipt;
   const authorization = response && response.execution_authorization;
-  if (!receipt || !receipt.payload || !authorization || !authorization.payload) {
-    fail("Response must include a decision receipt and an execution authorization.");
+  if (!receipt || !receipt.payload) {
+    fail("Response must include a signed decision receipt.");
   }
-  if (receipt.algorithm !== "Ed25519" || authorization.algorithm !== "Ed25519") {
+  if (receipt.algorithm !== "Ed25519") {
     fail("Only Ed25519 Verigate receipts are accepted.");
   }
 
   const receiptPayload = receipt.payload;
-  const authPayload = authorization.payload;
   const intent = receiptPayload.intent;
   const decision = receiptPayload.decision;
-  const action = authPayload.action;
-  if (!intent || !decision || !action) fail("Receipt or authorization is missing its intent/decision/action.");
+  if (!intent || !decision) fail("Decision receipt is missing its intent or decision.");
   if (decision.decision !== "ALLOW") fail("Verigate decision is not ALLOW; no EVM signature was produced.");
+  if (!authorization || !authorization.payload) {
+    fail("ALLOW response must include an execution authorization.");
+  }
+  if (authorization.algorithm !== "Ed25519") {
+    fail("Only Ed25519 Verigate receipts are accepted.");
+  }
+  const authPayload = authorization.payload;
+  const action = authPayload.action;
+  if (!action) fail("Execution authorization is missing its action.");
   if (decision.intent_id !== intent.intent_id || decision.agent_id !== intent.agent_id) {
     fail("Decision receipt intent/agent identifiers do not match.");
   }
@@ -248,7 +255,11 @@ async function main() {
   if (!file) fail("Usage: npm run bridge:sign -- ./authorization-response.json");
   const response = JSON.parse(fs.readFileSync(file, "utf8"));
   const signed = await signAuthorization(response);
-  process.stdout.write(JSON.stringify(signed, null, 2) + "\n");
+  process.stdout.write(JSON.stringify(
+    signed,
+    (_key, value) => typeof value === "bigint" ? value.toString() : value,
+    2
+  ) + "\n");
 }
 
 if (require.main === module) {
