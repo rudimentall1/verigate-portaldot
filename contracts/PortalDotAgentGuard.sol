@@ -14,6 +14,7 @@ contract PortalDotAgentGuard {
     bytes32 private constant TRANSFER_TYPEHASH = keccak256(
         "TransferAuthorization(address recipient,uint256 amount,uint256 nonce,uint256 deadline,bytes32 actionId)"
     );
+    uint256 private constant MAX_AUTHORIZATION_TTL = 300;
     uint256 private constant SECP256K1_HALF_ORDER =
         0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
 
@@ -25,6 +26,7 @@ contract PortalDotAgentGuard {
     error InvalidRecipient();
     error InvalidAmount();
     error AuthorizationExpired();
+    error AuthorizationTooFarInFuture();
     error NonceAlreadyUsed(uint256 nonce);
     error InvalidSignature();
     error InvalidAuthoritySignature();
@@ -61,6 +63,7 @@ contract PortalDotAgentGuard {
         if (recipient == address(0) || recipient == address(this)) revert InvalidRecipient();
         if (amount == 0) revert InvalidAmount();
         if (block.timestamp > deadline) revert AuthorizationExpired();
+        if (deadline > block.timestamp + MAX_AUTHORIZATION_TTL) revert AuthorizationTooFarInFuture();
         if (usedNonces[nonce]) revert NonceAlreadyUsed(nonce);
         if (address(this).balance < amount) {
             revert InsufficientBalance(address(this).balance, amount);
