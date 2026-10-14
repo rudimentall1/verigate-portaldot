@@ -291,7 +291,7 @@ def main() -> int:
                         raise RuntimeError(
                             f"POST /v1/actions/authorize returned HTTP {status}: "
                             + json.dumps(response, ensure_ascii=False)
-                            + "\\n\\nIsolated Verigate Uvicorn log tail:\\n"
+                            + "\n\nIsolated Verigate Uvicorn log tail:\n"
                             + (log_tail or "(log is empty; no traceback was captured)")
                         )
                     return response
