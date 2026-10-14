@@ -102,7 +102,7 @@ function validateAuthorizationBinding(response, options = {}) {
 
   const issuedAt = Number(authPayload.issued_at);
   const expiresAt = Number(authPayload.expires_at);
-  if (!Number.isInteger(issuedAt) || !Number.isInteger(expiresAt) || expiresAt <= now) {
+  if (!Number.isSafeInteger(issuedAt) || !Number.isSafeInteger(expiresAt) || !Number.isSafeInteger(now) || expiresAt <= now) {
     fail("Execution authorization is expired or has invalid timestamps.");
   }
   if (issuedAt > now + 15 || expiresAt <= issuedAt || expiresAt - issuedAt > 300) {
