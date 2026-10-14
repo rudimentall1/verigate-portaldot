@@ -98,6 +98,14 @@ describe("Verigate bridge binding", function () {
       .to.throw(/does not exactly match the signed decision receipt intent/);
   });
 
+  it("refuses BLOCK even when no execution authorization is present", function () {
+    const item = response(2000000000);
+    item.decision_receipt.payload.decision.decision = "BLOCK";
+    delete item.execution_authorization;
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+      .to.throw(/not ALLOW/);
+  });
+
   it("refuses WARN and BLOCK", function () {
     for (const decision of ["WARN", "BLOCK"]) {
       const item = response(2000000000);
