@@ -80,7 +80,7 @@ describe("Verigate bridge binding", function () {
     try {
       let error;
       try {
-        await signAuthorization(response(2000000000));
+        await signAuthorization(response(Math.floor(Date.now() / 1000)));
       } catch (caught) {
         error = caught;
       }
