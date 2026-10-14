@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const crypto = require("node:crypto");
 const { ethers } = require("hardhat");
-const { validateAuthorizationBinding, actionDigest, canonicalJson, signAuthorization } = require("../adapter/verigate-bridge");
+const { validateAuthorizationBinding, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate } = require("../adapter/verigate-bridge");
 
 describe("Verigate bridge binding", function () {
   let recipient;
@@ -212,6 +212,39 @@ describe("Verigate bridge binding", function () {
       }
       expect(error).to.be.instanceOf(SyntaxError);
       expect(error.message).to.equal("invalid JSON");
+      expect(calls).to.equal(1);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("sends the exact signed artifact to the configured Verigate verifier", async function () {
+    const originalFetch = global.fetch;
+    const attestation = {
+      algorithm: "Ed25519",
+      signature: "fixture-signature",
+      payload: { artifact_id: "fixture-artifact", decision: "ALLOW" }
+    };
+    let calls = 0;
+    global.fetch = async (url, options) => {
+      calls += 1;
+      expect(url.toString()).to.equal("https://verigate.example/v1/verify");
+      expect(options.method).to.equal("POST");
+      expect(options.redirect).to.equal("error");
+      expect(options.headers).to.deep.equal({
+        "content-type": "application/json",
+        "x-api-key": "fixture-api-key"
+      });
+      expect(options.signal).to.be.instanceOf(AbortSignal);
+      expect(JSON.parse(options.body)).to.deep.equal({
+        payload: attestation.payload,
+        signature: attestation.signature,
+        algorithm: attestation.algorithm
+      });
+      return { ok: true, status: 200, json: async () => ({ valid: true }) };
+    };
+    try {
+      await verifyWithVerigate("https://verigate.example/base/path", attestation, "fixture-api-key");
       expect(calls).to.equal(1);
     } finally {
       global.fetch = originalFetch;
