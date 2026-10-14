@@ -1,24 +1,41 @@
 # Verigate bridge integration
 
-This document defines the intended integration contract. It is not yet a completed adapter implementation.
+The bridge signer is the security boundary between Verigate's Ed25519 execution authorization and the PortalDot contract's EIP-712 authorization. The initial CLI is in adapter/verigate-bridge.js.
 
-## Required inputs and checks
+## Required sequence
 
-The bridge receives a proposed payment plus the Verigate authorization response. Before it signs EIP-712 data, it must:
+1. Read a response captured from Verigate's POST /v1/actions/authorize endpoint.
+2. Require a decision receipt whose decision is exactly ALLOW, plus a separate execution authorization.
+3. Ask the configured Verigate instance's POST /v1/verify endpoint to validate both Ed25519 signatures.
+4. Check that the receipt and execution authorization refer to the same intent and agent.
+5. Check that the signed action maps exactly to a PortalDot native transfer: recipient, raw base-unit amount, chain ID, asset and network.
+6. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing.
+7. Sign EIP-712 data using the dedicated bridge key; never broadcast automatically from this CLI.
 
-1. call the supported Verigate action-authorization endpoint for the intent;
-2. stop unless the returned decision is exactly ALLOW;
-3. validate the Ed25519 execution authorization using Verigate's supported verification endpoint and trusted public key;
-4. compare the normalized authorized action against the recipient and amount supplied to the EVM signer;
-5. enforce an expiry of no more than five minutes and ensure the authorization/action identifier has not previously been submitted;
-6. produce an EIP-712 authorization with the contract's exact name, version, chain ID, verifying contract and typed fields.
+## Required signed intent convention
 
-Do not assume that an API field name, receipt shape or action normalization matches this document without reading the source/API schema and a real response. Pin tests to a captured, non-sensitive fixture from the running Verigate API.
+- action_type: portaldot.native_transfer
+- target: destination EVM address
+- network: portaldot-v3
+- asset: tPOTv3
+- amount_exact: positive integer string containing EVM transfer base units
+- metadata.portaldot_v3.chain_id: 420420777
+- metadata.portaldot_v3.recipient: same destination EVM address
+- metadata.portaldot_v3.amount_base_units: same integer string as amount_exact
+
+The policy therefore sees the same exact base-unit integer that the EVM contract will transfer. Configure policies in those units for this prototype; do not imply these are human-readable POT units.
 
 ## Signature separation
 
-Verigate currently uses Ed25519 for its off-chain authorization artifacts. Solidity's native ecrecover verifies secp256k1 signatures, not Ed25519. The separate EVM key therefore represents a bridge trust boundary, not a direct on-chain verification of Verigate's Ed25519 signature.
+Verigate signs its off-chain authorization artifacts with Ed25519. Solidity's ecrecover verifies secp256k1 signatures, not Ed25519. The separate EVM key therefore represents a bridge trust boundary, not direct on-chain verification of Verigate's Ed25519 signature.
 
-## Next implementation step
+## Key separation
 
-Inspect the current ActionAuthorizationRequest, AuthorizationResponse, execution authorization verification function and POST /v1/verify request schema in the Verigate source. Then implement the smallest adapter that consumes a real ALLOW response, rejects BLOCK/tampered data, validates the Ed25519 proof, and only then signs this contract's typed payload.
+The deployer key pays deployment gas. The bridge signer key is configured as the immutable signer in PortalDotAgentGuard. Keep them separate, use a throwaway/test-only bridge key, and keep the guarded balance small.
+
+## Remaining work
+
+- Run the current CLI against a real response from the configured Verigate instance.
+- Test authorization expiry, action mismatch, invalid signatures and denied decisions end to end.
+- Consider locally verifying Ed25519 against a pinned trusted public key instead of relying only on the issuer API's verify endpoint.
+- Never record a transaction hash or deployed address until it is confirmed on the live expected chain.

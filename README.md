@@ -2,16 +2,17 @@
 
 A focused PortalDot V3 Hacker House project exploring how an AI agent's proposed payment can be gated by an explicit, signed execution authorization.
 
-**Status:** initial implementation scaffold. Local contract tests and live PortalDot deployment have not yet been run from this repository. The public V3 RPC has been reported unavailable by the event team; deployment must wait for a successful network preflight.
+**Status:** initial implementation scaffold with a native-payment guard, local Hardhat tests, an RPC preflight, and a bridge-signing CLI. These files have not yet been compiled or run in this environment. No live PortalDot deployment is claimed. The event team has reported V3 RPC availability issues.
 
-## What this MVP is intended to show
+## What this MVP demonstrates
 
-1. A Verigate policy decision can be used as the off-chain authority to approve or deny a payment intent.
-2. A dedicated EVM bridge signer can issue a short-lived EIP-712 authorization only after verifying the corresponding Verigate execution authorization.
-3. `PortalDotAgentGuard` accepts only a signature bound to this contract and chain, a fixed recipient, an exact native-token amount, a nonce, a deadline, and an action identifier.
-4. The contract transfers only its own native balance. It has no generic arbitrary-call interface.
+1. Verigate evaluates an agent's proposed action under its policies.
+2. The off-chain bridge requires a signed ALLOW decision and a valid Ed25519 execution authorization.
+3. A dedicated EVM bridge signer issues a short-lived EIP-712 authorization only when the signed action matches the exact recipient and amount encoded for PortalDot.
+4. PortalDotAgentGuard accepts only a signature bound to this contract and chain, a recipient, native-token amount, nonce, deadline, and action identifier.
+5. The contract can send only its own native-token balance. It has no generic arbitrary-call interface.
 
-The contract verifies the EIP-712 bridge authorization. It does **not** verify Verigate's Ed25519 signature on-chain. That verification belongs in the off-chain bridge, and this trust boundary must remain explicit.
+The contract verifies an EIP-712 bridge authorization. It does **not** verify Verigate's Ed25519 signature on-chain. That verification belongs in the off-chain bridge, and this trust boundary must remain explicit.
 
 ## Quick start
 
@@ -23,51 +24,66 @@ npm test
 npm run compile
 ```
 
-The test suite uses a local Hardhat chain. Passing local tests is not evidence that PortalDot RPC, faucet, or deployment is available.
+The tests use a local Hardhat chain. Passing local tests is not evidence that PortalDot RPC, faucet, or deployment is available.
 
 ## PortalDot V3 preflight
 
-Copy `.env.example` to `.env` and set values only when needed. Never commit private keys or funded-wallet files.
+Copy .env.example to .env. Keep private keys out of Git.
 
 ```bash
 npm run preflight
 ```
 
-The preflight reads `eth_chainId` and `eth_blockNumber`, and fails closed when the RPC is unavailable or returns a chain ID other than `420420777`.
+The preflight reads eth_chainId and eth_blockNumber, and fails closed when the RPC is unavailable or the chain ID differs from 420420777.
 
-## Deploy
+## Contract deployment
 
-Deployment is deliberately blocked unless RPC preflight succeeds and a deployer key is configured. Set `AUTHORITY_SIGNER_ADDRESS` to the dedicated bridge signer's EVM address. Do not use a personal wallet as a long-lived authority key.
+Set DEPLOYER_PRIVATE_KEY and AUTHORITY_SIGNER_ADDRESS in .env. The authority signer must be the dedicated EVM key used by the bridge, not an unrelated deployer address.
 
 ```bash
 npm run deploy:portaldot
 ```
 
-Deployment has not been verified yet. Record the actual contract address, transaction hash, block number, RPC result, and date under `evidence/` after a successful deployment. Do not write placeholder hashes as evidence.
+The command runs network preflight before Hardhat deployment. Deployment is not verified yet. Save the actual address, transaction hash, block number, timestamp, and explorer link under evidence/ only after confirmation on the live expected chain.
+
+After deployment, set PORTALDOT_GUARD_ADDRESS in .env.
+
+## Bridge signing CLI
+
+The CLI accepts a JSON response from Verigate's POST /v1/actions/authorize endpoint. It verifies the decision receipt and execution authorization through the configured Verigate POST /v1/verify endpoint, then signs only the narrowly defined transfer mapping.
+
+```bash
+npm run bridge:sign -- ./authorization-response.json
+```
+
+The accepted action must have:
+- decision exactly ALLOW;
+- a valid Ed25519 decision receipt and execution authorization according to the trusted Verigate instance;
+- action_type equal to portaldot.native_transfer;
+- network equal to portaldot-v3 and asset equal to tPOTv3;
+- a valid recipient address in target;
+- amount_exact set to an integer string of PortalDot EVM base units;
+- metadata.portaldot_v3 containing matching chain_id, recipient, and amount_base_units.
+
+The amount is represented in raw EVM transfer base units to avoid guessing how PortalDot V3 maps Substrate token decimals to EVM value units. Confirm the live network denomination before presenting user-facing amounts. The bridge CLI signs a payload; it does not broadcast a transaction.
 
 ## Verigate integration boundary
 
-The bridge must:
-- submit the proposed action to Verigate;
-- require an explicit `ALLOW` result;
-- verify the returned Ed25519 execution authorization against Verigate's trusted public key and supported verification endpoint;
-- compare the authorization's exact normalized action with the intended recipient and amount;
-- enforce a short TTL and prevent duplicate bridge processing;
-- only then sign the EIP-712 message with the dedicated EVM bridge key.
+The bridge must stop for WARN, BLOCK, a missing execution authorization, an invalid signature, expired authority, or any mismatch between the signed action and the transfer parameters. See docs/verigate-bridge.md and docs/security-model.md.
 
-The bridge integration is not claimed complete in this first scaffold. See [the security model](docs/security-model.md).
+The bridge-signing CLI is an initial integration step, not a claim that a full agent workflow or production key service already exists. Its API signature checks rely on the configured Verigate instance; protect that endpoint and bridge key.
 
 ## Scope and limitations
 
-- The first on-chain action is a native-token payment only.
-- tPOT is the PortalDot V3 testnet gas token. The actual RPC and the relevant wallet mapping must be confirmed before any deployment.
+- The first on-chain operation is a native-token payment only.
+- tPOT is the PortalDot V3 testnet gas token. The actual RPC and wallet mapping must be confirmed before deployment.
 - No live deployment, independent audit, production key management, or production readiness is claimed.
-- This repository is a new PortalDot-specific integration, not a copy of Verigate.
+- This is a separate PortalDot integration, not a copy of the Verigate repository.
 
 ## Source and credits
 
-Verigate is the existing authority-control project: <https://github.com/rudimentall1/verigate>. Its code and concepts remain in the original repository; this repository adds a separate PortalDot integration. Review upstream license and attribution requirements before reusing code.
+Verigate is the existing authority-control project: https://github.com/rudimentall1/verigate. This repository adds a separate PortalDot integration. Review upstream license and attribution requirements before reusing code.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See LICENSE.
