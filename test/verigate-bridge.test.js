@@ -111,4 +111,25 @@ describe("Verigate bridge binding", function () {
     expect(() => validateAuthorizationBinding(item, { now, expectedChainId: 420420777 }))
       .to.throw(/expired/);
   });
+
+  it("refuses an authorization ID not derived from the receipt signature and nonce", function () {
+    const item = response(2000000000);
+    item.execution_authorization.payload.authorization_id = "b".repeat(64);
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+      .to.throw(/authorization ID does not match/);
+  });
+
+  it("refuses a nonce that differs from the receipt intent", function () {
+    const item = response(2000000000);
+    item.execution_authorization.payload.nonce = "different-intent";
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+      .to.throw(/nonce must match/);
+  });
+
+  it("refuses a policy digest mismatch", function () {
+    const item = response(2000000000);
+    item.execution_authorization.payload.policy_sha256 = "d".repeat(64);
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+      .to.throw(/policy digest does not match/);
+  });
 });
