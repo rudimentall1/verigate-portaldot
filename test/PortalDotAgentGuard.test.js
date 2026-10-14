@@ -76,6 +76,28 @@ describe("PortalDotAgentGuard", function () {
     expect(await guard.usedNonces(auth.nonce)).to.equal(true);
   });
 
+  it("blocks a reentrant replay from a recipient contract", async function () {
+    const recipientFactory = await ethers.getContractFactory("ReentrantRecipient");
+    const reentrantRecipient = await recipientFactory.deploy(await guard.getAddress());
+    await reentrantRecipient.waitForDeployment();
+
+    const auth = await authorization({ recipient: await reentrantRecipient.getAddress(), nonce: 9n });
+    const signature = await signAuth(authority, auth);
+    await reentrantRecipient.configure(
+      auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, signature
+    );
+
+    await expect(
+      guard.executeTransfer(
+        auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, signature
+      )
+    ).to.emit(guard, "TransferExecuted").withArgs(auth.actionId, auth.recipient, auth.amount, auth.nonce);
+
+    expect(await reentrantRecipient.reentryBlocked()).to.equal(true);
+    expect(await guard.usedNonces(auth.nonce)).to.equal(true);
+    expect(await ethers.provider.getBalance(await reentrantRecipient.getAddress())).to.equal(auth.amount);
+  });
+
   it("rejects a changed recipient", async function () {
     const auth = await authorization();
     const signature = await signAuth(authority, auth);
