@@ -93,6 +93,36 @@ describe("Verigate bridge binding", function () {
   });
 
 
+  it("refuses to sign when the execution authorization fails verification after the receipt passes", async function () {
+    const originalFetch = global.fetch;
+    let calls = 0;
+    global.fetch = async (_url, options) => {
+      calls += 1;
+      const body = JSON.parse(options.body);
+      expect(body.signature).to.equal("fixture-only-not-a-real-signature");
+      return {
+        ok: true,
+        status: 200,
+        json: async () => calls === 1
+          ? { valid: true }
+          : { valid: false, reason: "authorization signature invalid" }
+      };
+    };
+    try {
+      let error;
+      try {
+        await signAuthorization(response(Math.floor(Date.now() / 1000)));
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).to.be.instanceOf(Error);
+      expect(error.message).to.match(/signature was not validated: authorization signature invalid/);
+      expect(calls).to.equal(2);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it("refuses to sign when the Verigate verification endpoint is unreachable", async function () {
     const originalFetch = global.fetch;
     let calls = 0;
