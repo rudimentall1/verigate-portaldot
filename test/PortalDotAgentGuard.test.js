@@ -211,4 +211,33 @@ describe("PortalDotAgentGuard", function () {
       guard.executeTransfer(auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, "0x1234")
     ).to.be.revertedWithCustomError(guard, "InvalidSignature");
   });
+
+  it("rejects signatures with an invalid recovery byte", async function () {
+    const auth = await authorization();
+    const malformed = ethers.concat([
+      ethers.zeroPadValue("0x01", 32),
+      ethers.zeroPadValue("0x01", 32),
+      "0x1d"
+    ]);
+    await expect(
+      guard.executeTransfer(auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, malformed)
+    ).to.be.revertedWithCustomError(guard, "InvalidSignature");
+  });
+
+  it("rejects malleable high-s signatures", async function () {
+    const auth = await authorization();
+    const signature = ethers.Signature.from(await signAuth(authority, auth));
+    const curveOrder = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+    const highS = curveOrder - BigInt(signature.s);
+    const highV = signature.v === 27 ? 28 : 27;
+    const malleable = ethers.Signature.from({
+      r: signature.r,
+      s: ethers.toBeHex(highS, 32),
+      v: highV
+    }).serialized;
+
+    await expect(
+      guard.executeTransfer(auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, malleable)
+    ).to.be.revertedWithCustomError(guard, "InvalidSignature");
+  });
 });
