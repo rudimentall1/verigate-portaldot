@@ -89,14 +89,14 @@ describe("Verigate bridge binding", function () {
   it("refuses an action whose canonical digest no longer matches", function () {
     const item = response(2000000000);
     item.execution_authorization.payload.action.metadata.unreviewed_change = true;
-    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
       .to.throw(/action digest does not match/);
   });
 
   it("refuses an authorization action that differs from the receipt intent", function () {
     const item = response(2000000000);
     item.decision_receipt.payload.intent.metadata.extra_receipt_field = "different";
-    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
       .to.throw(/does not exactly match the signed decision receipt intent/);
   });
 
@@ -104,7 +104,7 @@ describe("Verigate bridge binding", function () {
     const item = response(2000000000);
     item.decision_receipt.payload.decision.decision = "BLOCK";
     delete item.execution_authorization;
-    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
       .to.throw(/not ALLOW/);
   });
 
@@ -112,7 +112,7 @@ describe("Verigate bridge binding", function () {
     for (const decision of ["WARN", "BLOCK"]) {
       const item = response(2000000000);
       item.decision_receipt.payload.decision.decision = decision;
-      expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+      expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
         .to.throw(/not ALLOW/);
     }
   });
@@ -120,14 +120,14 @@ describe("Verigate bridge binding", function () {
   it("refuses a changed recipient mapping", function () {
     const item = response(2000000000);
     item.execution_authorization.payload.action.metadata.portaldot_v3.recipient = other.address;
-    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
       .to.throw(/do not match/);
   });
 
   it("refuses a changed amount mapping", function () {
     const item = response(2000000000);
     item.execution_authorization.payload.action.metadata.portaldot_v3.amount_base_units = "2000000";
-    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
       .to.throw(/amount_exact must equal/);
   });
 
@@ -171,6 +171,18 @@ describe("Verigate bridge binding", function () {
       .to.throw(/expired or has invalid timestamps/);
   });
 
+  it("refuses to assume a chain ID when none is configured", function () {
+    const configured = process.env.PORTALDOT_CHAIN_ID;
+    delete process.env.PORTALDOT_CHAIN_ID;
+    try {
+      expect(() => validateAuthorizationBinding(response(2000000000), { now: 2000000000 }))
+        .to.throw(/PORTALDOT_CHAIN_ID must be explicitly configured/);
+    } finally {
+      if (configured === undefined) delete process.env.PORTALDOT_CHAIN_ID;
+      else process.env.PORTALDOT_CHAIN_ID = configured;
+    }
+  });
+
   it("refuses an invalid expected chain ID", function () {
     expect(() => validateAuthorizationBinding(response(2000000000), { now: 2000000000, expectedChainId: Number.MAX_SAFE_INTEGER + 1 }))
       .to.throw(/positive safe integer/);
@@ -198,28 +210,28 @@ describe("Verigate bridge binding", function () {
     item.execution_authorization.payload.action.amount_exact = tooLarge;
     item.execution_authorization.payload.action.metadata.portaldot_v3.amount_base_units = tooLarge;
     item.execution_authorization.payload.action_sha256 = actionDigest(item.execution_authorization.payload.action);
-    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
       .to.throw(/uint256 limit/);
   });
 
   it("refuses an authorization ID not derived from the receipt signature and nonce", function () {
     const item = response(2000000000);
     item.execution_authorization.payload.authorization_id = "b".repeat(64);
-    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
       .to.throw(/authorization ID does not match/);
   });
 
   it("refuses a nonce that differs from the receipt intent", function () {
     const item = response(2000000000);
     item.execution_authorization.payload.nonce = "different-intent";
-    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
       .to.throw(/nonce must match/);
   });
 
   it("refuses a policy digest mismatch", function () {
     const item = response(2000000000);
     item.execution_authorization.payload.policy_sha256 = "d".repeat(64);
-    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
       .to.throw(/policy digest does not match/);
   });
 
@@ -246,7 +258,7 @@ describe("Verigate bridge binding", function () {
       item.execution_authorization.payload.action.metadata.portaldot_v3.amount_base_units = amount;
       item.execution_authorization.payload.action_sha256 = actionDigest(item.execution_authorization.payload.action);
 
-      expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+      expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
         .to.throw(/positive base-unit integer/);
     }
   });
