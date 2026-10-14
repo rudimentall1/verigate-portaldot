@@ -118,8 +118,9 @@ describe("Verigate bridge binding", function () {
   it("refuses to sign when the Verigate verification endpoint returns HTTP 503", async function () {
     const originalFetch = global.fetch;
     let calls = 0;
-    global.fetch = async () => {
+    global.fetch = async (_url, options) => {
       calls += 1;
+      expect(options.redirect).to.equal("error");
       return { ok: false, status: 503 };
     };
     try {
