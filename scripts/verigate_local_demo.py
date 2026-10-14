@@ -153,7 +153,6 @@ def main() -> int:
     )
 
     sys.path.insert(0, str(source_root))
-    os.environ.update(env)
 
     try:
         from cryptography.hazmat.primitives import serialization
@@ -329,7 +328,8 @@ def main() -> int:
                     base_url + "/v1/verify/adversarial",
                     {"authorization": allow_response["execution_authorization"]},
                 )
-                if adversarial_status != 200 or not adversarial.get("baseline_valid"):
+                if (adversarial_status != 200 or not adversarial.get("baseline_valid")
+                        or adversarial.get("all_blocked") is not True):
                     raise RuntimeError(
                         "Verigate's adversarial verifier rejected the valid ALLOW authorization: "
                         + json.dumps(adversarial, ensure_ascii=False)
