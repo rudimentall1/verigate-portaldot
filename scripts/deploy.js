@@ -15,9 +15,21 @@ async function main() {
     throw new Error("AUTHORITY_SIGNER_ADDRESS must be the dedicated EVM bridge signer address.");
   }
 
+  const authoritySigner = ethers.getAddress(process.env.AUTHORITY_SIGNER_ADDRESS);
+  if (authoritySigner === ethers.ZeroAddress) {
+    throw new Error("AUTHORITY_SIGNER_ADDRESS must not be the zero address.");
+  }
+
   const [deployer] = await ethers.getSigners();
+  const deployerAddress = ethers.getAddress(await deployer.getAddress());
+  if (deployerAddress === authoritySigner) {
+    throw new Error(
+      "Refusing deployment: deployer and bridge authority signer must be different addresses. Use separate keys."
+    );
+  }
+
   const factory = await ethers.getContractFactory("PortalDotAgentGuard", deployer);
-  const guard = await factory.deploy(process.env.AUTHORITY_SIGNER_ADDRESS);
+  const guard = await factory.deploy(authoritySigner);
   const tx = guard.deploymentTransaction();
   const receipt = await tx.wait();
 
@@ -26,8 +38,8 @@ async function main() {
     chainId: network.chainId.toString(),
     contract: "PortalDotAgentGuard",
     address: await guard.getAddress(),
-    deployer: await deployer.getAddress(),
-    authoritySigner: process.env.AUTHORITY_SIGNER_ADDRESS,
+    deployer: deployerAddress,
+    authoritySigner,
     transactionHash: receipt.hash,
     blockNumber: receipt.blockNumber,
     note: "Save this actual output in evidence/. Do not treat local Hardhat deployments as PortalDot evidence."
