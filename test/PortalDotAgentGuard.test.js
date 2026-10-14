@@ -141,6 +141,19 @@ describe("PortalDotAgentGuard", function () {
     ).to.be.revertedWithCustomError(guard, "InvalidAuthoritySignature");
   });
 
+  it("rejects authorizations with a deadline more than five minutes away", async function () {
+    const latest = await ethers.provider.getBlock("latest");
+    const auth = await authorization({ deadline: BigInt(latest.timestamp + 600), nonce: 17n });
+    const signature = await signAuth(authority, auth);
+
+    await expect(
+      guard.executeTransfer(
+        auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, signature
+      )
+    ).to.be.revertedWithCustomError(guard, "AuthorizationTooFarInFuture");
+    expect(await guard.usedNonces(auth.nonce)).to.equal(false);
+  });
+
   it("rejects expired authorizations", async function () {
     const latest = await ethers.provider.getBlock("latest");
     const auth = await authorization({ deadline: BigInt(latest.timestamp - 1) });
