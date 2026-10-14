@@ -123,7 +123,10 @@ function validateAuthorizationBinding(response, options = {}) {
   const mapping = action.metadata && action.metadata.portaldot_v3;
   const intentMapping = intent.metadata && intent.metadata.portaldot_v3;
   if (!mapping || !intentMapping) fail("Signed intent must include metadata.portaldot_v3.");
-  if (Number(mapping.chain_id) !== expectedChainId || Number(intentMapping.chain_id) !== expectedChainId) {
+  const isExactChainId = (value) =>
+    (typeof value === "number" && Number.isSafeInteger(value) && value > 0 && value === expectedChainId) ||
+    (typeof value === "string" && /^[1-9][0-9]*$/.test(value) && value === String(expectedChainId));
+  if (!isExactChainId(mapping.chain_id) || !isExactChainId(intentMapping.chain_id)) {
     fail(`Signed intent is not bound to the expected PortalDot chain ID ${expectedChainId}.`);
   }
 
