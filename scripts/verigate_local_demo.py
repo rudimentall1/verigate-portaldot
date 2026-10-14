@@ -158,14 +158,31 @@ def main() -> int:
     try:
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-        from attest.keys import generate_keypair
         from core.identity import sign_action_intent
         from core.models import ActionIntent, AgentIdentity, Capability
         from core.storage import Storage
 
-        # These are disposable test-only issuer keys. No existing Verigate keys are read.
-        generate_keypair(env["VERIGATE_PRIVATE_KEY"], env["VERIGATE_PUBLIC_KEY"])
-        generate_keypair(env["VERIGATE_GOVERNANCE_PRIVATE_KEY"], env["VERIGATE_GOVERNANCE_PUBLIC_KEY"])
+        # These are disposable, unencrypted test-only issuer keys. Write them
+        # explicitly rather than using environment-sensitive key-management defaults.
+        def write_test_keypair(private_path: str, public_path: str) -> None:
+            key = Ed25519PrivateKey.generate()
+            private_bytes = key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+            public_bytes = key.public_key().public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
+            Path(private_path).write_bytes(private_bytes)
+            Path(public_path).write_bytes(public_bytes)
+
+        write_test_keypair(env["VERIGATE_PRIVATE_KEY"], env["VERIGATE_PUBLIC_KEY"])
+        write_test_keypair(
+            env["VERIGATE_GOVERNANCE_PRIVATE_KEY"],
+            env["VERIGATE_GOVERNANCE_PUBLIC_KEY"],
+        )
 
         agent_private_key = Ed25519PrivateKey.generate()
         public_key_raw = agent_private_key.public_key().public_bytes(
