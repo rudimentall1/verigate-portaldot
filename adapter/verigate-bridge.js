@@ -47,6 +47,9 @@ function actionDigest(action) {
 function validateAuthorizationBinding(response, options = {}) {
   const expectedChainId = Number(options.expectedChainId ?? process.env.PORTALDOT_CHAIN_ID ?? "420420777");
   const now = Number(options.now ?? Math.floor(Date.now() / 1000));
+  if (!Number.isSafeInteger(expectedChainId) || expectedChainId <= 0) {
+    fail("Expected PortalDot chain ID must be a positive safe integer.");
+  }
 
   const receipt = response && response.decision_receipt;
   const authorization = response && response.execution_authorization;
@@ -147,6 +150,9 @@ function validateAuthorizationBinding(response, options = {}) {
   }
 
   const amount = BigInt(amountText);
+  if (amount > (1n << 256n) - 1n) {
+    fail("Transfer amount exceeds the EVM uint256 limit.");
+  }
   const nonce = BigInt("0x" + authPayload.authorization_id);
   const actionId = ethers.keccak256(ethers.toUtf8Bytes(intent.intent_id));
   const deadline = BigInt(Math.min(expiresAt, now + 120));
