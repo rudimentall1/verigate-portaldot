@@ -8,6 +8,8 @@ describe("Verigate bridge binding", function () {
   let other;
 
   beforeEach(async function () {
+    // Explicit fixture configuration; production code must not assume a chain ID.
+    process.env.PORTALDOT_CHAIN_ID = "420420777";
     [, recipient, other] = await ethers.getSigners();
   });
 
