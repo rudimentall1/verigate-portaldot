@@ -130,7 +130,7 @@ def main() -> int:
         "allowed_assets:\n"
         "  - tPOTv3\n"
         "per_tx_cap:\n"
-        "  tPOTv3: 2000000000\n"
+        "  TPOTV3: 2000000000\n"
         "rate_limit_per_minute: 30\n",
         encoding="utf-8",
     )
