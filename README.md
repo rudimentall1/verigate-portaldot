@@ -26,6 +26,20 @@ npm run compile
 
 The tests use a local Hardhat chain. Passing local tests is not evidence that PortalDot RPC, faucet, or deployment is available.
 
+## Isolated Verigate API integration check
+
+The helper runs a second, temporary Verigate instance on loopback port 8001 with a disposable database, issuer keys and a narrow test policy. It creates a fresh test agent identity and capability, submits signed ALLOW and BLOCK actions through the real HTTP endpoints, verifies the returned Ed25519 artifacts, then runs the PortalDot bridge CLI against both responses. The ALLOW case signs only against a dummy contract address; the BLOCK case must be refused.
+
+It does not use the running Verigate server on port 8000, read its .env, or modify its database. Temporary private keys and database files are deleted after the run. Output JSON files are retained in a separate operating-system temp folder. No chain transaction is sent.
+
+Run from this repository in PowerShell, using the Python environment from your local Verigate checkout:
+
+```powershell
+& "C:\Users\User\Desktop\Work\verigate\verigate\.venv\Scripts\python.exe" ".\scripts\verigate_local_demo.py" --verigate-root "C:\Users\User\Desktop\Work\verigate\verigate"
+```
+
+If port 8001 is occupied, add `--port 8011`. The script prints the paths to the ALLOW response, BLOCK response, dry-run signature and summary. These are local test artifacts, not PortalDot deployment evidence.
+
 ## PortalDot V3 preflight
 
 Copy .env.example to .env. Keep private keys out of Git.
