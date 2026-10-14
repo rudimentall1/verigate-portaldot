@@ -115,6 +115,30 @@ describe("Verigate bridge binding", function () {
     }
   });
 
+  it("refuses to sign when Verigate verification times out", async function () {
+    const originalFetch = global.fetch;
+    let calls = 0;
+    global.fetch = async (_url, options) => {
+      calls += 1;
+      expect(options.signal).to.be.instanceOf(AbortSignal);
+      expect(options.signal.aborted).to.equal(false);
+      throw new DOMException("The operation timed out", "TimeoutError");
+    };
+    try {
+      let error;
+      try {
+        await signAuthorization(response(Math.floor(Date.now() / 1000)));
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).to.be.instanceOf(DOMException);
+      expect(error.name).to.equal("TimeoutError");
+      expect(calls).to.equal(1);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it("refuses to sign when the Verigate verification endpoint returns HTTP 503", async function () {
     const originalFetch = global.fetch;
     let calls = 0;
