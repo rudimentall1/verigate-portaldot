@@ -322,6 +322,73 @@ def main() -> int:
                 block_path = output_root / "block-response.json"
                 allow_path.write_text(json.dumps(allow_response, indent=2), encoding="utf-8")
                 block_path.write_text(json.dumps(block_response, indent=2), encoding="utf-8")
+
+                # Run the actual Node bridge CLI against the fresh responses while
+                # the temporary Verigate verifier is still online. The signer key
+                # is generated in memory and the domain uses a dummy contract address.
+                # This signs data only; it cannot broadcast a transaction.
+                project_root = Path(__file__).resolve().parents[1]
+                wallet_result = subprocess.run(
+                    [
+                        "node",
+                        "-e",
+                        "const { Wallet } = require('ethers'); "
+                        "const w = Wallet.createRandom(); "
+                        "process.stdout.write(JSON.stringify({privateKey:w.privateKey,address:w.address}));",
+                    ],
+                    cwd=project_root,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    check=False,
+                )
+                if wallet_result.returncode != 0:
+                    raise RuntimeError("Could not create an ephemeral bridge test key: " + wallet_result.stderr[-2000:])
+                test_wallet = json.loads(wallet_result.stdout)
+                bridge_env = env.copy()
+                bridge_env["VERIGATE_BASE_URL"] = base_url
+                bridge_env["BRIDGE_SIGNER_PRIVATE_KEY"] = test_wallet["privateKey"]
+                bridge_env["AUTHORITY_SIGNER_ADDRESS"] = test_wallet["address"]
+                bridge_env["PORTALDOT_GUARD_ADDRESS"] = "0x000000000000000000000000000000000000dEaD"
+                bridge_env["PORTALDOT_CHAIN_ID"] = str(CHAIN_ID)
+
+                bridge_allow = subprocess.run(
+                    ["node", "adapter/verigate-bridge.js", str(allow_path)],
+                    cwd=project_root,
+                    env=bridge_env,
+                    capture_output=True,
+                    text=True,
+                    timeout=12,
+                    check=False,
+                )
+                if bridge_allow.returncode != 0:
+                    raise RuntimeError(
+                        "The PortalDot bridge CLI refused the genuine ALLOW response: "
+                        + bridge_allow.stderr[-3000:]
+                    )
+                signed_dry_run = json.loads(bridge_allow.stdout)
+                signed_path = output_root / "bridge-signature-dry-run.json"
+                signed_path.write_text(json.dumps(signed_dry_run, indent=2), encoding="utf-8")
+
+                bridge_block = subprocess.run(
+                    ["node", "adapter/verigate-bridge.js", str(block_path)],
+                    cwd=project_root,
+                    env=bridge_env,
+                    capture_output=True,
+                    text=True,
+                    timeout=12,
+                    check=False,
+                )
+                block_refused = (
+                    bridge_block.returncode != 0
+                    and "not ALLOW" in (bridge_block.stderr + bridge_block.stdout)
+                )
+                if not block_refused:
+                    raise RuntimeError(
+                        "The PortalDot bridge CLI did not clearly refuse the BLOCK response. "
+                        + bridge_block.stderr[-3000:]
+                    )
+
                 summary = {
                     "test_instance": "isolated temporary Verigate API",
                     "base_url": base_url,
@@ -339,9 +406,16 @@ def main() -> int:
                         "decision": block_decision,
                         "execution_authorization_present": False,
                         "decision_receipt_signature_valid": block_receipt_ok,
+                        "bridge_cli_refused_block": block_refused,
                         "response_file": str(block_path),
                     },
-                    "note": "Test-only addresses and temporary issuer keys. No transaction was signed or broadcast.",
+                    "bridge_cli_allow_dry_run": {
+                        "signature_created": True,
+                        "signature_file": str(signed_path),
+                        "authority_signer": test_wallet["address"],
+                        "domain_contract_is_dummy": True,
+                    },
+                    "note": "Temporary test-only issuer/bridge keys and test recipients. The bridge CLI generated a typed signature for a dummy contract domain; no transaction was broadcast and this signature is not deployment evidence.",
                 }
                 summary_path = output_root / "summary.json"
                 summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
