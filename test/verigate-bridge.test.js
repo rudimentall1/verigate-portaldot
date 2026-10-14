@@ -171,4 +171,33 @@ describe("Verigate bridge binding", function () {
     expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
       .to.throw(/policy digest does not match/);
   });
+
+  it("accepts the exact uint256 maximum without numeric coercion", function () {
+    const now = 2000000000;
+    const item = response(now);
+    const max = ((1n << 256n) - 1n).toString();
+    item.decision_receipt.payload.intent.amount_exact = max;
+    item.decision_receipt.payload.intent.metadata.portaldot_v3.amount_base_units = max;
+    item.execution_authorization.payload.action.amount_exact = max;
+    item.execution_authorization.payload.action.metadata.portaldot_v3.amount_base_units = max;
+    item.execution_authorization.payload.action_sha256 = actionDigest(item.execution_authorization.payload.action);
+
+    const result = validateAuthorizationBinding(item, { now, expectedChainId: 420420777 });
+    expect(result.amount).to.equal((1n << 256n) - 1n);
+  });
+
+  it("refuses zero and non-integer transfer amounts", function () {
+    for (const amount of ["0", "01", "-1", "1.5", "1e6", ""]) {
+      const item = response(2000000000);
+      item.decision_receipt.payload.intent.amount_exact = amount;
+      item.decision_receipt.payload.intent.metadata.portaldot_v3.amount_base_units = amount;
+      item.execution_authorization.payload.action.amount_exact = amount;
+      item.execution_authorization.payload.action.metadata.portaldot_v3.amount_base_units = amount;
+      item.execution_authorization.payload.action_sha256 = actionDigest(item.execution_authorization.payload.action);
+
+      expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+        .to.throw(/positive base-unit integer/);
+    }
+  });
+
 });
