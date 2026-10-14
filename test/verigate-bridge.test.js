@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const crypto = require("node:crypto");
 const { ethers } = require("hardhat");
-const { validateAuthorizationBinding, actionDigest } = require("../adapter/verigate-bridge");
+const { validateAuthorizationBinding, actionDigest, canonicalJson } = require("../adapter/verigate-bridge");
 
 describe("Verigate bridge binding", function () {
   let recipient;
@@ -67,6 +67,12 @@ describe("Verigate bridge binding", function () {
       ...overrides
     };
   }
+
+  it("matches Verigate's compact sorted-key UTF-8 canonical JSON", function () {
+    const sample = { z: 2, "é": "café", a: { "β": true, a: null }, items: [1, "x"] };
+    expect(canonicalJson(sample)).to.equal('{"a":{"a":null,"β":true},"items":[1,"x"],"z":2,"é":"café"}');
+    expect(actionDigest(sample)).to.equal("0cffd54445698991ce85b4a3c73496ca3994791c6105a5eca67ad5bbb4931609");
+  });
 
   it("maps a valid ALLOW to an exact bounded transfer", function () {
     const now = 2000000000;
