@@ -140,6 +140,22 @@ describe("Verigate bridge binding", function () {
       .to.throw(/expired/);
   });
 
+  it("refuses future-issued and overlong execution authorizations", function () {
+    const now = 2000000000;
+
+    const futureIssued = response(now);
+    futureIssued.execution_authorization.payload.issued_at = now + 16;
+    futureIssued.execution_authorization.payload.expires_at = now + 240;
+    expect(() => validateAuthorizationBinding(futureIssued, { now, expectedChainId: 420420777 }))
+      .to.throw(/invalid issue time or exceeds Verigate's five-minute TTL/);
+
+    const overlong = response(now);
+    overlong.execution_authorization.payload.issued_at = now - 1;
+    overlong.execution_authorization.payload.expires_at = now + 301;
+    expect(() => validateAuthorizationBinding(overlong, { now, expectedChainId: 420420777 }))
+      .to.throw(/invalid issue time or exceeds Verigate's five-minute TTL/);
+  });
+
   it("refuses an invalid expected chain ID", function () {
     expect(() => validateAuthorizationBinding(response(2000000000), { now: 2000000000, expectedChainId: Number.MAX_SAFE_INTEGER + 1 }))
       .to.throw(/positive safe integer/);
