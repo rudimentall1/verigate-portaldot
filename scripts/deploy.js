@@ -2,7 +2,15 @@ require("dotenv").config();
 const { ethers } = require("hardhat");
 
 async function main() {
-  const expectedChainId = BigInt(process.env.PORTALDOT_CHAIN_ID || "420420777");
+  const rpcUrl = (process.env.PORTALDOT_RPC_URL || "").trim();
+  const chainIdText = (process.env.PORTALDOT_CHAIN_ID || "").trim();
+  if (!rpcUrl) {
+    throw new Error("Refusing deployment: PORTALDOT_RPC_URL must be explicitly configured to the confirmed PortalDot EVM RPC endpoint.");
+  }
+  if (!chainIdText || !/^[1-9][0-9]*$/.test(chainIdText)) {
+    throw new Error("Refusing deployment: PORTALDOT_CHAIN_ID must be explicitly set to the confirmed positive decimal chain ID.");
+  }
+  const expectedChainId = BigInt(chainIdText);
   const network = await ethers.provider.getNetwork();
 
   if (network.chainId !== expectedChainId) {
