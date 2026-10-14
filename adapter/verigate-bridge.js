@@ -190,6 +190,7 @@ function validateAuthorizationBinding(response, options = {}) {
 async function verifyWithVerigate(baseUrl, attestation, apiKey) {
   const response = await fetch(new URL("/v1/verify", baseUrl), {
     method: "POST",
+    redirect: "error",
     headers: {
       "content-type": "application/json",
       ...(apiKey ? { "x-api-key": apiKey } : {})
