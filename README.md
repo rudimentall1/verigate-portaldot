@@ -2,7 +2,7 @@
 
 A focused PortalDot V3 Hacker House project exploring how an AI agent's proposed payment can be gated by an explicit, signed execution authorization.
 
-**Status:** the current implementation has a native-payment guard, bridge-signing CLI, RPC preflight, and local Hardhat tests. GitHub Actions passed `npm test` and `npm run compile` on commit `dd5269c` (14 October 2026). The isolated real-Verigate API integration helper has not yet been run, and no live PortalDot deployment is claimed. The V3 EVM RPC endpoint and chain ID still need independent confirmation before deployment.
+**Status:** the repository has a native-payment guard, bridge-signing CLI, RPC preflight, local Hardhat tests, and an isolated Verigate API integration helper. The integration helper has passed locally: signed ALLOW artifacts were verified, BLOCK was refused, and no transaction was broadcast. The latest bridge changes have not yet been confirmed by a fresh CI run. No live PortalDot deployment is claimed. The V3 EVM RPC endpoint and chain ID still need independent confirmation before deployment.
 
 ## What this MVP demonstrates
 
