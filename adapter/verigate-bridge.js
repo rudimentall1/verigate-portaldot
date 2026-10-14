@@ -17,6 +17,33 @@ function fail(message) {
   throw new Error(message);
 }
 
+function compareUnicodeCodePoints(left, right) {
+  const a = Array.from(left, (char) => char.codePointAt(0));
+  const b = Array.from(right, (char) => char.codePointAt(0));
+  const length = Math.min(a.length, b.length);
+  for (let i = 0; i < length; i += 1) {
+    if (a[i] !== b[i]) return a[i] - b[i];
+  }
+  return a.length - b.length;
+}
+
+// Mirrors Verigate's attest.receipt._canonical(): sorted keys, compact JSON,
+// UTF-8 bytes, and no ASCII-only escaping.
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const keys = Object.keys(value).sort(compareUnicodeCodePoints);
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+  }
+  const encoded = JSON.stringify(value);
+  if (encoded === undefined) fail("Action contains a value that cannot be represented as canonical JSON.");
+  return encoded;
+}
+
+function actionDigest(action) {
+  return crypto.createHash("sha256").update(canonicalJson(action), "utf8").digest("hex");
+}
+
 function validateAuthorizationBinding(response, options = {}) {
   const expectedChainId = Number(options.expectedChainId ?? process.env.PORTALDOT_CHAIN_ID ?? "420420777");
   const now = Number(options.now ?? Math.floor(Date.now() / 1000));
@@ -109,6 +136,14 @@ function validateAuthorizationBinding(response, options = {}) {
   if (!/^[1-9][0-9]*$/.test(amountText) || amountText !== mappedAmount ||
       String(intentMapping.amount_base_units ?? "") !== amountText) {
     fail("amount_exact must equal metadata.portaldot_v3.amount_base_units as a positive base-unit integer.");
+  }
+
+  const computedActionDigest = actionDigest(action);
+  if (String(authPayload.action_sha256 || "").toLowerCase() !== computedActionDigest) {
+    fail("Execution authorization action digest does not match its action.");
+  }
+  if (computedActionDigest !== actionDigest(intent)) {
+    fail("Execution authorization action does not exactly match the signed decision receipt intent.");
   }
 
   const amount = BigInt(amountText);
@@ -217,4 +252,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { validateAuthorizationBinding, verifyWithVerigate, signAuthorization };
+module.exports = { validateAuthorizationBinding, verifyWithVerigate, signAuthorization, canonicalJson, actionDigest };
