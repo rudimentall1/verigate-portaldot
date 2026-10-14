@@ -39,3 +39,10 @@ The deployer key pays deployment gas. The bridge signer key is configured as the
 - Test authorization expiry, action mismatch, invalid signatures and denied decisions end to end.
 - Consider locally verifying Ed25519 against a pinned trusted public key instead of relying only on the issuer API's verify endpoint.
 - Never record a transaction hash or deployed address until it is confirmed on the live expected chain.
+
+
+## Local end-to-end harness
+
+Run `scripts/verigate_local_demo.py` with the Python interpreter from the Verigate checkout. The harness creates an isolated temporary Verigate API instance, seeds a test-only identity and capability, submits ALLOW and BLOCK requests through the actual HTTP routes, verifies Ed25519 artifacts, and runs the Node bridge CLI with a fresh throwaway EVM signer against a dummy contract domain.
+
+The harness must never use the normal Verigate database, private keys or .env. It makes no RPC calls and broadcasts no transaction. A successful result validates local API-to-bridge plumbing only; it does not replace a live PortalDot V3 deployment or a real agent integration.
