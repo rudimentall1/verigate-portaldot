@@ -230,11 +230,11 @@ describe("PortalDotAgentGuard", function () {
     const curveOrder = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
     const highS = curveOrder - BigInt(signature.s);
     const highV = signature.v === 27 ? 28 : 27;
-    const malleable = ethers.Signature.from({
-      r: signature.r,
-      s: ethers.toBeHex(highS, 32),
-      v: highV
-    }).serialized;
+    const malleable = ethers.concat([
+      signature.r,
+      ethers.toBeHex(highS, 32),
+      ethers.toBeHex(highV, 1)
+    ]);
 
     await expect(
       guard.executeTransfer(auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, malleable)
