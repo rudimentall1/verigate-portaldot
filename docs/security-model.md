@@ -32,9 +32,11 @@ The demo supports a single native-token transfer. It is not a general wallet, to
 - malformed or non-canonical signature;
 - zero recipient/amount;
 - insufficient balance and failing recipient;
-- re-entrant recipient.
+- re-entrant recipient;
+- Verigate verification endpoint unreachable (network error);
+- Verigate verification endpoint returning a non-2xx response (including HTTP 503).
 
-The initial test suite covers the core authorization and replay cases. Expand it before using real testnet funds.
+GitHub Actions passed the bridge tests and compile workflow for commit `eb315fd` (14 October 2026), including explicit chain-ID configuration, invalid verification responses, network failure and HTTP 503. These are local automated tests, not live-network validation. Expand coverage and review dependency advisories before using real testnet funds.
 
 ## Live-network evidence
 
