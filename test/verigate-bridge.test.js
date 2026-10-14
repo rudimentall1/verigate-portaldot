@@ -92,6 +92,51 @@ describe("Verigate bridge binding", function () {
     }
   });
 
+
+  it("refuses to sign when the Verigate verification endpoint is unreachable", async function () {
+    const originalFetch = global.fetch;
+    let calls = 0;
+    global.fetch = async () => {
+      calls += 1;
+      throw new Error("network unreachable");
+    };
+    try {
+      let error;
+      try {
+        await signAuthorization(response(Math.floor(Date.now() / 1000)));
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).to.be.instanceOf(Error);
+      expect(error.message).to.equal("network unreachable");
+      expect(calls).to.equal(1);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("refuses to sign when the Verigate verification endpoint returns HTTP 503", async function () {
+    const originalFetch = global.fetch;
+    let calls = 0;
+    global.fetch = async () => {
+      calls += 1;
+      return { ok: false, status: 503 };
+    };
+    try {
+      let error;
+      try {
+        await signAuthorization(response(Math.floor(Date.now() / 1000)));
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).to.be.instanceOf(Error);
+      expect(error.message).to.match(/returned HTTP 503/);
+      expect(calls).to.equal(1);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it("matches Verigate's compact sorted-key UTF-8 canonical JSON", function () {
     const sample = { z: 2, "é": "café", a: { "β": true, a: null }, items: [1, "x"] };
     expect(canonicalJson(sample)).to.equal('{"a":{"a":null,"β":true},"items":[1,"x"],"z":2,"é":"café"}');
