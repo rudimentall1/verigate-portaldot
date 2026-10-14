@@ -53,7 +53,7 @@ The preflight reads eth_chainId and eth_blockNumber, and fails closed when the R
 
 ## Contract deployment
 
-Set DEPLOYER_PRIVATE_KEY and AUTHORITY_SIGNER_ADDRESS in .env. The authority signer must be the dedicated EVM key used by the bridge, not an unrelated deployer address.
+Set DEPLOYER_PRIVATE_KEY and AUTHORITY_SIGNER_ADDRESS in .env. These must be separate keys: the deployer pays deployment gas, while the authority signer is the dedicated EVM key used by the bridge. The deployment script refuses a zero authority address or the same address for both roles.
 
 ```bash
 npm run deploy:portaldot
