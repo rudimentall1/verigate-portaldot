@@ -35,7 +35,8 @@ It does not use the running Verigate server on port 8000, read its .env, or modi
 Run from this repository in PowerShell, using the Python environment from your local Verigate checkout:
 
 ```powershell
-& "C:\Users\User\Desktop\Work\verigate\verigate\.venv\Scripts\python.exe" ".\scripts\verigate_local_demo.py" --verigate-root "C:\Users\User\Desktop\Work\verigate\verigate"
+$verigateRoot = "$env:USERPROFILE\Desktop\Work\verigate\verigate"
+& "$verigateRoot\.venv\Scripts\python.exe" ".\scripts\verigate_local_demo.py" --verigate-root $verigateRoot
 ```
 
 If port 8001 is occupied, add `--port 8011`. The script prints the paths to the ALLOW response, BLOCK response, dry-run signature and summary. These are local test artifacts, not PortalDot deployment evidence.
