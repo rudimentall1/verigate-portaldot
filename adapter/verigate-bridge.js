@@ -45,7 +45,14 @@ function actionDigest(action) {
 }
 
 function validateAuthorizationBinding(response, options = {}) {
-  const expectedChainId = Number(options.expectedChainId ?? process.env.PORTALDOT_CHAIN_ID ?? "420420777");
+  const configuredChainId = options.expectedChainId ?? process.env.PORTALDOT_CHAIN_ID;
+  if (configuredChainId === undefined || configuredChainId === null || String(configuredChainId).trim() === "") {
+    fail("PORTALDOT_CHAIN_ID must be explicitly configured; refusing an assumed network ID.");
+  }
+  if (typeof configuredChainId === "string" && !/^[1-9][0-9]*$/.test(configuredChainId)) {
+    fail("Expected PortalDot chain ID must be a canonical positive decimal integer.");
+  }
+  const expectedChainId = Number(configuredChainId);
   const now = Number(options.now ?? Math.floor(Date.now() / 1000));
   if (!Number.isSafeInteger(expectedChainId) || expectedChainId <= 0) {
     fail("Expected PortalDot chain ID must be a positive safe integer.");
