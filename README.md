@@ -49,7 +49,7 @@ Copy .env.example to .env. Keep private keys out of Git.
 npm run preflight
 ```
 
-The preflight reads eth_chainId and eth_blockNumber, and fails closed when the RPC is unavailable or the chain ID differs from 420420777.
+The preflight reads eth_chainId and eth_blockNumber, and fails closed when the RPC is unavailable or the chain ID differs from 420420777. That chain ID is currently a project assumption, not independently confirmed network metadata.
 
 ## Contract deployment
 
@@ -91,7 +91,7 @@ The bridge-signing CLI is an initial integration step, not a claim that a full a
 ## Scope and limitations
 
 - The first on-chain operation is a native-token payment only.
-- tPOT is the PortalDot V3 testnet gas token. The actual RPC and wallet mapping must be confirmed before deployment.
+- The EVM testnet RPC, chain ID, token denomination, and wallet mapping are not yet confirmed from an authoritative PortalDot source. The published [PortalDot developer chain info](https://portaldot-dev.readthedocs.io/en/latest/chain-info.html) documents a Substrate WebSocket endpoint for mainnet, not the EVM testnet configured here. Do not deploy until the target network is independently identified.
 - No live deployment, independent audit, production key management, or production readiness is claimed.
 - This is a separate PortalDot integration, not a copy of the Verigate repository.
 
