@@ -275,4 +275,23 @@ describe("PortalDotAgentGuard", function () {
     expect(await guard.usedNonces(auth.nonce)).to.equal(false);
     expect(await ethers.provider.getBalance(await guard.getAddress())).to.equal(guardBalanceBefore);
   });
+
+  it("accepts an authorization whose deadline is exactly five minutes away", async function () {
+    const latest = await ethers.provider.getBlock("latest");
+    const auth = await authorization({
+      deadline: BigInt(latest.timestamp + 301),
+      nonce: 18n
+    });
+    const signature = await signAuth(authority, auth);
+
+    // The transaction is mined one second after the current block, leaving exactly 300 seconds.
+    await ethers.provider.send("evm_setNextBlockTimestamp", [latest.timestamp + 1]);
+    await expect(
+      guard.executeTransfer(
+        auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, signature
+      )
+    ).to.emit(guard, "TransferExecuted").withArgs(auth.actionId, auth.recipient, auth.amount, auth.nonce);
+
+    expect(await guard.usedNonces(auth.nonce)).to.equal(true);
+  });
 });
