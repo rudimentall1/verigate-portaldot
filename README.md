@@ -14,6 +14,8 @@ A focused PortalDot V3 Hacker House project exploring how an AI agent's proposed
 
 The contract verifies an EIP-712 bridge authorization. It does **not** verify Verigate's Ed25519 signature on-chain. That verification belongs in the off-chain bridge, and this trust boundary must remain explicit.
 
+See [architecture and trust boundaries](docs/architecture.md) for the flow diagram and a clear distinction between implemented and not-yet-connected steps.
+
 ## Quick start
 
 Requires Node.js 20 or newer.
