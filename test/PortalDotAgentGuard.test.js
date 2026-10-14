@@ -54,6 +54,12 @@ describe("PortalDotAgentGuard", function () {
     });
   });
 
+  it("rejects deployment with a zero authority signer", async function () {
+    const factory = await ethers.getContractFactory("PortalDotAgentGuard");
+    await expect(factory.deploy(ethers.ZeroAddress))
+      .to.be.revertedWithCustomError(factory, "ZeroAuthoritySigner");
+  });
+
   it("executes a valid, exact payment and consumes its nonce", async function () {
     const auth = await authorization();
     const signature = await signAuth(authority, auth);
