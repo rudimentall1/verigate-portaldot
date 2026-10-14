@@ -154,6 +154,29 @@ describe("PortalDotAgentGuard", function () {
     ).to.be.revertedWithCustomError(guard, "InvalidRecipient");
   });
 
+  it("rejects the guard as its own recipient", async function () {
+    const auth = await authorization({ recipient: await guard.getAddress(), nonce: 7n });
+    const signature = await signAuth(authority, auth);
+    await expect(
+      guard.executeTransfer(
+        auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, signature
+      )
+    ).to.be.revertedWithCustomError(guard, "InvalidRecipient");
+    expect(await guard.usedNonces(auth.nonce)).to.equal(false);
+  });
+
+  it("rejects transfers larger than the available balance without consuming the nonce", async function () {
+    const auth = await authorization({ amount: ethers.parseEther("6"), nonce: 8n });
+    const signature = await signAuth(authority, auth);
+    await expect(
+      guard.executeTransfer(
+        auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, signature
+      )
+    ).to.be.revertedWithCustomError(guard, "InsufficientBalance")
+      .withArgs(ethers.parseEther("5"), ethers.parseEther("6"));
+    expect(await guard.usedNonces(auth.nonce)).to.equal(false);
+  });
+
   it("rejects malformed signatures", async function () {
     const auth = await authorization();
     await expect(
