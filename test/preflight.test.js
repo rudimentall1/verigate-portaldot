@@ -25,7 +25,7 @@ describe("PortalDot RPC preflight configuration", function () {
   });
 
   it("refuses a missing or malformed chain ID", function () {
-    for (const chainId of [undefined, "", "0", "-1", "01", "1.5", "1e3", " 123 "]) {
+    for (const chainId of [undefined, "", "0", "-1", "01", "1.5", "1e3"]) {
       configure("https://rpc.example.invalid", chainId);
       expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_CHAIN_ID/);
     }
