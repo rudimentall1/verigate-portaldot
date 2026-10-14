@@ -1,4 +1,5 @@
 const { expect } = require("chai");
+const crypto = require("node:crypto");
 const { ethers } = require("hardhat");
 const { validateAuthorizationBinding } = require("../adapter/verigate-bridge");
 
@@ -29,21 +30,30 @@ describe("Verigate bridge binding", function () {
       }
     };
     const intent = structuredClone(action);
+    const receiptSignature = "fixture-only-not-a-real-signature";
+    const policySha256 = "a".repeat(64);
     const decisionReceipt = {
       algorithm: "Ed25519",
-      signature: "fixture-only-not-a-real-signature",
+      signature: receiptSignature,
       payload: {
         intent,
         decision: { decision: "ALLOW", intent_id: intent.intent_id, agent_id: intent.agent_id },
-        policy_sha256: "a".repeat(64)
+        policy_sha256: policySha256
       }
     };
+    const authorizationNonce = intent.intent_id;
+    const authorizationId = crypto
+      .createHash("sha256")
+      .update(receiptSignature + authorizationNonce, "utf8")
+      .digest("hex");
     const executionAuthorization = {
       algorithm: "Ed25519",
       signature: "fixture-only-not-a-real-signature",
       payload: {
-        authorization_id: "b".repeat(64),
+        authorization_id: authorizationId,
         action_sha256: "c".repeat(64),
+        nonce: authorizationNonce,
+        policy_sha256: policySha256,
         intent_id: intent.intent_id,
         agent_id: intent.agent_id,
         issued_at: now - 1,
@@ -63,7 +73,7 @@ describe("Verigate bridge binding", function () {
     const result = validateAuthorizationBinding(response(now), { now, expectedChainId: 420420777 });
     expect(result.recipient).to.equal(ethers.getAddress(recipient.address));
     expect(result.amount).to.equal(1000000n);
-    expect(result.nonce).to.equal(BigInt("0x" + "b".repeat(64)));
+    expect(result.nonce).to.equal(BigInt("0x" + crypto.createHash("sha256").update("fixture-only-not-a-real-signaturetest-intent-001", "utf8").digest("hex")));
     expect(result.deadline).to.equal(BigInt(now + 120));
     expect(result.actionId).to.equal(ethers.keccak256(ethers.toUtf8Bytes("test-intent-001")));
   });
