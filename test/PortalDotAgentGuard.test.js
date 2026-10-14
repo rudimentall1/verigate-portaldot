@@ -253,4 +253,26 @@ describe("PortalDotAgentGuard", function () {
       guard.executeTransfer(auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, malleable)
     ).to.be.revertedWithCustomError(guard, "InvalidSignature");
   });
+
+  it("does not consume a nonce when the recipient rejects the native transfer", async function () {
+    const recipientFactory = await ethers.getContractFactory("RejectingRecipient");
+    const rejectingRecipient = await recipientFactory.deploy();
+    await rejectingRecipient.waitForDeployment();
+
+    const auth = await authorization({
+      recipient: await rejectingRecipient.getAddress(),
+      nonce: 23n
+    });
+    const signature = await signAuth(authority, auth);
+    const guardBalanceBefore = await ethers.provider.getBalance(await guard.getAddress());
+
+    await expect(
+      guard.executeTransfer(
+        auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, signature
+      )
+    ).to.be.revertedWithCustomError(guard, "NativeTransferFailed");
+
+    expect(await guard.usedNonces(auth.nonce)).to.equal(false);
+    expect(await ethers.provider.getBalance(await guard.getAddress())).to.equal(guardBalanceBefore);
+  });
 });
