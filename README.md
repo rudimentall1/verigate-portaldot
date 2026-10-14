@@ -51,11 +51,11 @@ Copy .env.example to .env. Keep private keys out of Git.
 npm run preflight
 ```
 
-The preflight reads eth_chainId and eth_blockNumber, and fails closed when the RPC is unavailable or the chain ID differs from 420420777. That chain ID is currently a project assumption, not independently confirmed network metadata.
+The preflight requires PORTALDOT_RPC_URL and PORTALDOT_CHAIN_ID to be explicitly configured. Both are blank in .env.example because the repository's previous RPC endpoint and chain ID have not been independently confirmed. It reads eth_chainId and eth_blockNumber and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Do not fill these values from guesses or use a deployment key until the official EVM network details are confirmed. The deployment script repeats the configuration checks so it also fails closed when invoked directly.
 
 ## Contract deployment
 
-Set DEPLOYER_PRIVATE_KEY and AUTHORITY_SIGNER_ADDRESS in .env. These must be separate keys: the deployer pays deployment gas, while the authority signer is the dedicated EVM key used by the bridge. The deployment script refuses a zero authority address or the same address for both roles.
+Only after the official EVM RPC and chain ID are confirmed, set PORTALDOT_RPC_URL, PORTALDOT_CHAIN_ID, DEPLOYER_PRIVATE_KEY, and AUTHORITY_SIGNER_ADDRESS in the untracked .env file. The deployer and authority signer must be separate keys: the deployer pays deployment gas, while the authority signer is the dedicated EVM key used by the bridge. The deployment script refuses a zero authority address or the same address for both roles.
 
 ```bash
 npm run deploy:portaldot
