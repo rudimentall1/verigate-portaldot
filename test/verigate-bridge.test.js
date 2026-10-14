@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const crypto = require("node:crypto");
 const { ethers } = require("hardhat");
-const { validateAuthorizationBinding } = require("../adapter/verigate-bridge");
+const { validateAuthorizationBinding, actionDigest } = require("../adapter/verigate-bridge");
 
 describe("Verigate bridge binding", function () {
   let recipient;
@@ -51,7 +51,7 @@ describe("Verigate bridge binding", function () {
       signature: "fixture-only-not-a-real-signature",
       payload: {
         authorization_id: authorizationId,
-        action_sha256: "c".repeat(64),
+        action_sha256: actionDigest(action),
         nonce: authorizationNonce,
         policy_sha256: policySha256,
         intent_id: intent.intent_id,
@@ -76,6 +76,20 @@ describe("Verigate bridge binding", function () {
     expect(result.nonce).to.equal(BigInt("0x" + crypto.createHash("sha256").update("fixture-only-not-a-real-signaturetest-intent-001", "utf8").digest("hex")));
     expect(result.deadline).to.equal(BigInt(now + 120));
     expect(result.actionId).to.equal(ethers.keccak256(ethers.toUtf8Bytes("test-intent-001")));
+  });
+
+  it("refuses an action whose canonical digest no longer matches", function () {
+    const item = response(2000000000);
+    item.execution_authorization.payload.action.metadata.unreviewed_change = true;
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+      .to.throw(/action digest does not match/);
+  });
+
+  it("refuses an authorization action that differs from the receipt intent", function () {
+    const item = response(2000000000);
+    item.decision_receipt.payload.intent.metadata.extra_receipt_field = "different";
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+      .to.throw(/does not exactly match the signed decision receipt intent/);
   });
 
   it("refuses WARN and BLOCK", function () {
