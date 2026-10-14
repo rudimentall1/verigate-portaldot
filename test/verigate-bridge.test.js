@@ -132,6 +132,25 @@ describe("Verigate bridge binding", function () {
       .to.throw(/expired/);
   });
 
+  it("refuses an invalid expected chain ID", function () {
+    expect(() => validateAuthorizationBinding(response(2000000000), { now: 2000000000, expectedChainId: Number.MAX_SAFE_INTEGER + 1 }))
+      .to.throw(/positive safe integer/);
+    expect(() => validateAuthorizationBinding(response(2000000000), { now: 2000000000, expectedChainId: 0 }))
+      .to.throw(/positive safe integer/);
+  });
+
+  it("refuses a transfer amount above the EVM uint256 limit", function () {
+    const item = response(2000000000);
+    const tooLarge = ((1n << 256n)).toString();
+    item.decision_receipt.payload.intent.amount_exact = tooLarge;
+    item.decision_receipt.payload.intent.metadata.portaldot_v3.amount_base_units = tooLarge;
+    item.execution_authorization.payload.action.amount_exact = tooLarge;
+    item.execution_authorization.payload.action.metadata.portaldot_v3.amount_base_units = tooLarge;
+    item.execution_authorization.payload.action_sha256 = actionDigest(item.execution_authorization.payload.action);
+    expect(() => validateAuthorizationBinding(item, { now: 2000000000 }))
+      .to.throw(/uint256 limit/);
+  });
+
   it("refuses an authorization ID not derived from the receipt signature and nonce", function () {
     const item = response(2000000000);
     item.execution_authorization.payload.authorization_id = "b".repeat(64);
