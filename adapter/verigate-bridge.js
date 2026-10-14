@@ -1,5 +1,6 @@
 require("dotenv").config();
 const fs = require("node:fs");
+const crypto = require("node:crypto");
 const { ethers } = require("ethers");
 
 const TRANSFER_TYPES = {
@@ -41,6 +42,19 @@ function validateAuthorizationBinding(response, options = {}) {
   }
   if (authPayload.intent_id !== intent.intent_id || authPayload.agent_id !== intent.agent_id) {
     fail("Execution authorization is bound to a different intent or agent.");
+  }
+  if (authPayload.nonce !== intent.intent_id) {
+    fail("Execution authorization nonce must match the receipt intent ID.");
+  }
+  const expectedAuthorizationId = crypto
+    .createHash("sha256")
+    .update(String(receipt.signature) + String(authPayload.nonce), "utf8")
+    .digest("hex");
+  if (String(authPayload.authorization_id || "").toLowerCase() !== expectedAuthorizationId) {
+    fail("Execution authorization ID does not match the receipt signature and nonce.");
+  }
+  if (authPayload.policy_sha256 !== receiptPayload.policy_sha256) {
+    fail("Execution authorization policy digest does not match the decision receipt.");
   }
   if (!/^[a-f0-9]{64}$/i.test(String(authPayload.authorization_id || ""))) {
     fail("Execution authorization has no valid 32-byte authorization ID.");
