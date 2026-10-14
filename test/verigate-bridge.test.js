@@ -156,6 +156,19 @@ describe("Verigate bridge binding", function () {
       .to.throw(/invalid issue time or exceeds Verigate's five-minute TTL/);
   });
 
+  it("refuses timestamps outside JavaScript's safe integer range", function () {
+    const now = 2000000000;
+    const unsafeIssuedAt = response(now);
+    unsafeIssuedAt.execution_authorization.payload.issued_at = Number.MAX_SAFE_INTEGER + 1;
+    expect(() => validateAuthorizationBinding(unsafeIssuedAt, { now, expectedChainId: 420420777 }))
+      .to.throw(/expired or has invalid timestamps/);
+
+    const unsafeExpiresAt = response(now);
+    unsafeExpiresAt.execution_authorization.payload.expires_at = Number.MAX_SAFE_INTEGER + 1;
+    expect(() => validateAuthorizationBinding(unsafeExpiresAt, { now, expectedChainId: 420420777 }))
+      .to.throw(/expired or has invalid timestamps/);
+  });
+
   it("refuses an invalid expected chain ID", function () {
     expect(() => validateAuthorizationBinding(response(2000000000), { now: 2000000000, expectedChainId: Number.MAX_SAFE_INTEGER + 1 }))
       .to.throw(/positive safe integer/);
