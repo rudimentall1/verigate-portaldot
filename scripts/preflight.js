@@ -58,14 +58,11 @@ async function main() {
   console.log("RPC preflight passed. This checks connectivity only; it does not prove that a wallet is funded or a deployment will succeed.");
 }
 
-module.exports = { requiredNetworkConfig };
-
 if (require.main === module) {
   main().catch((error) => {
     console.error(`RPC preflight failed: ${error.message}`);
     process.exitCode = 1;
   });
 }
-  console.error(`RPC preflight failed: ${error.message}`);
-  process.exitCode = 1;
-});
+
+module.exports = { requiredNetworkConfig };
