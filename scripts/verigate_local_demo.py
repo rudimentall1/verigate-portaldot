@@ -282,9 +282,17 @@ def main() -> int:
                     }
                     status, response = http_json(base_url + "/v1/actions/authorize", body, timeout=8.0)
                     if status != 200:
+                        try:
+                            log_tail = log_path.read_text(
+                                encoding="utf-8", errors="replace"
+                            )[-12000:]
+                        except OSError as exc:
+                            log_tail = f"Could not read isolated Uvicorn log: {exc}"
                         raise RuntimeError(
                             f"POST /v1/actions/authorize returned HTTP {status}: "
                             + json.dumps(response, ensure_ascii=False)
+                            + "\\n\\nIsolated Verigate Uvicorn log tail:\\n"
+                            + (log_tail or "(log is empty; no traceback was captured)")
                         )
                     return response
 
