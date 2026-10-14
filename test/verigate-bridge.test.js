@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const crypto = require("node:crypto");
 const { ethers } = require("hardhat");
-const { validateAuthorizationBinding, actionDigest, canonicalJson } = require("../adapter/verigate-bridge");
+const { validateAuthorizationBinding, actionDigest, canonicalJson, signAuthorization } = require("../adapter/verigate-bridge");
 
 describe("Verigate bridge binding", function () {
   let recipient;
@@ -69,6 +69,28 @@ describe("Verigate bridge binding", function () {
       ...overrides
     };
   }
+
+  it("refuses to sign when Verigate does not verify the decision receipt", async function () {
+    const originalFetch = global.fetch;
+    let calls = 0;
+    global.fetch = async () => {
+      calls += 1;
+      return { ok: true, json: async () => ({ valid: false, reason: "invalid signature" }) };
+    };
+    try {
+      let error;
+      try {
+        await signAuthorization(response(2000000000));
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).to.be.instanceOf(Error);
+      expect(error.message).to.match(/signature was not validated/);
+      expect(calls).to.equal(1);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 
   it("matches Verigate's compact sorted-key UTF-8 canonical JSON", function () {
     const sample = { z: 2, "é": "café", a: { "β": true, a: null }, items: [1, "x"] };
