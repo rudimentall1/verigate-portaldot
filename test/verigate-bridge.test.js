@@ -176,6 +176,18 @@ describe("Verigate bridge binding", function () {
       .to.throw(/positive safe integer/);
   });
 
+  it("refuses non-canonical chain ID encodings", function () {
+    const now = 2000000000;
+    for (const chainId of ["0420420777", "420420777.0", "4.20420777e8", 420420777.5]) {
+      const item = response(now);
+      item.execution_authorization.payload.action.metadata.portaldot_v3.chain_id = chainId;
+      item.decision_receipt.payload.intent.metadata.portaldot_v3.chain_id = chainId;
+      item.execution_authorization.payload.action_sha256 = actionDigest(item.execution_authorization.payload.action);
+      expect(() => validateAuthorizationBinding(item, { now, expectedChainId: 420420777 }))
+        .to.throw(/chain ID/);
+    }
+  });
+
   it("refuses a transfer amount above the EVM uint256 limit", function () {
     const item = response(2000000000);
     const tooLarge = ((1n << 256n)).toString();
