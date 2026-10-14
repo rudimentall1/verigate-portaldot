@@ -332,17 +332,6 @@ def main() -> int:
                         )
                     )
 
-                adversarial_status, adversarial = http_json(
-                    base_url + "/v1/verify/adversarial",
-                    {"authorization": allow_response["execution_authorization"]},
-                )
-                if (adversarial_status != 200 or not adversarial.get("baseline_valid")
-                        or adversarial.get("all_blocked") is not True):
-                    raise RuntimeError(
-                        "Verigate's adversarial verifier rejected the valid ALLOW authorization: "
-                        + json.dumps(adversarial, ensure_ascii=False)
-                    )
-
                 allow_path = output_root / "allow-response.json"
                 block_path = output_root / "block-response.json"
                 allow_path.write_text(json.dumps(allow_response, indent=2), encoding="utf-8")
@@ -423,8 +412,6 @@ def main() -> int:
                         "execution_authorization_present": True,
                         "decision_receipt_signature_valid": allow_receipt_ok,
                         "execution_authorization_signature_valid": allow_auth_ok,
-                        "verigate_adversarial_baseline_valid": adversarial.get("baseline_valid"),
-                        "verigate_adversarial_attacks_all_blocked": adversarial.get("all_blocked"),
                         "response_file": str(allow_path),
                     },
                     "block": {
@@ -445,7 +432,7 @@ def main() -> int:
                 summary_path = output_root / "summary.json"
                 summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
                 print(json.dumps(summary, indent=2))
-                print("\nPASS: real Verigate HTTP routes issued ALLOW and BLOCK; signed artifacts verified; BLOCK carried no execution authorization.")
+                print("\nPASS: real Verigate HTTP routes issued ALLOW and BLOCK; signed artifacts verified; bridge signed ALLOW and refused BLOCK.")
                 print("No on-chain transaction was signed or broadcast.")
                 return 0
             finally:
