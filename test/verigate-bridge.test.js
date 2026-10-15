@@ -445,3 +445,69 @@ describe("Verigate bridge binding", function () {
   });
 
 });
+
+
+describe("PortalDot RPC preflight configuration", function () {
+  const { requiredNetworkConfig, safeRpcOrigin } = require("../scripts/preflight");
+  const keys = ["PORTALDOT_RPC_URL", "PORTALDOT_CHAIN_ID"];
+  let originalEnv;
+
+  beforeEach(function () {
+    originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+    for (const key of keys) delete process.env[key];
+  });
+
+  afterEach(function () {
+    for (const key of keys) {
+      if (originalEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = originalEnv[key];
+    }
+  });
+
+  it("fails closed when the RPC URL is missing", function () {
+    process.env.PORTALDOT_CHAIN_ID = "420420777";
+    expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_RPC_URL is required/);
+  });
+
+  it("fails closed when the chain ID is missing", function () {
+    process.env.PORTALDOT_RPC_URL = "https://rpc.example";
+    expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_CHAIN_ID must be explicitly set/);
+  });
+
+  it("rejects non-canonical or non-positive chain IDs", function () {
+    process.env.PORTALDOT_RPC_URL = "https://rpc.example";
+    for (const value of ["0", "-1", "0x1", "420420777x"]) {
+      process.env.PORTALDOT_CHAIN_ID = value;
+      expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_CHAIN_ID must be explicitly set/);
+    }
+  });
+
+  it("rejects malformed RPC URLs", function () {
+    process.env.PORTALDOT_RPC_URL = "not a URL";
+    process.env.PORTALDOT_CHAIN_ID = "420420777";
+    expect(() => requiredNetworkConfig()).to.throw(/valid absolute URL/);
+  });
+
+  it("rejects non-HTTP RPC URLs", function () {
+    process.env.PORTALDOT_RPC_URL = "wss://rpc.example";
+    process.env.PORTALDOT_CHAIN_ID = "420420777";
+    expect(() => requiredNetworkConfig()).to.throw(/must use HTTP or HTTPS/);
+  });
+
+  it("accepts explicit HTTP(S) configuration and parses chain ID exactly", function () {
+    process.env.PORTALDOT_RPC_URL = "https://rpc.example/path";
+    process.env.PORTALDOT_CHAIN_ID = "420420777";
+    expect(requiredNetworkConfig()).to.deep.equal({
+      rpcUrl: "https://rpc.example/path",
+      expectedChainId: 420420777n
+    });
+  });
+
+  it("redacts credentials, endpoint paths, and query tokens from the logged RPC origin", function () {
+    const endpoint = "https://user:password@rpc.example:8443/v1/private-token?api_key=secret";
+    expect(safeRpcOrigin(endpoint)).to.equal("https://rpc.example:8443");
+    expect(safeRpcOrigin(endpoint)).not.to.include("password");
+    expect(safeRpcOrigin(endpoint)).not.to.include("private-token");
+    expect(safeRpcOrigin(endpoint)).not.to.include("secret");
+  });
+});
