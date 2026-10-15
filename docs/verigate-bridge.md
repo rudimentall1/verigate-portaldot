@@ -6,11 +6,12 @@ The bridge signer is the security boundary between Verigate's Ed25519 execution 
 
 1. Read a response captured from Verigate's POST /v1/actions/authorize endpoint.
 2. Require a decision receipt whose decision is exactly ALLOW, plus a separate execution authorization.
-3. Ask the configured Verigate instance's POST /v1/verify endpoint to validate both Ed25519 signatures.
-4. Check that the receipt and execution authorization refer to the same intent and agent.
-5. Check that the signed action maps exactly to a PortalDot native transfer: recipient, raw base-unit amount, chain ID, asset and network.
-6. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing.
-7. Sign EIP-712 data using the dedicated bridge key; never broadcast automatically from this CLI.
+3. Independently verify both Ed25519 signatures locally against the pinned issuer key configured by `VERIGATE_PUBLIC_KEY_FILE`.
+4. Ask the configured Verigate instance's POST /v1/verify endpoint for a second validation; the server response is not the sole source of signature truth.
+5. Check that the receipt and execution authorization refer to the same intent and agent.
+6. Check that the signed action maps exactly to a PortalDot native transfer: recipient, raw base-unit amount, chain ID, asset and network.
+7. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing.
+8. Sign EIP-712 data using the dedicated bridge key; never broadcast automatically from this CLI.
 
 ## Required signed intent convention
 
@@ -29,6 +30,10 @@ The policy therefore sees the same exact base-unit integer that the EVM contract
 
 Verigate signs its off-chain authorization artifacts with Ed25519. Solidity's ecrecover verifies secp256k1 signatures, not Ed25519. The separate EVM key therefore represents a bridge trust boundary, not direct on-chain verification of Verigate's Ed25519 signature.
 
+## Pinned issuer key
+
+Set `VERIGATE_PUBLIC_KEY_FILE` to a local PEM containing the trusted Verigate Ed25519 public key. Verify the key fingerprint through an independent trusted channel before pinning it. Fetching `/v1/public-key` over the same endpoint alone does not protect against a compromised issuer endpoint or key-substitution attack. The bridge verifies signatures locally first, then calls `/v1/verify` as a secondary check. A missing key, wrong key type or invalid signature stops signing.
+
 ## Key separation
 
 The deployer key pays deployment gas. The bridge signer key is configured as the immutable signer in PortalDotAgentGuard. Keep them separate, use a throwaway/test-only bridge key, and keep the guarded balance small.
@@ -41,7 +46,7 @@ Verigate signs compact, sorted-key JSON with Python's `json.dumps(..., ensure_as
 
 - Run the current CLI against a real response from the configured Verigate instance.
 - Test authorization expiry, action mismatch, invalid signatures and denied decisions end to end.
-- Consider locally verifying Ed25519 against a pinned trusted public key instead of relying only on the issuer API's verify endpoint.
+- Obtain the issuer public key through a trusted channel, verify its fingerprint, and keep the pinned PEM under controlled deployment configuration. Never commit private keys.
 - Never record a transaction hash or deployed address until it is confirmed on the live expected chain.
 
 
