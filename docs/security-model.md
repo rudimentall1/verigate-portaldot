@@ -4,10 +4,14 @@
 
 1. An agent proposes a specific payment intent.
 2. Verigate evaluates the intent and policy. Any non-ALLOW decision must stop the flow.
-3. The bridge validates the returned Verigate execution authorization with Verigate's trusted Ed25519 public key and supported verification path.
+3. The bridge independently validates both signed Verigate artifacts against a pinned Ed25519 public key, then queries `/v1/verify` as a secondary check.
 4. The bridge compares the authorized action with the exact recipient, amount, intent/action identifier and short expiry it is about to encode.
 5. A dedicated EVM bridge key signs the EIP-712 TransferAuthorization.
 6. The PortalDot contract recovers that EVM signer and executes only the signed native-token payment.
+
+## Verigate issuer trust
+
+The bridge requires `VERIGATE_PUBLIC_KEY_FILE` to identify a local PEM for the trusted issuer key. The key fingerprint must be established through an independent trusted channel; downloading a key from the same API endpoint without checking its fingerprint is not pinning. Both signatures are verified locally before the issuer API is asked to verify them again. A compromised or incorrect verification endpoint cannot make a forged artifact pass the local cryptographic check, although denial of service remains possible while the secondary API check is required.
 
 ## What the contract enforces
 
@@ -36,7 +40,7 @@ The demo supports a single native-token transfer. It is not a general wallet, to
 - Verigate verification endpoint unreachable (network error);
 - Verigate verification endpoint returning a non-2xx response (including HTTP 503).
 
-GitHub Actions passed the bridge and contract tests plus Solidity compilation, and the isolated Verigate ALLOW/BLOCK integration for [commit ab0daa2](https://github.com/rudimentall1/verigate-portaldot/commit/ab0daa27356d45eb3484ff344807cbd56d869b92): [unit tests](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679531073) and [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679531026). The unit tests cover explicit chain-ID configuration, invalid verification responses, network failure, HTTP 503, and cross-language number formatting. These checks are local automated tests, not live-network validation. Review dependency advisories and the trust boundary before using real testnet funds.
+GitHub Actions passed the bridge and contract tests plus Solidity compilation, and the isolated Verigate ALLOW/BLOCK integration for [commit ab0daa2](https://github.com/rudimentall1/verigate-portaldot/commit/ab0daa27356d45eb3484ff344807cbd56d869b92): [unit tests](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679531073) and [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679531026). The unit tests cover explicit chain-ID configuration, locally pinned Ed25519 verification, invalid verification responses, network failure, HTTP 503, and cross-language number formatting. These checks are local automated tests, not live-network validation. Review dependency advisories and the trust boundary before using real testnet funds.
 
 ## Live-network evidence
 
