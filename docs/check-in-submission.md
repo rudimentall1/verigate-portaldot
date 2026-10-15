@@ -15,7 +15,7 @@ Verigate PortalDot is a narrow authorization bridge that prevents an AI agent's 
 
 - **Public repository:** https://github.com/rudimentall1/verigate-portaldot
 - **Native-transfer guard:** `PortalDotAgentGuard` accepts only an EIP-712-authorized native-token transfer. It checks the trusted signer, recipient, amount, deadline and replay nonce; it has no arbitrary-call interface.
-- **Authorization bridge:** the bridge checks the signed Verigate decision and execution authorization, binds the authorization to the exact action, recipient and amount, and produces a short-lived EIP-712 signature only for `ALLOW`.
+- **Authorization bridge:** the bridge independently validates both Verigate Ed25519 artifacts using a locally pinned issuer public key, asks the API verifier for a second check, binds the authorization to the exact action, recipient and amount, and produces a short-lived EIP-712 signature only for `ALLOW`.
 - **Automated evidence:** GitHub Actions runs local Hardhat tests and Solidity compilation, plus a separate integration job using a temporary Verigate API instance with disposable test keys. The integration verifies genuine signed artifacts, creates a dry-run EIP-712 signature for `ALLOW`, and refuses `BLOCK`.
 - **Latest CI evidence:** https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679986616
 - **Architecture and trust boundaries:** https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/architecture.md
