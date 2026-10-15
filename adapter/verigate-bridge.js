@@ -322,6 +322,49 @@ function validateAuthorizationBinding(response, options = {}) {
   };
 }
 
+function verifyLocally(attestation, publicKeyPath = process.env.VERIGATE_PUBLIC_KEY_FILE) {
+  if (!publicKeyPath) {
+    fail("VERIGATE_PUBLIC_KEY_FILE must point to a pinned Verigate issuer public key PEM.");
+  }
+  if (!attestation || attestation.algorithm !== "Ed25519" || !attestation.payload ||
+      typeof attestation.payload !== "object" || Array.isArray(attestation.payload)) {
+    fail("Local verification requires an Ed25519 attestation with an object payload.");
+  }
+  const encodedSignature = attestation.signature;
+  if (typeof encodedSignature !== "string" ||
+      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encodedSignature)) {
+    fail("Verigate signature is not valid canonical base64.");
+  }
+  const signature = Buffer.from(encodedSignature, "base64");
+  if (signature.length !== 64 || signature.toString("base64") !== encodedSignature) {
+    fail("Verigate Ed25519 signature must be exactly 64 bytes in canonical base64.");
+  }
+
+  let publicKey;
+  try {
+    publicKey = crypto.createPublicKey(fs.readFileSync(publicKeyPath));
+  } catch (error) {
+    fail("Cannot load the pinned Verigate public key from VERIGATE_PUBLIC_KEY_FILE: " + error.message);
+  }
+  if (publicKey.asymmetricKeyType !== "ed25519") {
+    fail("VERIGATE_PUBLIC_KEY_FILE must contain an Ed25519 public key.");
+  }
+
+  let valid = false;
+  try {
+    valid = crypto.verify(
+      null,
+      Buffer.from(canonicalJson(attestation.payload), "utf8"),
+      publicKey,
+      signature
+    );
+  } catch (error) {
+    fail("Local Ed25519 signature verification failed: " + error.message);
+  }
+  if (!valid) fail("Local Ed25519 signature verification failed; refusing to trust the issuer API response.");
+  return true;
+}
+
 async function verifyWithVerigate(baseUrl, attestation, apiKey) {
   const response = await fetch(new URL("/v1/verify", baseUrl), {
     method: "POST",
@@ -351,7 +394,11 @@ async function signAuthorization(response) {
   const baseUrl = process.env.VERIGATE_BASE_URL || "http://127.0.0.1:8000";
   const apiKey = process.env.VERIGATE_API_KEY || "";
 
-  // Validate both signed artifacts before using the bridge key.
+  // Verify independently against a pinned issuer key before contacting the API.
+  // The remote verifier is a second check, never the sole source of signature truth.
+  const publicKeyPath = process.env.VERIGATE_PUBLIC_KEY_FILE;
+  verifyLocally(response.decision_receipt, publicKeyPath);
+  verifyLocally(response.execution_authorization, publicKeyPath);
   await verifyWithVerigate(baseUrl, response.decision_receipt, apiKey);
   await verifyWithVerigate(baseUrl, response.execution_authorization, apiKey);
 
@@ -419,4 +466,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { validateAuthorizationBinding, verifyWithVerigate, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers };
+module.exports = { validateAuthorizationBinding, verifyLocally, verifyWithVerigate, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers };

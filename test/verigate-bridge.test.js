@@ -1,11 +1,38 @@
 const { expect } = require("chai");
 const crypto = require("node:crypto");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const { ethers } = require("hardhat");
-const { validateAuthorizationBinding, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate } = require("../adapter/verigate-bridge");
+const { validateAuthorizationBinding, verifyLocally, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate } = require("../adapter/verigate-bridge");
 
 describe("Verigate bridge binding", function () {
   let recipient;
   let other;
+  let issuerPrivateKey;
+  let testKeyDir;
+  let publicKeyFile;
+  let originalPublicKeyFile;
+
+  before(function () {
+    originalPublicKeyFile = process.env.VERIGATE_PUBLIC_KEY_FILE;
+    const pair = crypto.generateKeyPairSync("ed25519");
+    issuerPrivateKey = pair.privateKey;
+    testKeyDir = fs.mkdtempSync(path.join(os.tmpdir(), "verigate-portaldot-tests-"));
+    publicKeyFile = path.join(testKeyDir, "issuer.pub");
+    fs.writeFileSync(publicKeyFile, pair.publicKey.export({ type: "spki", format: "pem" }));
+    process.env.VERIGATE_PUBLIC_KEY_FILE = publicKeyFile;
+  });
+
+  after(function () {
+    if (originalPublicKeyFile === undefined) delete process.env.VERIGATE_PUBLIC_KEY_FILE;
+    else process.env.VERIGATE_PUBLIC_KEY_FILE = originalPublicKeyFile;
+    fs.rmSync(testKeyDir, { recursive: true, force: true });
+  });
+
+  function signPayload(payload) {
+    return crypto.sign(null, Buffer.from(canonicalJson(payload), "utf8"), issuerPrivateKey).toString("base64");
+  }
 
   beforeEach(async function () {
     // Explicit fixture configuration; production code must not assume a chain ID.
@@ -32,25 +59,25 @@ describe("Verigate bridge binding", function () {
       }
     };
     const intent = structuredClone(action);
-    const receiptSignature = "fixture-only-not-a-real-signature";
     const policySha256 = "a".repeat(64);
     const decisionReceipt = {
       algorithm: "Ed25519",
-      signature: receiptSignature,
+      signature: "",
       payload: {
         intent,
         decision: { decision: "ALLOW", intent_id: intent.intent_id, agent_id: intent.agent_id },
         policy_sha256: policySha256
       }
     };
+    decisionReceipt.signature = signPayload(decisionReceipt.payload);
     const authorizationNonce = intent.intent_id;
     const authorizationId = crypto
       .createHash("sha256")
-      .update(receiptSignature + authorizationNonce, "utf8")
+      .update(decisionReceipt.signature + authorizationNonce, "utf8")
       .digest("hex");
     const executionAuthorization = {
       algorithm: "Ed25519",
-      signature: "fixture-only-not-a-real-signature",
+      signature: "",
       payload: {
         authorization_id: authorizationId,
         action_sha256: actionDigest(action),
@@ -63,12 +90,69 @@ describe("Verigate bridge binding", function () {
         action
       }
     };
+    executionAuthorization.signature = signPayload(executionAuthorization.payload);
     return {
       decision_receipt: decisionReceipt,
       execution_authorization: executionAuthorization,
       ...overrides
     };
   }
+
+  it("verifies both signed artifacts locally against the pinned Ed25519 key", function () {
+    const item = response(Math.floor(Date.now() / 1000));
+    expect(verifyLocally(item.decision_receipt)).to.equal(true);
+    expect(verifyLocally(item.execution_authorization)).to.equal(true);
+  });
+
+  it("refuses a forged artifact locally even if the remote verifier might approve it", async function () {
+    const originalFetch = global.fetch;
+    const item = response(Math.floor(Date.now() / 1000));
+    item.execution_authorization.signature = Buffer.alloc(64, 7).toString("base64");
+    let calls = 0;
+    global.fetch = async () => {
+      calls += 1;
+      return { ok: true, status: 200, json: async () => ({ valid: true }) };
+    };
+    try {
+      let error;
+      try {
+        await signAuthorization(item);
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).to.be.instanceOf(Error);
+      expect(error.message).to.match(/Local Ed25519 signature verification failed/);
+      expect(calls).to.equal(0);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("fails closed if no pinned Verigate public key path is configured", async function () {
+    const originalPublicKey = process.env.VERIGATE_PUBLIC_KEY_FILE;
+    const originalFetch = global.fetch;
+    let calls = 0;
+    delete process.env.VERIGATE_PUBLIC_KEY_FILE;
+    global.fetch = async () => {
+      calls += 1;
+      return { ok: true, status: 200, json: async () => ({ valid: true }) };
+    };
+    try {
+      let error;
+      try {
+        await signAuthorization(response(Math.floor(Date.now() / 1000)));
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).to.be.instanceOf(Error);
+      expect(error.message).to.match(/VERIGATE_PUBLIC_KEY_FILE must point to a pinned/);
+      expect(calls).to.equal(0);
+    } finally {
+      if (originalPublicKey === undefined) delete process.env.VERIGATE_PUBLIC_KEY_FILE;
+      else process.env.VERIGATE_PUBLIC_KEY_FILE = originalPublicKey;
+      global.fetch = originalFetch;
+    }
+  });
 
   it("refuses to sign when Verigate does not verify the decision receipt", async function () {
     const originalFetch = global.fetch;
@@ -99,7 +183,7 @@ describe("Verigate bridge binding", function () {
     global.fetch = async (_url, options) => {
       calls += 1;
       const body = JSON.parse(options.body);
-      expect(body.signature).to.equal("fixture-only-not-a-real-signature");
+      expect(body.signature).to.match(/^[A-Za-z0-9+/]+={0,2}$/);
       return {
         ok: true,
         status: 200,
