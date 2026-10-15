@@ -1,6 +1,6 @@
 # Hacker House check-in status
 
-Updated: 14 October 2026
+Updated: 15 October 2026
 
 The public event listing gives the check-in deadline as 24 October, 20:00 UTC+8 (12:00 UTC). Confirm the live deadline and any changes on the official DoraHacks page or PortalDot Discord before submission.
 
@@ -9,8 +9,8 @@ The public event listing gives the check-in deadline as 24 October, 20:00 UTC+8 
 - Public repository: https://github.com/rudimentall1/verigate-portaldot
 - Core contract: `PortalDotAgentGuard` accepts only EIP-712-authorized native-token transfers and has no generic arbitrary-call method.
 - Bridge: checks the signed Verigate decision and execution authorization, binds the action to the exact recipient and base-unit amount, and creates an EIP-712 signature for an ALLOW decision only.
-- Verification: GitHub Actions passed contract and bridge tests plus Solidity compilation for commit [8fd4125](https://github.com/rudimentall1/verigate-portaldot/commit/8fd4125c0d0fb1221a50a75e66a36398d57e31aa).
-- Local integration exercise: signed ALLOW artifacts were verified through the real Verigate API routes; BLOCK was refused; no transaction was broadcast.
+- Verification: GitHub Actions passed contract and bridge tests plus Solidity compilation. The latest source-validation run is [unit tests](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679693720); the [PortalDot CI run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679693695) also passed the isolated Verigate integration job.
+- Local integration exercise: CI starts a disposable Verigate API, verifies genuine signed ALLOW/BLOCK artifacts through HTTP routes, creates an EIP-712 dry-run signature for ALLOW only, refuses BLOCK, and broadcasts no transaction.
 - Architecture and security boundary: [docs/architecture.md](architecture.md).
 
 ## Remaining before check-in
