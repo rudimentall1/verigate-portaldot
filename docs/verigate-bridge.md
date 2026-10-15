@@ -19,7 +19,7 @@ The bridge signer is the security boundary between Verigate's Ed25519 execution 
 - network: portaldot-v3
 - asset: tPOTv3
 - amount_exact: positive integer string containing EVM transfer base units
-- metadata.portaldot_v3.chain_id: 420420777
+- metadata.portaldot_v3.chain_id: the explicitly configured positive EVM chain ID. The value `420420777` is used only by local test fixtures and is not confirmed live-network metadata.
 - metadata.portaldot_v3.recipient: same destination EVM address
 - metadata.portaldot_v3.amount_base_units: same integer string as amount_exact
 
@@ -33,6 +33,10 @@ Verigate signs its off-chain authorization artifacts with Ed25519. Solidity's ec
 
 The deployer key pays deployment gas. The bridge signer key is configured as the immutable signer in PortalDotAgentGuard. Keep them separate, use a throwaway/test-only bridge key, and keep the guarded balance small.
 
+## Cross-language canonical JSON
+
+Verigate signs compact, sorted-key JSON with Python's `json.dumps(..., ensure_ascii=False)`. Python preserves the distinction between integer `1` and float `1.0`; standard JavaScript `JSON.parse` followed by `JSON.stringify` does not. The CLI therefore retains the original numeric tokens from the Verigate JSON artifact when building canonical hashes and when asking `/v1/verify` to verify the payload. Do not parse and re-serialize the signed artifact through a JavaScript client before saving it. A changed numeric representation fails closed rather than being accepted as the original signature.
+
 ## Remaining work
 
 - Run the current CLI against a real response from the configured Verigate instance.
@@ -45,4 +49,4 @@ The deployer key pays deployment gas. The bridge signer key is configured as the
 
 Run `scripts/verigate_local_demo.py` with the Python interpreter from the Verigate checkout. The harness creates an isolated temporary Verigate API instance, seeds a test-only identity and capability, submits ALLOW and BLOCK requests through the actual HTTP routes, verifies Ed25519 artifacts, and runs the Node bridge CLI with a fresh throwaway EVM signer against a dummy contract domain.
 
-The harness must never use the normal Verigate database, private keys or .env. It makes no RPC calls and broadcasts no transaction. A successful result validates local API-to-bridge plumbing only; it does not replace a live PortalDot V3 deployment or a real agent integration.
+The harness must never use the normal Verigate database, private keys or .env. GitHub Actions now runs it as a separate CI job on pushes and pull requests. It makes no RPC calls and broadcasts no transaction. A successful result validates isolated API-to-bridge plumbing only; it does not replace a check against the configured Verigate instance, a real agent integration, or a live PortalDot V3 deployment.
