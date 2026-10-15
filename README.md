@@ -67,7 +67,7 @@ After deployment, set PORTALDOT_GUARD_ADDRESS in .env.
 
 ## Bridge signing CLI
 
-The CLI accepts a JSON response from Verigate's POST /v1/actions/authorize endpoint. It verifies the decision receipt and execution authorization through the configured Verigate POST /v1/verify endpoint, then signs only the narrowly defined transfer mapping.
+The CLI accepts a JSON response from Verigate's POST /v1/actions/authorize endpoint. Before contacting the API verifier, it independently verifies both Ed25519 signatures against the locally pinned PEM path in `VERIGATE_PUBLIC_KEY_FILE`. It then asks the configured `/v1/verify` endpoint for a second check and signs only the narrowly defined transfer mapping. Do not blindly trust a public key downloaded from the same endpoint: verify its fingerprint through an independent trusted channel.
 
 ```bash
 npm run bridge:sign -- ./authorization-response.json
