@@ -343,10 +343,13 @@ describe("Verigate bridge binding", function () {
 
   it("maps a valid ALLOW to an exact bounded transfer", function () {
     const now = 2000000000;
-    const result = validateAuthorizationBinding(response(now), { now, expectedChainId: 420420777 });
+    const item = response(now);
+    const result = validateAuthorizationBinding(item, { now, expectedChainId: 420420777 });
     expect(result.recipient).to.equal(ethers.getAddress(recipient.address));
     expect(result.amount).to.equal(1000000n);
-    expect(result.nonce).to.equal(BigInt("0x" + crypto.createHash("sha256").update("fixture-only-not-a-real-signaturetest-intent-001", "utf8").digest("hex")));
+    expect(result.nonce).to.equal(BigInt("0x" + crypto.createHash("sha256")
+      .update(item.decision_receipt.signature + item.execution_authorization.payload.nonce, "utf8")
+      .digest("hex")));
     expect(result.deadline).to.equal(BigInt(now + 120));
     expect(result.actionId).to.equal(ethers.keccak256(ethers.toUtf8Bytes("test-intent-001")));
   });
