@@ -494,6 +494,21 @@ describe("PortalDot RPC preflight configuration", function () {
     expect(() => requiredNetworkConfig()).to.throw(/must use HTTP or HTTPS/);
   });
 
+  it("rejects remote RPC endpoints over plain HTTP", function () {
+    process.env.PORTALDOT_RPC_URL = "http://rpc.example/path";
+    process.env.PORTALDOT_CHAIN_ID = "420420777";
+    expect(() => requiredNetworkConfig()).to.throw(/Remote RPC endpoints must use HTTPS/);
+  });
+
+  it("allows HTTP only for loopback development endpoints", function () {
+    process.env.PORTALDOT_RPC_URL = "http://127.0.0.1:8545";
+    process.env.PORTALDOT_CHAIN_ID = "31337";
+    expect(requiredNetworkConfig()).to.deep.equal({
+      rpcUrl: "http://127.0.0.1:8545",
+      expectedChainId: 31337n
+    });
+  });
+
   it("accepts explicit HTTP(S) configuration and parses chain ID exactly", function () {
     process.env.PORTALDOT_RPC_URL = "https://rpc.example/path";
     process.env.PORTALDOT_CHAIN_ID = "420420777";

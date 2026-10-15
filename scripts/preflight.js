@@ -18,6 +18,10 @@ function requiredNetworkConfig() {
   if (!["http:", "https:"].includes(parsedUrl.protocol)) {
     throw new Error("PORTALDOT_RPC_URL must use HTTP or HTTPS.");
   }
+  const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+  if (parsedUrl.protocol === "http:" && !loopbackHosts.has(parsedUrl.hostname.toLowerCase())) {
+    throw new Error("Remote RPC endpoints must use HTTPS. Plain HTTP is allowed only for local loopback development.");
+  }
 
   return { rpcUrl, expectedChainId: BigInt(chainIdText) };
 }

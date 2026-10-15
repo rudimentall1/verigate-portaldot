@@ -51,7 +51,7 @@ Copy .env.example to .env. Keep private keys out of Git.
 npm run preflight
 ```
 
-The preflight requires PORTALDOT_RPC_URL and PORTALDOT_CHAIN_ID to be explicitly configured. Both are blank in .env.example because the repository's previous RPC endpoint and chain ID have not been independently confirmed. It reads eth_chainId and eth_blockNumber and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Do not fill these values from guesses or use a deployment key until the official EVM network details are confirmed. The deployment script repeats the configuration checks so it also fails closed when invoked directly.
+The preflight requires PORTALDOT_RPC_URL and PORTALDOT_CHAIN_ID to be explicitly configured. Both are blank in .env.example because the repository's previous RPC endpoint and chain ID have not been independently confirmed. Remote RPC endpoints must use HTTPS; plain HTTP is allowed only for loopback local development. It reads eth_chainId and eth_blockNumber and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Do not fill these values from guesses or use a deployment key until the official EVM network details are confirmed. The deployment script repeats the configuration checks so it also fails closed when invoked directly.
 
 ## Contract deployment
 
