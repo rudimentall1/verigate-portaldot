@@ -361,6 +361,7 @@ def main() -> int:
                 test_wallet = json.loads(wallet_result.stdout)
                 bridge_env = env.copy()
                 bridge_env["VERIGATE_BASE_URL"] = base_url
+                bridge_env["VERIGATE_PUBLIC_KEY_FILE"] = env["VERIGATE_PUBLIC_KEY"]
                 bridge_env["BRIDGE_SIGNER_PRIVATE_KEY"] = test_wallet["privateKey"]
                 bridge_env["AUTHORITY_SIGNER_ADDRESS"] = test_wallet["address"]
                 bridge_env["PORTALDOT_GUARD_ADDRESS"] = "0x000000000000000000000000000000000000dEaD"
