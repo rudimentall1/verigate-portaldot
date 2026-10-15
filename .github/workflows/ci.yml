@@ -26,3 +26,30 @@ jobs:
         run: npm test
       - name: Compile contracts
         run: npm run compile
+
+  verigate-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out PortalDot bridge
+        uses: actions/checkout@v4
+      - name: Check out Verigate source
+        uses: actions/checkout@v4
+        with:
+          repository: rudimentall1/verigate
+          ref: main
+          path: verigate-upstream
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install bridge dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install isolated Verigate API dependencies
+        run: python -m pip install -r verigate-upstream/requirements.txt
+      - name: Run isolated Verigate ALLOW/BLOCK integration
+        run: python scripts/verigate_local_demo.py --verigate-root "$GITHUB_WORKSPACE/verigate-upstream"
