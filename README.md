@@ -2,7 +2,7 @@
 
 A focused PortalDot V3 Hacker House project exploring how an AI agent's proposed payment can be gated by an explicit, signed execution authorization.
 
-**Status (15 October 2026):** the repository has a native-payment guard, bridge-signing CLI, RPC preflight, local Hardhat tests, and a real-API integration harness. The latest successful [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676047) and [unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676086) validate [commit 78049cf](https://github.com/rudimentall1/verigate-portaldot/commit/78049cf2e5369efab8a3bbbaf47fcb5de4f1106c). The integration job starts a disposable loopback Verigate API, locally verifies both Ed25519 artifacts against a pinned public key, checks them through the API as a second layer, signs a dry-run EIP-712 authorization only for ALLOW, refuses BLOCK, and uploads its test evidence. A forged signature is refused locally even when a test verifier responds `valid: true`. No transaction is broadcast. The bridge preserves source numeric spellings in signed JSON because Python distinguishes `1` from `1.0`, while standard JavaScript parsing collapses them. Network configuration fails closed instead of assuming an RPC endpoint or chain ID. No live PortalDot deployment is claimed; the V3 EVM RPC endpoint and chain ID still need independent confirmation before deployment.
+**Status (15 October 2026):** the repository has a native-payment guard, bridge-signing CLI, RPC preflight, local Hardhat tests, and a real-API integration harness. The latest successful [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783295) and [unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783332) validate the current `main` revision (`ee2af67`). The integration job starts a disposable loopback Verigate API, locally verifies both Ed25519 artifacts against a pinned public key, checks them through the API as a second layer, signs a dry-run EIP-712 authorization only for ALLOW, refuses BLOCK, and uploads its test evidence. A forged signature is refused locally even when a test verifier responds `valid: true`. No transaction is broadcast. The bridge preserves source numeric spellings in signed JSON because Python distinguishes `1` from `1.0`, while standard JavaScript parsing collapses them. Network configuration fails closed instead of assuming an RPC endpoint or chain ID. No live PortalDot deployment is claimed; the V3 EVM RPC endpoint and chain ID still need independent confirmation before deployment.
 
 ## What this MVP demonstrates
 
@@ -34,11 +34,12 @@ The helper runs a second, temporary Verigate instance on loopback port 8001 with
 
 It does not use the running Verigate server on port 8000, read its .env, or modify its database. Temporary private keys and database files are deleted after the run. Output JSON files are retained in a separate operating-system temp folder. No chain transaction is sent.
 
-Run from this repository in PowerShell, using the Python environment from your local Verigate checkout:
+Run from this repository in PowerShell, using the Python environment from your own Verigate checkout:
 
 ```powershell
-$verigateRoot = "$env:USERPROFILE\Desktop\Work\verigate\verigate"
-& "$verigateRoot\.venv\Scripts\python.exe" ".\scripts\verigate_local_demo.py" --verigate-root $verigateRoot
+$verigateRoot = Read-Host "Path to your Verigate checkout"
+$python = Join-Path $verigateRoot ".venv\Scripts\python.exe"
+& $python ".\scripts\verigate_local_demo.py" --verigate-root $verigateRoot
 ```
 
 If port 8001 is occupied, add `--port 8011`. The script prints the paths to the ALLOW response, BLOCK response, dry-run signature and summary. These are local test artifacts, not PortalDot deployment evidence.
