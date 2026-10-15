@@ -52,4 +52,14 @@ jobs:
       - name: Install isolated Verigate API dependencies
         run: python -m pip install -r verigate-upstream/requirements.txt
       - name: Run isolated Verigate ALLOW/BLOCK integration
-        run: python scripts/verigate_local_demo.py --verigate-root "$GITHUB_WORKSPACE/verigate-upstream"
+        run: |
+          mkdir -p "$RUNNER_TEMP/verigate-portaldot-evidence"
+          python scripts/verigate_local_demo.py --verigate-root "$GITHUB_WORKSPACE/verigate-upstream" --output-dir "$RUNNER_TEMP/verigate-portaldot-evidence"
+      - name: Upload isolated integration evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-verigate-api-evidence
+          path: ${{ runner.temp }}/verigate-portaldot-evidence/
+          if-no-files-found: error
+          retention-days: 14
