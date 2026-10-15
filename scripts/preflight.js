@@ -22,6 +22,10 @@ function requiredNetworkConfig() {
   return { rpcUrl, expectedChainId: BigInt(chainIdText) };
 }
 
+function safeRpcOrigin(rpcUrl) {
+  return new URL(rpcUrl).origin;
+}
+
 async function rpc(rpcUrl, method) {
   const response = await fetch(rpcUrl, {
     method: "POST",
@@ -39,7 +43,7 @@ async function rpc(rpcUrl, method) {
 
 async function main() {
   const { rpcUrl, expectedChainId } = requiredNetworkConfig();
-  console.log(`Configured PortalDot EVM RPC: ${rpcUrl}`);
+  console.log(`Configured PortalDot EVM RPC origin: ${safeRpcOrigin(rpcUrl)}`);
   console.log(`Expected chain ID: ${expectedChainId}`);
 
   const [chainHex, blockHex] = await Promise.all([
@@ -65,4 +69,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { requiredNetworkConfig };
+module.exports = { requiredNetworkConfig, safeRpcOrigin };
