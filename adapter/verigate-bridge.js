@@ -3,6 +3,127 @@ const fs = require("node:fs");
 const crypto = require("node:crypto");
 const { ethers } = require("ethers");
 
+// Preserve Python JSON number spellings from Verigate's JSON artifacts. Python's
+// json.dumps distinguishes an integer (1) from an integral float (1.0), while
+// JSON.parse/JSON.stringify in JavaScript collapses both to the same Number.
+// That distinction matters because Verigate signs its Python-canonical bytes.
+const numericLexemes = new WeakMap();
+const rawJsonValues = new WeakMap();
+
+function parseJsonPreservingNumbers(source) {
+  const text = String(source);
+  let index = 0;
+
+  function whitespace() {
+    while (index < text.length && /[\\t\\n\\r ]/.test(text[index])) index += 1;
+  }
+
+  function stringValue() {
+    const start = index;
+    if (text[index] !== '"') fail("Malformed JSON string.");
+    index += 1;
+    while (index < text.length) {
+      if (text[index] === "\\\\") {
+        index += 2;
+        continue;
+      }
+      if (text[index] === '"') {
+        index += 1;
+        return { value: JSON.parse(text.slice(start, index)), start, end: index };
+      }
+      index += 1;
+    }
+    fail("Unterminated JSON string.");
+  }
+
+  function rememberNumber(parent, key, node) {
+    if (node.numberRaw === undefined || parent === null) return;
+    let entries = numericLexemes.get(parent);
+    if (!entries) {
+      entries = new Map();
+      numericLexemes.set(parent, entries);
+    }
+    entries.set(String(key), node.numberRaw);
+  }
+
+  function parseValue() {
+    whitespace();
+    const start = index;
+    const char = text[index];
+
+    if (char === '"') return stringValue();
+
+    if (char === '{') {
+      index += 1;
+      const object = {};
+      whitespace();
+      if (text[index] === '}') index += 1;
+      else {
+        while (index < text.length) {
+          whitespace();
+          const parsedKey = stringValue();
+          const key = parsedKey.value;
+          whitespace();
+          if (text[index] !== ':') fail("Malformed JSON object: expected colon.");
+          index += 1;
+          const child = parseValue();
+          Object.defineProperty(object, key, {
+            value: child.value, enumerable: true, writable: true, configurable: true
+          });
+          rememberNumber(object, key, child);
+          whitespace();
+          if (text[index] === '}') { index += 1; break; }
+          if (text[index] !== ',') fail("Malformed JSON object: expected comma.");
+          index += 1;
+        }
+      }
+      rawJsonValues.set(object, text.slice(start, index));
+      return { value: object, start, end: index };
+    }
+
+    if (char === '[') {
+      index += 1;
+      const array = [];
+      whitespace();
+      if (text[index] === ']') index += 1;
+      else {
+        while (index < text.length) {
+          const child = parseValue();
+          array.push(child.value);
+          rememberNumber(array, array.length - 1, child);
+          whitespace();
+          if (text[index] === ']') { index += 1; break; }
+          if (text[index] !== ',') fail("Malformed JSON array: expected comma.");
+          index += 1;
+        }
+      }
+      rawJsonValues.set(array, text.slice(start, index));
+      return { value: array, start, end: index };
+    }
+
+    const literal = text.slice(index).match(/^(true|false|null)/);
+    if (literal) {
+      index += literal[0].length;
+      return {
+        value: literal[0] === "true" ? true : literal[0] === "false" ? false : null,
+        start, end: index
+      };
+    }
+
+    const numeric = text.slice(index).match(/^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/);
+    if (numeric) {
+      index += numeric[0].length;
+      return { value: Number(numeric[0]), numberRaw: numeric[0], start, end: index };
+    }
+    fail("Malformed JSON value.");
+  }
+
+  const parsed = parseValue();
+  whitespace();
+  if (index !== text.length) fail("Unexpected trailing content after JSON value.");
+  return parsed.value;
+}
+
 const TRANSFER_TYPES = {
   TransferAuthorization: [
     { name: "recipient", type: "address" },
@@ -29,13 +150,18 @@ function compareUnicodeCodePoints(left, right) {
 
 // Mirrors Verigate's attest.receipt._canonical(): sorted keys, compact JSON,
 // UTF-8 bytes, and no ASCII-only escaping.
-function canonicalJson(value) {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+function canonicalJson(value, parent = null, parentKey = null) {
+  if (Array.isArray(value)) {
+    return `[${value.map((item, index) => canonicalJson(item, value, index)).join(",")}]`;
+  }
   if (value !== null && typeof value === "object") {
     const keys = Object.keys(value).sort(compareUnicodeCodePoints);
-    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key], value, key)}`).join(",")}}`;
   }
-  const encoded = JSON.stringify(value);
+  const rawNumber = typeof value === "number" && parent !== null
+    ? numericLexemes.get(parent)?.get(String(parentKey))
+    : undefined;
+  const encoded = rawNumber ?? JSON.stringify(value);
   if (encoded === undefined) fail("Action contains a value that cannot be represented as canonical JSON.");
   return encoded;
 }
@@ -195,11 +321,15 @@ async function verifyWithVerigate(baseUrl, attestation, apiKey) {
       "content-type": "application/json",
       ...(apiKey ? { "x-api-key": apiKey } : {})
     },
-    body: JSON.stringify({
-      payload: attestation.payload,
-      signature: attestation.signature,
-      algorithm: attestation.algorithm
-    }),
+    // Reuse source JSON for the payload when available so integral floats
+    // (for example 1.0) remain floats when Python's verifier parses the request.
+    body: rawJsonValues.has(attestation.payload)
+      ? `{"payload":${rawJsonValues.get(attestation.payload)},"signature":${JSON.stringify(attestation.signature)},"algorithm":${JSON.stringify(attestation.algorithm)}}`
+      : JSON.stringify({
+          payload: attestation.payload,
+          signature: attestation.signature,
+          algorithm: attestation.algorithm
+        }),
     signal: AbortSignal.timeout(8000)
   });
   if (!response.ok) fail(`Verigate signature verification endpoint returned HTTP ${response.status}.`);
@@ -264,7 +394,7 @@ async function signAuthorization(response) {
 async function main() {
   const file = process.argv[2];
   if (!file) fail("Usage: npm run bridge:sign -- ./authorization-response.json");
-  const response = JSON.parse(fs.readFileSync(file, "utf8"));
+  const response = parseJsonPreservingNumbers(fs.readFileSync(file, "utf8"));
   const signed = await signAuthorization(response);
   process.stdout.write(JSON.stringify(
     signed,
@@ -280,4 +410,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { validateAuthorizationBinding, verifyWithVerigate, signAuthorization, canonicalJson, actionDigest };
+module.exports = { validateAuthorizationBinding, verifyWithVerigate, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers };
