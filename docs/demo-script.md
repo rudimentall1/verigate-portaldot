@@ -22,7 +22,7 @@
 **Show:** [architecture diagram](architecture.md), then `contracts/PortalDotAgentGuard.sol`.
 
 **Say:**
-> The bridge binds the authorization to the exact recipient, amount, chain ID, expiry and action. The contract verifies an EIP-712 signature, rejects replayed nonces and exposes no arbitrary-call interface. Verigate's Ed25519 signatures are checked off-chain; the contract trusts the dedicated EVM bridge signer.
+> The bridge verifies both Ed25519 signatures locally against a pinned issuer public key and asks the API to validate them again. It binds the authorization to the exact recipient, amount, chain ID and expiry. The contract verifies an EIP-712 signature, rejects replayed nonces and exposes no arbitrary-call interface. The contract trusts the dedicated EVM bridge signer.
 
 ### 0:45–1:25 — Reproducible integration result
 
@@ -51,7 +51,7 @@
 **Show:** [RPC preflight section in README](../README.md#portaldot-v3-preflight) and `.env.example` with blank network values.
 
 **Say:**
-> We are intentionally not deploying yet. PortalDot's published chain information available to this project confirms the Substrate WebSocket endpoint, but not the EVM testnet RPC and chain ID. Those values remain blank until confirmed by an authoritative source. No on-chain transaction has been broadcast. The next milestone is to confirm network details with the PortalDot team, run preflight and then deploy and verify the contract.
+> We are intentionally not deploying yet. PortalDot's published chain information available to this project confirms the Substrate WebSocket endpoint, but not the EVM testnet RPC and chain ID. Those values remain blank until confirmed by an authoritative source. The bridge also requires `VERIGATE_PUBLIC_KEY_FILE` to point to the trusted issuer PEM; its fingerprint must be verified independently. No on-chain transaction has been broadcast. The next milestone is to confirm network details with the PortalDot team, run preflight and then deploy and verify the contract.
 
 ### 2:25–2:35 — Close
 
