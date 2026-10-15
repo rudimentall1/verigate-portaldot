@@ -15,7 +15,11 @@ function parseJsonPreservingNumbers(source) {
   let index = 0;
 
   function whitespace() {
-    while (index < text.length && /[\\t\\n\\r ]/.test(text[index])) index += 1;
+    while (index < text.length) {
+      const code = text.charCodeAt(index);
+      if (code === 32 || code === 9 || code === 10 || code === 13) index += 1;
+      else break;
+    }
   }
 
   function stringValue() {
@@ -23,7 +27,7 @@ function parseJsonPreservingNumbers(source) {
     if (text[index] !== '"') fail("Malformed JSON string.");
     index += 1;
     while (index < text.length) {
-      if (text[index] === "\\\\") {
+      if (text.charCodeAt(index) === 92) {
         index += 2;
         continue;
       }
@@ -37,13 +41,18 @@ function parseJsonPreservingNumbers(source) {
   }
 
   function rememberNumber(parent, key, node) {
-    if (node.numberRaw === undefined || parent === null) return;
+    if (parent === null) return;
+    const name = String(key);
     let entries = numericLexemes.get(parent);
+    if (node.numberRaw === undefined) {
+      entries?.delete(name);
+      return;
+    }
     if (!entries) {
       entries = new Map();
       numericLexemes.set(parent, entries);
     }
-    entries.set(String(key), node.numberRaw);
+    entries.set(name, node.numberRaw);
   }
 
   function parseValue() {
@@ -110,7 +119,7 @@ function parseJsonPreservingNumbers(source) {
       };
     }
 
-    const numeric = text.slice(index).match(/^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/);
+    const numeric = text.slice(index).match(/^-?(?:0|[1-9][0-9]*)(?:[.][0-9]+)?(?:[eE][+-]?[0-9]+)?/);
     if (numeric) {
       index += numeric[0].length;
       return { value: Number(numeric[0]), numberRaw: numeric[0], start, end: index };
