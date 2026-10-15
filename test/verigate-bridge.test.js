@@ -510,4 +510,36 @@ describe("PortalDot RPC preflight configuration", function () {
     expect(safeRpcOrigin(endpoint)).not.to.include("private-token");
     expect(safeRpcOrigin(endpoint)).not.to.include("secret");
   });
+
+  it("preserves Python float spellings in signed payloads", async function () {
+    const source = '{"algorithm":"Ed25519","signature":"fixture-signature","payload":{"small":1e-06,"integer":1,"float":1.0}}';
+    const artifact = require("../adapter/verigate-bridge").parseJsonPreservingNumbers(source);
+    const canonical = '{"float":1.0,"integer":1,"small":1e-06}';
+    expect(canonicalJson(artifact.payload)).to.equal(canonical);
+    expect(actionDigest(artifact.payload)).to.equal(
+      crypto.createHash("sha256").update(canonical, "utf8").digest("hex")
+    );
+  });
+
+  it("preserves Python float spellings when sending the signed payload to Verigate", async function () {
+    const originalFetch = global.fetch;
+    const source = '{"algorithm":"Ed25519","signature":"fixture-signature","payload":{"integral_float":1.0,"integer":1,"small_float":1e-06}}';
+    const artifact = require("../adapter/verigate-bridge").parseJsonPreservingNumbers(source);
+    global.fetch = async (_url, options) => {
+      expect(options.body).to.include('"integral_float":1.0');
+      expect(options.body).to.include('"small_float":1e-06');
+      expect(JSON.parse(options.body)).to.deep.equal({
+        payload: { integral_float: 1, integer: 1, small_float: 0.000001 },
+        signature: "fixture-signature",
+        algorithm: "Ed25519"
+      });
+      return { ok: true, status: 200, json: async () => ({ valid: true }) };
+    };
+    try {
+      await verifyWithVerigate("https://verigate.example", artifact, "");
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
 });
