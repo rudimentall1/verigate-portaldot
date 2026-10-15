@@ -2,23 +2,24 @@
 
 Updated: 15 October 2026
 
-The public event listing gives the check-in deadline as 24 October, 20:00 UTC+8 (12:00 UTC). Confirm the live deadline and any changes on the official DoraHacks page or PortalDot Discord before submission.
+The public event listing gives the check-in deadline as 24 October 2026, 20:00 UTC+8 (12:00 UTC, or 14:00 in Frankfurt). It lists the final submission/code-freeze deadline as 6 November, 12:00 UTC+8 (04:00 UTC). A recently indexed copy of a post from the official @PortaldotL0 account reports schedule changes for later activities: Office Hour applications by 27 October, 12:00 UTC; Office Hours on 28–29 October; Live Demo Day on 8–9 November; community voting from 9 November, 16:00 UTC to 10 November, 16:00 UTC; winners announced 11 November. The reported update does not mention changing the check-in deadline. Reconfirm both deadlines in the official [DoraHacks listing](https://dorahacks.io/hackathon/2362/detail) and [PortalDot Discord](https://discord.gg/portaldot) before submitting.
 
 ## Current progress
 
 - Public repository: https://github.com/rudimentall1/verigate-portaldot
 - Core contract: `PortalDotAgentGuard` accepts only EIP-712-authorized native-token transfers and has no generic arbitrary-call method.
 - Bridge: checks the signed Verigate decision and execution authorization, binds the action to the exact recipient and base-unit amount, and creates an EIP-712 signature for an ALLOW decision only.
-- Verification: GitHub Actions passed contract and bridge tests plus Solidity compilation. The latest source-validation run is [unit tests](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679693720); the [PortalDot CI run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679693695) also passed the isolated Verigate integration job.
+- Verification: GitHub Actions passed contract and bridge tests plus Solidity compilation. The latest source-validation run is [unit tests](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679986524); the [PortalDot CI run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679986616) passed the isolated Verigate integration job and uploaded the evidence artifact.
 - Local integration exercise: CI starts a disposable Verigate API, verifies genuine signed ALLOW/BLOCK artifacts through HTTP routes, creates an EIP-712 dry-run signature for ALLOW only, refuses BLOCK, and broadcasts no transaction.
 - Architecture and security boundary: [docs/architecture.md](architecture.md).
+- Video plan: [three-minute demo script](demo-script.md); clearly labels the local integration as a dry run, not a PortalDot deployment.
 
 ## Remaining before check-in
 
 1. Confirm the supported PortalDot V3 EVM testnet RPC, chain ID, native-token value denomination and address mapping with an authoritative PortalDot source or mentor.
 2. Run the RPC preflight against that confirmed network. Do not deploy with the current assumed endpoint or chain ID.
 3. Deploy the guard only after the target chain is confirmed. Record the contract address, deployment transaction hash, block number, timestamp and explorer link where available.
-4. Capture a short demo of the core ALLOW and BLOCK flow. Keep a dry-run demo clearly labeled if a live deployment remains blocked.
+4. Record the [three-minute ALLOW/BLOCK demo](demo-script.md). Use the CI evidence artifact for the reproducible local integration; clearly state that it does not demonstrate a live transaction.
 5. Publish a compact progress summary and open issues on DoraHacks. Keep development commits and test results public.
 
 ## Honest current limitations
