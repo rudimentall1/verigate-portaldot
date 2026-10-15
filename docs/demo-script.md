@@ -4,8 +4,8 @@
 
 ## Evidence to use
 
-- [Latest successful PortalDot CI run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676047)
-- [Latest successful unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676086)
+- [Latest successful PortalDot CI run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783295)
+- [Latest successful unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783332)
 - Download the `isolated-verigate-api-evidence` artifact from the PortalDot CI run. It contains `summary.json`, `allow-response.json`, `block-response.json`, and `bridge-signature-dry-run.json`. The artifact is retained for 14 days by GitHub Actions; rerun the workflow to regenerate it later.
 
 ## Recording plan (target: 2 minutes 35 seconds)
