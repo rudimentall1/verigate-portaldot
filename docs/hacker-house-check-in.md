@@ -25,7 +25,7 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 ## Honest current limitations
 
 - No live PortalDot deployment is claimed.
-- The configured default RPC and chain ID `420420777` remain unverified assumptions.
+- `PORTALDOT_RPC_URL` and `PORTALDOT_CHAIN_ID` are intentionally blank in `.env.example`. The previously discussed ID `420420777` is only a test fixture, not a confirmed network setting.
 - The CLI outputs a signed authorization JSON but does not submit a transaction.
 - The contract code is tested on local Hardhat only; local tests do not establish that PortalDot V3 EVM is reachable or behaves the same way.
 
