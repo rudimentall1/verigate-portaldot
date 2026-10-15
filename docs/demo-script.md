@@ -4,8 +4,8 @@
 
 ## Evidence to use
 
-- [Latest successful PortalDot CI run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679986616)
-- [Latest successful unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38679986524)
+- [Latest successful PortalDot CI run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676047)
+- [Latest successful unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676086)
 - Download the `isolated-verigate-api-evidence` artifact from the PortalDot CI run. It contains `summary.json`, `allow-response.json`, `block-response.json`, and `bridge-signature-dry-run.json`. The artifact is retained for 14 days by GitHub Actions; rerun the workflow to regenerate it later.
 
 ## Recording plan (target: 2 minutes 35 seconds)
@@ -22,7 +22,7 @@
 **Show:** [architecture diagram](architecture.md), then `contracts/PortalDotAgentGuard.sol`.
 
 **Say:**
-> The bridge verifies both Ed25519 signatures locally against a pinned issuer public key and asks the API to validate them again. It binds the authorization to the exact recipient, amount, chain ID and expiry. The contract verifies an EIP-712 signature, rejects replayed nonces and exposes no arbitrary-call interface. The contract trusts the dedicated EVM bridge signer.
+> The bridge verifies both Ed25519 signatures locally against a pinned issuer public key and asks the API to validate them again. A test also confirms that an invalid signature is refused even when a mocked API replies `valid: true`. It binds the authorization to the exact recipient, amount, chain ID and expiry. The contract verifies an EIP-712 signature, rejects replayed nonces and exposes no arbitrary-call interface. The contract trusts the dedicated EVM bridge signer.
 
 ### 0:45–1:25 — Reproducible integration result
 
