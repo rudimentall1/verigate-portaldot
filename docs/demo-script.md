@@ -48,10 +48,10 @@
 
 ### 1:55–2:25 — Current limitation and next milestone
 
-**Show:** [RPC preflight section in README](../README.md#portaldot-v3-preflight) and `.env.example` with blank network values.
+**Show:** [RPC preflight section in README](../README.md#portaldot-v3-preflight) and `.env.example` with the RPC URL and chain ID announced by PortalDot.
 
 **Say:**
-> We are intentionally not deploying yet. PortalDot's published chain information available to this project confirms the Substrate WebSocket endpoint, but not the EVM testnet RPC and chain ID. Those values remain blank until confirmed by an authoritative source. The bridge also requires `VERIGATE_PUBLIC_KEY_FILE` to point to the trusted issuer PEM; its fingerprint must be verified independently. No on-chain transaction has been broadcast. The next milestone is to confirm network details with the PortalDot team, run preflight and then deploy and verify the contract.
+> PortalDot has announced the updated EVM RPC and chain ID. We will run preflight first and only proceed if the endpoint responds with the expected chain ID. The bridge also requires `VERIGATE_PUBLIC_KEY_FILE` to point to the trusted issuer PEM; its fingerprint must be verified independently. No on-chain transaction has been broadcast.
 
 ### 2:25–2:35 — Close
 
