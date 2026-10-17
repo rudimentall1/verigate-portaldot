@@ -25,11 +25,11 @@ Verigate PortalDot is a narrow authorization bridge that prevents an AI agent's 
 
 1. Run the network preflight against the EVM RPC and chain ID announced by the PortalDot team on 17 October 2026.
 2. Confirm native-token denomination and native/EVM wallet mapping with the PortalDot team, then deploy only if preflight succeeds. Capture the contract address, transaction hash, block number and explorer link if the network supports it.
-3. Record and publish an initial demo video of no more than three minutes. Until network details are confirmed, label the current integration as a local dry run.
+3. Record and publish an initial demo video of no more than three minutes. Until live preflight and deployment evidence exist, label the current integration as a local dry run.
 
 ## Testnet deployment status
 
-**Not deployed to the PortalDot testnet.** No contract address, deployment transaction hash or explorer transaction link is claimed. `PORTALDOT_RPC_URL` and `PORTALDOT_CHAIN_ID` are intentionally blank in `.env.example`; the previously discussed chain ID `420420777` is a test fixture, not a confirmed network setting. The current CI demonstration does not broadcast a transaction.
+**Not deployed to the PortalDot testnet.** No contract address, deployment transaction hash or explorer transaction link is claimed. `.env.example` records the RPC URL and chain ID announced by the PortalDot team on 17 October 2026. The CI demonstration remains local and does not broadcast a transaction. The current CI demonstration does not broadcast a transaction.
 
 ## Reproducibility
 
