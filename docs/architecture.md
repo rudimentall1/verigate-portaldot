@@ -45,7 +45,7 @@ The contract does **not** verify Verigate's Ed25519 signatures. The bridge verif
 
 ## Deployment blocker
 
-The historically discussed chain ID `420420777` and EVM RPC URL are project assumptions, not confirmed network metadata. `.env.example` intentionally leaves `PORTALDOT_RPC_URL` and `PORTALDOT_CHAIN_ID` blank; preflight and deployment fail closed until they are explicitly set. The published PortalDot developer chain information currently available to this project documents a Substrate mainnet WebSocket endpoint, not the EVM testnet RPC used by this repository. Do not deploy or publish a live-deployment claim until the organizer or authoritative PortalDot documentation confirms the EVM RPC, chain ID, token denomination and wallet mapping.
+On 17 October 2026, the PortalDot team announced the updated V3 testnet EVM RPC `https://test-evm-rpc-v3.portaldot.dev` and chain ID `420420777`. These values are recorded in `.env.example` from that announcement. Run preflight to verify the endpoint responds and reports the expected chain ID before deployment. The announcement separately lists the Substrate node WebSocket `wss://test-node-v3.portaldot.dev` and explorer `https://node-console.portaldot.dev`; neither is the EVM JSON-RPC endpoint. Confirm token denomination and native/EVM wallet mapping before using testnet funds.
 
 ## Validation evidence
 
