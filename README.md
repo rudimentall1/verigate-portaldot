@@ -52,11 +52,11 @@ Copy .env.example to .env. Keep private keys out of Git.
 npm run preflight
 ```
 
-The preflight requires PORTALDOT_RPC_URL and PORTALDOT_CHAIN_ID to be explicitly configured. Both are blank in .env.example because the repository's previous RPC endpoint and chain ID have not been independently confirmed. Remote RPC endpoints must use HTTPS; plain HTTP is allowed only for loopback local development. It reads eth_chainId and eth_blockNumber and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Do not fill these values from guesses or use a deployment key until the official EVM network details are confirmed. The deployment script repeats the configuration checks so it also fails closed when invoked directly.
+The preflight uses the endpoint and chain ID from the PortalDot team announcement recorded in `.env.example`. It reads `eth_chainId` and `eth_blockNumber` and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Remote RPC endpoints must use HTTPS; plain HTTP is allowed only for loopback local development. It reads eth_chainId and eth_blockNumber and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Do not deploy or use a funded deployment key until preflight succeeds and token denomination and wallet mapping are understood. The deployment script repeats the configuration checks so it also fails closed when invoked directly.
 
 ## Contract deployment
 
-Only after the official EVM RPC and chain ID are confirmed, set PORTALDOT_RPC_URL, PORTALDOT_CHAIN_ID, DEPLOYER_PRIVATE_KEY, and AUTHORITY_SIGNER_ADDRESS in the untracked .env file. The deployer and authority signer must be separate keys: the deployer pays deployment gas, while the authority signer is the dedicated EVM key used by the bridge. The deployment script refuses a zero authority address or the same address for both roles.
+Copy `.env.example` to the untracked `.env`, preserve the announced RPC settings, and set `DEPLOYER_PRIVATE_KEY` and `AUTHORITY_SIGNER_ADDRESS` only when ready to deploy. The deployer and authority signer must be separate keys: the deployer pays deployment gas, while the authority signer is the dedicated EVM key used by the bridge. The deployment script refuses a zero authority address or the same address for both roles.
 
 ```bash
 npm run deploy:portaldot
@@ -94,7 +94,7 @@ The bridge-signing CLI is an initial integration step, not a claim that a full a
 ## Scope and limitations
 
 - The first on-chain operation is a native-token payment only.
-- The EVM testnet RPC, chain ID, token denomination, and wallet mapping are not yet confirmed from an authoritative PortalDot source. The published [PortalDot developer chain info](https://portaldot-dev.readthedocs.io/en/latest/chain-info.html) documents a Substrate WebSocket endpoint for mainnet, not the EVM testnet configured here. Do not deploy until the target network is independently identified.
+- The PortalDot team announced the V3 EVM RPC and chain ID on 17 October 2026. Live preflight is still required, and token denomination plus native/EVM wallet mapping should be confirmed before using testnet funds.
 - No live deployment, independent audit, production key management, or production readiness is claimed.
 - This is a separate PortalDot integration, not a copy of the Verigate repository.
 
