@@ -23,8 +23,8 @@ Verigate PortalDot is a narrow authorization bridge that prevents an AI agent's 
 
 ## Outstanding work
 
-1. Confirm the official PortalDot V3 EVM testnet RPC, chain ID, native-token denomination and address mapping with the PortalDot team or authoritative documentation.
-2. Run the network preflight and deploy the guard only after those details are confirmed. Capture the contract address, transaction hash, block number and explorer link if the network supports it.
+1. Run the network preflight against the EVM RPC and chain ID announced by the PortalDot team on 17 October 2026.
+2. Confirm native-token denomination and native/EVM wallet mapping with the PortalDot team, then deploy only if preflight succeeds. Capture the contract address, transaction hash, block number and explorer link if the network supports it.
 3. Record and publish an initial demo video of no more than three minutes. Until network details are confirmed, label the current integration as a local dry run.
 
 ## Testnet deployment status
