@@ -16,8 +16,8 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 
 ## Remaining before check-in
 
-1. Confirm the supported PortalDot V3 EVM testnet RPC, chain ID, native-token value denomination and address mapping with an authoritative PortalDot source or mentor.
-2. Run the RPC preflight against that confirmed network. Do not deploy with the current assumed endpoint or chain ID.
+1. Run RPC preflight using the EVM endpoint and chain ID announced by the PortalDot team on 17 October 2026.
+2. Confirm native-token denomination and native/EVM wallet mapping with the team before using testnet funds.
 3. Deploy the guard only after the target chain is confirmed. Record the contract address, deployment transaction hash, block number, timestamp and explorer link where available.
 4. Record the [three-minute ALLOW/BLOCK demo](demo-script.md). Use the CI evidence artifact for the reproducible local integration; clearly state that it does not demonstrate a live transaction.
 5. Publish a compact progress summary and open issues on DoraHacks. Keep development commits and test results public.
