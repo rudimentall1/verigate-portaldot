@@ -25,7 +25,7 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 ## Honest current limitations
 
 - No live PortalDot deployment is claimed.
-- `PORTALDOT_RPC_URL` and `PORTALDOT_CHAIN_ID` are intentionally blank in `.env.example`. The previously discussed ID `420420777` is only a test fixture, not a confirmed network setting.
+- `.env.example` now records `https://test-evm-rpc-v3.portaldot.dev` and chain ID `420420777` from the PortalDot team announcement on 17 October 2026. Live preflight is still required before deployment.
 - The CLI outputs a signed authorization JSON but does not submit a transaction.
 - The contract code is tested on local Hardhat only; local tests do not establish that PortalDot V3 EVM is reachable or behaves the same way.
 
