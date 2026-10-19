@@ -11,7 +11,7 @@ The bridge signer is the security boundary between Verigate's Ed25519 execution 
 5. Check that the receipt and execution authorization refer to the same intent and agent.
 6. Check that the signed action maps exactly to a PortalDot native transfer: recipient, raw base-unit amount, chain ID, asset and network.
 7. Use read-only RPC calls to verify the configured chain ID, non-empty guard bytecode, pinned `PORTALDOT_GUARD_CODE_HASH`, and on-chain `authoritySigner()` against `AUTHORITY_SIGNER_ADDRESS`.
-8. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing.
+8. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing. The signed `issued_at` and `expires_at` fields must be safe-integer JSON numbers; string-encoded timestamps are rejected rather than coerced.
 9. Sign EIP-712 data using the dedicated bridge key; never broadcast automatically from this CLI.
 
 ## Required signed intent convention
