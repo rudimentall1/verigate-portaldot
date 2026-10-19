@@ -40,7 +40,7 @@ export function parseDotJsonValue(stdout, label = "Polkadot CLI result") {
   // even when --output json is selected. Parse the final non-empty output line,
   // not the banner, and recognize the explicit undefined sentinel emitted for
   // an absent storage key.
-  const lines = text.split(/\\r?\\n/).map((line) => line.trim()).filter(Boolean);
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const payload = lines[lines.length - 1];
   if (payload === "undefined") return null;
 
