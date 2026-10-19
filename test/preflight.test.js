@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { expect } = require("chai");
+const assert = require("node:assert/strict");
 const { requiredNetworkConfig, rpc } = require("../scripts/preflight");
 
 describe("PortalDot RPC preflight configuration", function () {
