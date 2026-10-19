@@ -13,6 +13,7 @@
     "preflight": "node scripts/preflight.js",
     "deploy:portaldot": "npm run preflight && hardhat run scripts/deploy.mjs --network portaldot",
     "bridge:sign": "node adapter/verigate-bridge.js",
+    "execute:authorization": "node scripts/execute-authorized-transfer.mjs",
     "monitor:rpc": "node scripts/monitor-rpc.js",
     "estimate:deployment": "npm run compile && node scripts/estimate-deployment.mjs",
     "address:substrate": "node scripts/portaldot-address.js"
