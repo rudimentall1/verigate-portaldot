@@ -2,8 +2,15 @@ import { defineConfig } from "hardhat/config";
 import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 import "dotenv/config";
 
+const simulatedChainIdText = (process.env.PORTALDOT_SIMULATED_CHAIN_ID || "31337").trim();
+if (!/^[1-9][0-9]*$/.test(simulatedChainIdText) ||
+    !Number.isSafeInteger(Number(simulatedChainIdText))) {
+  throw new Error("PORTALDOT_SIMULATED_CHAIN_ID must be a positive safe integer.");
+}
+const simulatedChainId = Number(simulatedChainIdText);
+
 const networks: Record<string, any> = {
-  hardhatMainnet: { type: "edr-simulated", chainType: "l1", chainId: 31337 }
+  hardhatMainnet: { type: "edr-simulated", chainType: "l1", chainId: simulatedChainId }
 };
 
 const rpcUrl = (process.env.PORTALDOT_RPC_URL || "").trim();
