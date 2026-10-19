@@ -6,7 +6,8 @@ import {
   EXPECTED_PORTALDOT_CHAIN_ID,
   validateMappingInputs,
   parseDotJsonValue,
-  compareOriginalAccountMapping
+  compareOriginalAccountMapping,
+  verifyOriginalAccountMapping
 } from "../scripts/verify-account-mapping.mjs";
 
 describe("Read-only Revive OriginalAccount verifier", function () {
@@ -65,6 +66,85 @@ describe("Read-only Revive OriginalAccount verifier", function () {
     });
     expect(missing.status).to.equal("no_mapping_entry");
     expect(missing.mappingMatchesRegisteredAccount).to.equal(null);
+  });
+
+  it("runs a one-key mapping query after checking the reported V3 runtime and records its finalized block", async function () {
+    const calls = [];
+    const runtimeSnapshot = {
+      status: "ok",
+      chainName: "PortalDot test fixture",
+      nodeName: "test-node",
+      nodeVersion: "test-version",
+      runtimeVersion: {
+        specName: "portaldot-v3",
+        specVersion: 3002,
+        implName: "test-node",
+        implVersion: 1,
+        transactionVersion: 2
+      },
+      finalizedBlockNumber: "100400",
+      finalizedHead: "0x" + "ab".repeat(32),
+      genesisHash: "0x" + "cd".repeat(32),
+      metadata: {
+        metadataBytes: 100,
+        metadataSha256: "a".repeat(64)
+      }
+    };
+    const commandRunner = (args, env, label) => {
+      calls.push({ args, env, label });
+      if (args[0] === "const") return '"420420777"';
+      if (args[0] === "query") {
+        expect(args).to.include(h160);
+        expect(args).to.include("Revive.OriginalAccount");
+        expect(args).to.include("--output");
+        expect(args).to.include("json");
+        return "chain: portaldot-v3\\n\\n" + JSON.stringify(accountOne);
+      }
+      return "ok";
+    };
+
+    const result = await verifyOriginalAccountMapping({
+      h160,
+      ss58Address: accountOne,
+      runtimeInspector: async ({ rpcUrl }) => {
+        expect(rpcUrl).to.equal("wss://test-node-v3.portaldot.dev/");
+        return runtimeSnapshot;
+      },
+      commandRunner
+    });
+
+    expect(result.status).to.equal("mapping_matches");
+    expect(result.runtimeSnapshot.runtimeVersion.specVersion).to.equal(3002);
+    expect(result.runtimeSnapshot.finalizedBlockNumber).to.equal("100400");
+    expect(result.reportedChainId).to.equal("420420777");
+    expect(result.queryScope).to.equal("one H160 key only");
+    expect(result.transactionSubmitted).to.equal(false);
+    expect(calls.filter((call) => call.args[0] === "query")).to.have.lengthOf(1);
+    expect(calls.some((call) => call.args[0] === "query" && call.args.length === 2)).to.equal(false);
+    expect(calls.every((call) => call.env.DOT_NO_UPDATE_CHECK === "1")).to.equal(true);
+  });
+
+  it("refuses a different runtime name before running Polkadot CLI commands", async function () {
+    let calls = 0;
+    let errorMessage = "";
+    try {
+      await verifyOriginalAccountMapping({
+        h160,
+        ss58Address: accountOne,
+        runtimeInspector: async () => ({
+          status: "ok",
+          runtimeVersion: { specName: "some-other-chain" }
+        }),
+        commandRunner: () => {
+          calls += 1;
+          return "should not run";
+        }
+      });
+    } catch (error) {
+      errorMessage = error.message;
+    }
+    expect(errorMessage).to.match(/expected portaldot-v3/);
+    expect(calls).to.equal(0);
   });
 
   it("accepts a hex-encoded AccountId32 value returned by an alternate CLI formatter", function () {
