@@ -64,6 +64,17 @@ npm run monitor:rpc
 
 The monitor requests only `eth_chainId` and `eth_blockNumber`, reports the check time, RPC origin, response latency, and block height as JSON, and exits non-zero on a chain-ID mismatch or RPC error. It sends no transactions, requires no private key, and is not a persistent background service. Use a scheduler or uptime platform only after reviewing its security and logging settings.
 
+## Read-only deployment cost estimate
+
+Before funding or broadcasting a deployment, estimate the actual compiled `PortalDotAgentGuard` creation bytecode against the configured testnet:
+
+```bash
+# Set AUTHORITY_SIGNER_ADDRESS and DEPLOYMENT_ESTIMATE_FROM in the untracked .env
+npm run estimate:deployment
+```
+
+The estimator verifies the configured chain ID, builds the constructor init code for the selected authority signer, calls only `eth_estimateGas`, `eth_gasPrice`, and `eth_getBalance`, and prints estimated cost in EVM POT units, live balance, and a 20% safety-margin result. It requires the public EVM address of the account that will deploy (or derives it locally from `DEPLOYER_PRIVATE_KEY`); the key is never sent, and the estimator does not sign or broadcast a transaction. If the node refuses estimation because the account is underfunded, treat that as a failed estimate and obtain enough test funds or re-estimate with a suitable funded account. The estimated result may include PortalDot's code-storage deposit, so use this project's current compiled bytecode rather than the generic sample size from another project.
+
 ## Contract deployment
 
 Copy `.env.example` to the untracked `.env`, preserve the announced RPC settings, and set `DEPLOYER_PRIVATE_KEY` and `AUTHORITY_SIGNER_ADDRESS` only when ready to deploy. The deployer and authority signer must be separate keys: the deployer pays deployment gas, while the authority signer is the dedicated EVM key used by the bridge. The deployment script refuses a zero authority address or the same address for both roles.
