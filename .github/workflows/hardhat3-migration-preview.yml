@@ -14,7 +14,7 @@ permissions:
 jobs:
   migration-preview:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Prepare isolated candidate
+      - name: Prepare isolated Hardhat 3 dependency candidate
         shell: bash
         run: |
           set -e
@@ -32,12 +32,18 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
           const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          delete p.devDependencies['@nomicfoundation/hardhat-toolbox'];
+          p.devDependencies['@nomicfoundation/hardhat-toolbox-mocha-ethers'] = '^4.0.0';
           p.devDependencies.hardhat = '^3.20.0';
           p.engines.node = '>=22.13.0';
-          p.devDependencies['@nomicfoundation/hardhat-toolbox'] = '^7.0.0';
+          p.type = 'module';
+          p.scripts.compile = 'hardhat build';
+          p.scripts.test = 'hardhat test';
+          p.scripts['deploy:portaldot'] = 'npm run preflight && hardhat run scripts/deploy.mjs --network portaldot';
           fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          fs.writeFileSync('package-candidate.json', JSON.stringify(p, null, 2) + '\n');
           NODE
-          cp package.json "$RUNNER_TEMP/hardhat3-preview/package-candidate.json"
+          cp package-candidate.json "$RUNNER_TEMP/hardhat3-preview/package-candidate.json"
       - name: Generate candidate lockfile (no repository changes)
         shell: bash
         run: |
@@ -48,7 +54,79 @@ jobs:
           cat "$RUNNER_TEMP/hardhat3-preview/lockfile-generation.log"
           if [ "$status" -eq 0 ]; then cp package-lock.json "$RUNNER_TEMP/hardhat3-preview/package-lock-candidate.json"; fi
           exit 0
-      - name: Install candidate dependencies
+      - name: Apply isolated ESM and Hardhat 3 compatibility overlay
+        shell: bash
+        run: |
+          set -e
+          mv hardhat.config.js hardhat.config.hardhat2.cjs
+          cat > hardhat.config.ts <<'CONFIG'
+          import { defineConfig } from "hardhat/config";
+          import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+          import "dotenv/config";
+
+          const networks: Record<string, any> = {
+            hardhatMainnet: { type: "edr-simulated", chainType: "l1", chainId: 31337 }
+          };
+
+          const rpcUrl = (process.env.PORTALDOT_RPC_URL || "").trim();
+          const chainIdText = (process.env.PORTALDOT_CHAIN_ID || "").trim();
+          if (Boolean(rpcUrl) !== Boolean(chainIdText)) {
+            throw new Error("PORTALDOT_RPC_URL and PORTALDOT_CHAIN_ID must be configured together.");
+          }
+          if (rpcUrl && chainIdText) {
+            if (!/^[1-9][0-9]*$/.test(chainIdText)) {
+              throw new Error("PORTALDOT_CHAIN_ID must be a canonical positive decimal integer.");
+            }
+            const parsedUrl = new URL(rpcUrl);
+            if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+              throw new Error("PORTALDOT_RPC_URL must use HTTP or HTTPS.");
+            }
+            if (parsedUrl.protocol === "http:" && !["localhost", "127.0.0.1", "[::1]"].includes(parsedUrl.hostname)) {
+              throw new Error("Remote RPC endpoints must use HTTPS.");
+            }
+            const chainId = Number(chainIdText);
+            if (!Number.isSafeInteger(chainId) || chainId <= 0) {
+              throw new Error("PORTALDOT_CHAIN_ID must be a positive safe integer.");
+            }
+            networks.portaldot = {
+              type: "http",
+              chainType: "generic",
+              url: rpcUrl,
+              chainId,
+              accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : []
+            };
+          }
+
+          export default defineConfig({
+            plugins: [hardhatToolboxMochaEthers],
+            solidity: { version: "0.8.24", settings: { optimizer: { enabled: true, runs: 200 } } },
+            networks
+          });
+          CONFIG
+          printf '{"type":"commonjs"}\n' > scripts/package.json
+          printf '{"type":"commonjs"}\n' > adapter/package.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          for (const file of fs.readdirSync('test').filter((name) => name.endsWith('.js'))) {
+            let source = fs.readFileSync('test/' + file, 'utf8');
+            source = "import { createRequire } from 'node:module';\nconst require = createRequire(import.meta.url);\n" + source;
+            source = source.replace(
+              'const { ethers } = require("hardhat");',
+              'const hre = (await import("hardhat")).default;\nconst { ethers } = await hre.network.create();'
+            );
+            fs.writeFileSync('test/' + file, source);
+          }
+          const deploy = fs.readFileSync('scripts/deploy.js', 'utf8');
+          const migrated = deploy.replace(
+            'require("dotenv").config();\nconst { ethers } = require("hardhat");',
+            'import "dotenv/config";\nconst hre = (await import("hardhat")).default;\nconst { ethers } = await hre.network.create();'
+          );
+          if (migrated === deploy) throw new Error("Could not transform deployment entrypoint to ESM.");
+          fs.writeFileSync('scripts/deploy.mjs', migrated);
+          NODE
+          rm -rf artifacts cache dist
+          cp hardhat.config.ts "$RUNNER_TEMP/hardhat3-preview/hardhat.config.candidate.ts"
+      - name: Install candidate dependencies reproducibly
         shell: bash
         run: |
           set +e
@@ -56,7 +134,7 @@ jobs:
           status=$?
           echo "$status" > "$RUNNER_TEMP/hardhat3-preview/npm-ci.exit-code"
           cat "$RUNNER_TEMP/hardhat3-preview/npm-ci.log"
-          exit 0
+          exit "$status"
       - name: Test candidate and compile contracts
         shell: bash
         run: |
@@ -73,7 +151,7 @@ jobs:
           audit_status=$?
           echo "$audit_status" > "$RUNNER_TEMP/hardhat3-preview/npm-audit.exit-code"
           node -e 'const a=require(process.argv[1]); console.log(JSON.stringify(a.metadata?.vulnerabilities ?? null,null,2))' "$RUNNER_TEMP/hardhat3-preview/npm-audit.json" || true
-          exit 0
+          if [ "$test_status" -ne 0 ] || [ "$compile_status" -ne 0 ]; then exit 1; fi
       - name: Upload migration evidence
         if: always()
         uses: actions/upload-artifact@v4
