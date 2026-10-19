@@ -28,9 +28,9 @@ describe("Read-only Revive OriginalAccount verifier", function () {
     expect(parseDotJsonValue(JSON.stringify(accountOne))).to.equal(accountOne);
     expect(parseDotJsonValue("null")).to.equal(null);
     expect(parseDotJsonValue("undefined")).to.equal(null);
-    expect(parseDotJsonValue("chain: portaldot-v3\\n\\nundefined")).to.equal(null);
-    expect(parseDotJsonValue("chain: portaldot-v3\\n\\n" + JSON.stringify(accountOne))).to.equal(accountOne);
-    expect(parseDotJsonValue("chain: portaldot-v3\\n\\n" + accountOne)).to.equal(accountOne);
+    expect(parseDotJsonValue("chain: portaldot-v3\n\nundefined")).to.equal(null);
+    expect(parseDotJsonValue("chain: portaldot-v3\n\n" + JSON.stringify(accountOne))).to.equal(accountOne);
+    expect(parseDotJsonValue("chain: portaldot-v3\n\n" + accountOne)).to.equal(accountOne);
     expect(parseDotJsonValue(JSON.stringify({ value: accountOne }))).to.equal(accountOne);
     expect(() => parseDotJsonValue("")).to.throw(/is empty/);
     expect(() => parseDotJsonValue("not-json")).to.throw(/did not contain valid JSON/);
