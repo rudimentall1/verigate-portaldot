@@ -98,6 +98,8 @@ describe("Read-only Revive OriginalAccount verifier", function () {
         expect(args).to.include("Revive.OriginalAccount");
         expect(args).to.include("--output");
         expect(args).to.include("json");
+        expect(args).to.include("--at");
+        expect(args).to.include(runtimeSnapshot.finalizedHead);
         return "chain: portaldot-v3\n\n" + JSON.stringify(accountOne);
       }
       return "ok";
