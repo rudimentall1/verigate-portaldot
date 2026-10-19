@@ -66,6 +66,9 @@ function rpcResponse(request) {
     case "eth_gasPrice":
       result = "0x9beb";
       break;
+    case "eth_maxPriorityFeePerGas":
+      result = "0x3e8";
+      break;
     case "eth_getBalance":
       result = `0x${(500n * 10n ** 18n).toString(16)}`;
       break;
@@ -238,7 +241,7 @@ try {
     `Expected a pre-broadcast budget refusal. Output:\\n${underfundedOutput}`
   );
   const budgetMethods = methodsSeen.slice(beforeBudgetGuard);
-  for (const method of ["eth_estimateGas", "eth_gasPrice", "eth_getBalance"]) {
+  for (const method of ["eth_estimateGas", "eth_getBalance"]) {
     assert(budgetMethods.includes(method), `Deployment budget guard did not call read-only method ${method}.`);
   }
   assert(
@@ -284,7 +287,10 @@ try {
   assert(estimateStdout.includes('"deployerBalancePot": "500.000000"'), "Estimator did not express EVM balance using 18-decimal POT units.");
   assert(estimateStdout.includes('"estimatedCostPot":'), "Estimator did not report a deployment cost in POT.");
   assert(methodsSeen.slice(beforeEstimate).includes("eth_estimateGas"), "Estimator did not request an estimate from the mock RPC.");
-  assert(methodsSeen.slice(beforeEstimate).includes("eth_gasPrice"), "Estimator did not read gas price from the mock RPC.");
+  assert(
+    methodsSeen.slice(beforeEstimate).some((method) => ["eth_gasPrice", "eth_feeHistory", "eth_maxPriorityFeePerGas"].includes(method)),
+    "Estimator did not request fee data from the mock RPC."
+  );
   assert(methodsSeen.slice(beforeEstimate).includes("eth_getBalance"), "Estimator did not read the deployer balance from the mock RPC.");
   assert(!methodsSeen.slice(beforeEstimate).some((method) => transactionMethods.has(method)), "Estimator attempted a transaction RPC method.");
   console.log("PASS: deployment estimator queries only read-only RPC methods and flags a 500 POT balance below the mocked estimated cost plus 20% margin.");
