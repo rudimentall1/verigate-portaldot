@@ -7,7 +7,7 @@ const os = require("node:os");
 const path = require("node:path");
 const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
-const { validateAuthorizationBinding, verifyLocally, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate } = require("../adapter/verigate-bridge");
+const { validateAuthorizationBinding, verifyLocally, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate, verifyGuardDeployment } = require("../adapter/verigate-bridge");
 
 describe("Verigate bridge binding", function () {
   let recipient;
@@ -603,6 +603,7 @@ describe("Verigate bridge binding", function () {
   it("executes an end-to-end Verigate ALLOW through bridge EIP-712 signing into the guard on a local chain", async function () {
     const envKeys = [
       "PORTALDOT_CHAIN_ID",
+      "PORTALDOT_RPC_URL",
       "VERIGATE_BASE_URL",
       "VERIGATE_API_KEY",
       "VERIGATE_PUBLIC_KEY_FILE",
@@ -644,6 +645,7 @@ describe("Verigate bridge binding", function () {
       await deployer.sendTransaction({ to: guardAddress, value: ethers.parseEther("1") });
 
       process.env.PORTALDOT_CHAIN_ID = chainId.toString();
+      process.env.PORTALDOT_RPC_URL = "http://127.0.0.1:8545";
       process.env.VERIGATE_BASE_URL = "https://verigate.example";
       process.env.VERIGATE_API_KEY = "disposable-test-api-key";
       process.env.BRIDGE_SIGNER_PRIVATE_KEY = bridgeWallet.privateKey;
@@ -659,7 +661,7 @@ describe("Verigate bridge binding", function () {
         return { ok: true, status: 200, json: async () => ({ valid: true }) };
       };
 
-      const signed = await signAuthorization(item);
+      const signed = await signAuthorization(item, { providerFactory: () => ethers.provider });
       expect(signed.domain.chainId).to.equal(chainId);
       expect(signed.domain.verifyingContract).to.equal(guardAddress);
       expect(signed.authoritySigner).to.equal(bridgeWallet.address);
@@ -691,6 +693,84 @@ describe("Verigate bridge binding", function () {
     }
   });
 
+});
+
+
+describe("On-chain PortalDot guard verification before signing", function () {
+  const rpcUrl = "https://rpc.example.invalid";
+  const guardAddress = "0x1111111111111111111111111111111111111111";
+  const expectedAuthority = "0x2222222222222222222222222222222222222222";
+  const otherAuthority = "0x3333333333333333333333333333333333333333";
+
+  function mockProvider({ chainId = 420420777n, code = "0x6000" } = {}) {
+    return {
+      getNetwork: async () => ({ chainId }),
+      getCode: async () => code
+    };
+  }
+
+  async function capturedError(promise) {
+    try {
+      await promise;
+    } catch (error) {
+      return error;
+    }
+    throw new Error("Expected guard verification to fail closed.");
+  }
+
+  it("rejects a guard RPC connected to a different chain", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      providerFactory: async () => mockProvider({ chainId: 1n }),
+      contractFactory: () => ({ authoritySigner: async () => expectedAuthority })
+    }));
+    expect(error.message).to.match(/expected 420420777; refusing to sign/);
+  });
+
+  it("rejects an address with no deployed contract bytecode", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      providerFactory: async () => mockProvider({ code: "0x" }),
+      contractFactory: () => {
+        throw new Error("authoritySigner must not be called when no bytecode exists");
+      }
+    }));
+    expect(error.message).to.match(/No deployed contract bytecode/);
+  });
+
+  it("rejects a deployed guard whose authority signer differs from configuration", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      providerFactory: async () => mockProvider(),
+      contractFactory: () => ({ authoritySigner: async () => otherAuthority })
+    }));
+    expect(error.message).to.match(/does not match AUTHORITY_SIGNER_ADDRESS/);
+  });
+
+  it("rejects remote RPC over plain HTTP before making any request", async function () {
+    let calls = 0;
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl: "http://rpc.example.invalid",
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      providerFactory: async () => {
+        calls += 1;
+        return mockProvider();
+      }
+    }));
+    expect(error.message).to.match(/Remote RPC endpoints must use HTTPS/);
+    expect(calls).to.equal(0);
+  });
 });
 
 
