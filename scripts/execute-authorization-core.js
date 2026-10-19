@@ -125,8 +125,8 @@ function validateSignedAuthorization(artifact, options = {}) {
   if (signatureS <= 0n || signatureS > SECP256K1_HALF_ORDER) {
     fail("EIP-712 signature must use canonical low-s form accepted by the guard contract.");
   }
-  if (![0, 1, 27, 28].includes(recovery)) {
-    fail("EIP-712 signature has an invalid recovery byte.");
+  if (![27, 28].includes(recovery)) {
+    fail("EIP-712 signature must use canonical recovery byte 27 or 28.");
   }
 
   const typedDomain = {
