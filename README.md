@@ -74,7 +74,13 @@ To print the deterministic fallback SS58 address for an EVM account without ente
 npm run address:substrate -- 0xYourEvmAddress
 ```
 
-Before moving more than a small test amount, verify the derived recipient and compare the actual transfer extrinsic/events with `eth_getBalance` for the H160. Do not infer the reason for a balance difference without transaction evidence.
+To decode a Substrate SS58 AccountId32 and calculate its expected H160 under current upstream `pallet-revive` rules, optionally compare it to a wallet-displayed EVM address:
+
+```bash
+npm run address:inspect -- 5YourSubstrateAddress 0xCandidateEvmAddress
+```
+
+This tool validates the SS58 checksum and reports the offline derivation; it does not query the PortalDot runtime or confirm a stateful mapping. The current upstream rule uses the last 20 bytes of `keccak256(AccountId32)` for ordinary Substrate accounts, but runtime versions may differ. A mismatch does not prove an address is wrong or unusable. Inspect the live runtime metadata/storage or get independent PortalDot confirmation before funding. Do not infer the reason for a balance difference without transaction evidence.
 
 ## Read-only deployment cost estimate
 
