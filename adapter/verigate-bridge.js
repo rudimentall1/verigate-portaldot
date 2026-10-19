@@ -290,11 +290,18 @@ function validateAuthorizationBinding(response, options = {}) {
     fail("Target and PortalDot metadata recipient do not match.");
   }
 
-  const amountText = String(action.amount_exact ?? "");
-  const mappedAmount = String(mapping.amount_base_units ?? "");
-  if (!/^[1-9][0-9]*$/.test(amountText) || amountText !== mappedAmount ||
-      String(intentMapping.amount_base_units ?? "") !== amountText) {
-    fail("amount_exact must equal metadata.portaldot_v3.amount_base_units as a positive base-unit integer.");
+  // Transfer amounts are exact base-unit values. Require canonical decimal strings
+  // rather than coercing JSON numbers, which can lose precision above 2^53 - 1.
+  const amountText = action.amount_exact;
+  const mappedAmount = mapping.amount_base_units;
+  const intentMappedAmount = intentMapping.amount_base_units;
+  if (typeof amountText !== "string" ||
+      typeof mappedAmount !== "string" ||
+      typeof intentMappedAmount !== "string" ||
+      !/^[1-9][0-9]*$/.test(amountText) ||
+      amountText !== mappedAmount ||
+      intentMappedAmount !== amountText) {
+    fail("amount_exact and metadata.portaldot_v3.amount_base_units must be matching canonical positive base-unit integer strings.");
   }
 
   const computedActionDigest = actionDigest(action);
