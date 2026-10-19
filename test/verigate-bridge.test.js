@@ -609,7 +609,8 @@ describe("Verigate bridge binding", function () {
       "VERIGATE_PUBLIC_KEY_FILE",
       "BRIDGE_SIGNER_PRIVATE_KEY",
       "AUTHORITY_SIGNER_ADDRESS",
-      "PORTALDOT_GUARD_ADDRESS"
+      "PORTALDOT_GUARD_ADDRESS",
+      "PORTALDOT_GUARD_CODE_HASH"
     ];
     const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
     const originalFetch = global.fetch;
@@ -651,6 +652,7 @@ describe("Verigate bridge binding", function () {
       process.env.BRIDGE_SIGNER_PRIVATE_KEY = bridgeWallet.privateKey;
       process.env.AUTHORITY_SIGNER_ADDRESS = bridgeWallet.address;
       process.env.PORTALDOT_GUARD_ADDRESS = guardAddress;
+      process.env.PORTALDOT_GUARD_CODE_HASH = ethers.keccak256(await ethers.provider.getCode(guardAddress));
       // The suite's before hook writes this temporary issuer public key.
       process.env.VERIGATE_PUBLIC_KEY_FILE = publicKeyFile;
       global.fetch = async (url, options) => {
@@ -701,6 +703,7 @@ describe("On-chain PortalDot guard verification before signing", function () {
   const guardAddress = "0x1111111111111111111111111111111111111111";
   const expectedAuthority = "0x2222222222222222222222222222222222222222";
   const otherAuthority = "0x3333333333333333333333333333333333333333";
+  const expectedCodeHash = ethers.keccak256("0x6000");
 
   function mockProvider({ chainId = 420420777n, code = "0x6000" } = {}) {
     return {
@@ -724,6 +727,7 @@ describe("On-chain PortalDot guard verification before signing", function () {
       expectedChainId: "420420777",
       guardAddress,
       authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
       providerFactory: async () => mockProvider({ chainId: 1n }),
       contractFactory: () => ({ authoritySigner: async () => expectedAuthority })
     }));
@@ -736,6 +740,7 @@ describe("On-chain PortalDot guard verification before signing", function () {
       expectedChainId: "420420777",
       guardAddress,
       authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
       providerFactory: async () => mockProvider({ code: "0x" }),
       contractFactory: () => {
         throw new Error("authoritySigner must not be called when no bytecode exists");
@@ -750,6 +755,7 @@ describe("On-chain PortalDot guard verification before signing", function () {
       expectedChainId: "420420777",
       guardAddress,
       authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
       providerFactory: async () => mockProvider(),
       contractFactory: () => ({ authoritySigner: async () => otherAuthority })
     }));
@@ -763,6 +769,7 @@ describe("On-chain PortalDot guard verification before signing", function () {
       expectedChainId: "420420777",
       guardAddress,
       authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
       providerFactory: async () => {
         calls += 1;
         return mockProvider();
