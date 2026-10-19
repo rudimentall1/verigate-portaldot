@@ -937,12 +937,14 @@ describe("On-chain PortalDot guard verification before signing", function () {
 
 describe("PortalDot RPC preflight configuration", function () {
   const { requiredNetworkConfig, safeRpcOrigin } = require("../scripts/preflight");
-  const keys = ["PORTALDOT_RPC_URL", "PORTALDOT_CHAIN_ID"];
+  const keys = ["PORTALDOT_RPC_URL", "PORTALDOT_CHAIN_ID", "PORTALDOT_GENESIS_HASH"];
+  const testGenesisHash = "0x" + "ab".repeat(32);
   let originalEnv;
 
   beforeEach(function () {
     originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
     for (const key of keys) delete process.env[key];
+    process.env.PORTALDOT_GENESIS_HASH = testGenesisHash;
   });
 
   afterEach(function () {
@@ -993,7 +995,8 @@ describe("PortalDot RPC preflight configuration", function () {
     process.env.PORTALDOT_CHAIN_ID = "31337";
     expect(requiredNetworkConfig()).to.deep.equal({
       rpcUrl: "http://127.0.0.1:8545",
-      expectedChainId: 31337n
+      expectedChainId: 31337n,
+      expectedGenesisHash: testGenesisHash
     });
   });
 
@@ -1002,7 +1005,8 @@ describe("PortalDot RPC preflight configuration", function () {
     process.env.PORTALDOT_CHAIN_ID = "420420777";
     expect(requiredNetworkConfig()).to.deep.equal({
       rpcUrl: "https://rpc.example/path",
-      expectedChainId: 420420777n
+      expectedChainId: 420420777n,
+      expectedGenesisHash: testGenesisHash
     });
   });
 
