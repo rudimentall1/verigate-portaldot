@@ -5,7 +5,7 @@ import { ethers as ethersLib } from "ethers";
 const require = createRequire(import.meta.url);
 const { requiredNetworkConfig, rpc, rpcResult } = require("./preflight.js");
 const { verifySubstrateGenesisHash } = require("./substrate-genesis.js");
-const { parseHexQuantity, formatUnitsExact, calculateDeploymentCost, buildDeploymentReadiness, resolveEstimateAuthoritySigner, resolveEstimateFromAddresses } = require("./deployment-estimate.js");
+const { parseHexQuantity, formatUnitsExact, calculateDeploymentCost, buildDeploymentReadiness, deploymentEstimateExitCode, resolveEstimateAuthoritySigner, resolveEstimateFromAddresses } = require("./deployment-estimate.js");
 
 async function main() {
   const config = requiredNetworkConfig();
@@ -97,11 +97,12 @@ async function main() {
   };
   console.log(JSON.stringify(result, null, 2));
 
-  // Distinguish quote failures from deployment readiness. A successful read-only
-  // quote is never an authorization to deploy while readiness blockers remain.
-  if (!calc.isSufficient) process.exitCode = 2;
-  else if (authoritySignerIsPlaceholder) process.exitCode = 3;
-  else if (readiness.readiness !== "READY_FOR_DEPLOYMENT") process.exitCode = 4;
+  // A successful read-only quote is never deployment authorization.
+  process.exitCode = deploymentEstimateExitCode({
+    balanceSufficient: calc.isSufficient,
+    authoritySignerIsPlaceholder,
+    readiness: readiness.readiness
+  });
 }
 
 main().catch((error) => {
