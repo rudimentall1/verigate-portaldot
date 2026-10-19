@@ -5,6 +5,7 @@ const {
   parseHexQuantity,
   formatUnitsExact,
   calculateDeploymentCost,
+  buildDeploymentReadiness,
   resolveEstimateAuthoritySigner,
   resolveEstimateFromAddresses,
   substrateRawToEvmWei,
@@ -59,6 +60,32 @@ describe("PortalDot deployment estimator arithmetic", function () {
     });
     expect(() => resolveEstimateAuthoritySigner("0x0000000000000000000000000000000000000000")).to.throw(/non-zero EVM address/);
     expect(() => resolveEstimateAuthoritySigner("not-an-address")).to.throw(/non-zero EVM address/);
+  });
+
+  it("fails closed for deployment readiness while keeping estimates useful for budget planning", function () {
+    const placeholder = buildDeploymentReadiness({
+      authoritySignerIsPlaceholder: true,
+      balanceSufficient: true
+    });
+    expect(placeholder.readiness).to.equal("NOT_READY_FOR_DEPLOYMENT");
+    expect(placeholder.estimateUsableForBudgetPlanning).to.equal(false);
+    expect(placeholder.readinessBlockers.some((item) => item.includes("placeholder"))).to.equal(true);
+    expect(placeholder.readinessBlockers.some((item) => item.includes("deployer-to-SS58 mapping"))).to.equal(true);
+
+    const fundedWithSelectedSigner = buildDeploymentReadiness({
+      authoritySignerIsPlaceholder: false,
+      balanceSufficient: true
+    });
+    expect(fundedWithSelectedSigner.readiness).to.equal("NOT_READY_FOR_DEPLOYMENT");
+    expect(fundedWithSelectedSigner.estimateUsableForBudgetPlanning).to.equal(true);
+    expect(fundedWithSelectedSigner.readinessBlockers).to.have.length(1);
+
+    const underfunded = buildDeploymentReadiness({
+      authoritySignerIsPlaceholder: false,
+      balanceSufficient: false
+    });
+    expect(underfunded.estimateUsableForBudgetPlanning).to.equal(false);
+    expect(underfunded.readinessBlockers.some((item) => item.includes("balance"))).to.equal(true);
   });
 
   it("compares the 20 percent deployment-cost margin against balance exactly", function () {
