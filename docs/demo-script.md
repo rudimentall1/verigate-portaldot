@@ -4,8 +4,8 @@
 
 ## Evidence to use
 
-- [Latest successful PortalDot CI run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783295)
-- [Latest successful unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783332)
+- [Latest successful PortalDot CI run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39189834992)
+- [Latest successful unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39189834946)
 - Download the `isolated-verigate-api-evidence` artifact from the PortalDot CI run. It contains `summary.json`, `allow-response.json`, `block-response.json`, and `bridge-signature-dry-run.json`. The artifact is retained for 14 days by GitHub Actions; rerun the workflow to regenerate it later.
 
 ## Recording plan (target: 2 minutes 35 seconds)
@@ -33,11 +33,13 @@
 - `allow.decision_receipt_signature_valid = true`
 - `allow.execution_authorization_signature_valid = true`
 - `bridge_cli_allow_dry_run.signature_created = true`
+- `bridge_cli_allow_dry_run.deployed_on_isolated_loopback_evm = true`
+- `bridge_cli_allow_dry_run.runtime_code_hash_verified` records the local guard runtime-code hash
 - `block.decision = BLOCK`
 - `block.bridge_cli_refused_block = true`
 
 **Say:**
-> CI launches a temporary Verigate API with disposable test keys. The ALLOW case produces an EIP-712 dry-run signature. The BLOCK case is refused. The test does not use the normal Verigate database or keys.
+> CI launches a temporary Verigate API with disposable test keys. The ALLOW case produces an EIP-712 signature only after the bridge validates the guard's configured chain ID, pinned runtime-code hash and authority signer. BLOCK is refused. Deployment/funding happens only in the disposable loopback Hardhat EVM; no public PortalDot RPC is used.
 
 ### 1:25–1:55 — Contract safety checks
 
@@ -51,7 +53,7 @@
 **Show:** [RPC preflight section in README](../README.md#portaldot-v3-preflight) and `.env.example` with the RPC URL and chain ID announced by PortalDot.
 
 **Say:**
-> PortalDot has announced the updated EVM RPC and chain ID. We will run preflight first and only proceed if the endpoint responds with the expected chain ID. The bridge also requires `VERIGATE_PUBLIC_KEY_FILE` to point to the trusted issuer PEM; its fingerprint must be verified independently. No on-chain transaction has been broadcast.
+> PortalDot has announced the updated EVM RPC and chain ID. We will run preflight first and only proceed if the endpoint responds with the expected chain ID. The bridge also requires `VERIGATE_PUBLIC_KEY_FILE` to point to the trusted issuer PEM; its fingerprint must be verified independently. No transaction was sent to public PortalDot. CI deploys/funds only the temporary local EVM, and it does not execute the bridge signature via `executeTransfer`.
 
 ### 2:25–2:35 — Close
 
@@ -63,6 +65,6 @@
 ## Do not show or claim
 
 - Do not show `.env`, private keys, API tokens, or a real wallet balance.
-- Do not describe the dummy contract address or dry-run signature as a deployment.
+- Do not present the temporary local guard deployment, simulated chain ID, or dry-run signature as a live PortalDot deployment.
 - Do not claim a PortalDot transaction, RPC connection, testnet deployment or explorer verification.
 - Keep the whole video under three minutes. If live network details are confirmed later, replace the relevant segment with an actual preflight and verified testnet interaction.

@@ -10,8 +10,9 @@ The bridge signer is the security boundary between Verigate's Ed25519 execution 
 4. Ask the configured Verigate instance's POST /v1/verify endpoint for a second validation; the server response is not the sole source of signature truth.
 5. Check that the receipt and execution authorization refer to the same intent and agent.
 6. Check that the signed action maps exactly to a PortalDot native transfer: recipient, raw base-unit amount, chain ID, asset and network.
-7. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing.
-8. Sign EIP-712 data using the dedicated bridge key; never broadcast automatically from this CLI.
+7. Use read-only RPC calls to verify the configured chain ID, non-empty guard bytecode, pinned `PORTALDOT_GUARD_CODE_HASH`, and on-chain `authoritySigner()` against `AUTHORITY_SIGNER_ADDRESS`.
+8. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing.
+9. Sign EIP-712 data using the dedicated bridge key; never broadcast automatically from this CLI.
 
 ## Required signed intent convention
 
@@ -52,6 +53,6 @@ Verigate signs compact, sorted-key JSON with Python's `json.dumps(..., ensure_as
 
 ## Local end-to-end harness
 
-Run `scripts/verigate_local_demo.py` with the Python interpreter from the Verigate checkout. The harness creates an isolated temporary Verigate API instance, seeds a test-only identity and capability, submits ALLOW and BLOCK requests through the actual HTTP routes, verifies Ed25519 artifacts, and runs the Node bridge CLI with a fresh throwaway EVM signer against a dummy contract domain.
+Run `scripts/verigate_local_demo.py` with the Python interpreter from the Verigate checkout. The harness creates an isolated temporary Verigate API instance, seeds a test-only identity and capability, submits ALLOW and BLOCK requests through the actual HTTP routes, and verifies Ed25519 artifacts. It also starts an isolated loopback Hardhat EVM, deploys the actual PortalDotAgentGuard source using disposable deployer and bridge keys, pins that local deployment's runtime-code hash, and runs the bridge against the actual guard address. ALLOW signs only after chain, code-hash and authority checks pass; BLOCK is refused.
 
-The harness must never use the normal Verigate database, private keys or .env. GitHub Actions now runs it as a separate CI job on pushes and pull requests. It makes no RPC calls and broadcasts no transaction. A successful result validates isolated API-to-bridge plumbing only; it does not replace a check against the configured Verigate instance, a real agent integration, or a live PortalDot V3 deployment.
+The harness never uses the normal Verigate database or issuer keys. Temporary private keys, node state and database files are deleted after the run. CI runs it on pushes and pull requests. Its test deployment and funding transactions remain on the loopback simulator; it does not contact public PortalDot RPC or prove a live testnet deployment.

@@ -1,6 +1,6 @@
 # Architecture and trust boundaries
 
-Updated: 14 October 2026
+Updated: 19 October 2026
 
 ## Current flow
 
@@ -12,15 +12,16 @@ flowchart TD
     C -->|ALLOW| D["Signed decision receipt + execution authorization"]
     D --> E["PortalDot bridge CLI"]
     E --> F["Check intent/action binding, recipient, amount, chain ID, nonce and expiry"]
-    F --> G["Configured Verigate /v1/verify checks both Ed25519 signatures"]
-    G --> H["Dedicated EVM bridge key signs EIP-712 transfer authorization"]
-    H --> I["Dry-run JSON signature output"]
+    F --> G["Verify Ed25519 locally and via Verigate /v1/verify"]
+    G --> H["Read-only RPC: chain ID, guard code hash and authoritySigner"]
+    H --> H2["Dedicated EVM bridge key signs EIP-712 authorization"]
+    H2 --> I["Dry-run JSON signature output"]
     I -. "Not wired to a broadcaster; no transaction sent" .-> J["PortalDotAgentGuard contract"]
     J --> K["Verify EIP-712 signature, deadline, balance and unused nonce"]
     K --> L["Native-token transfer"]
 ```
 
-The bridge CLI currently stops at the signed JSON output. The contract and its local Hardhat tests are in the repository, but the target PortalDot EVM testnet and a live contract deployment have not been independently verified. The dotted line is a future integration step, not a working path.
+The bridge CLI still stops at signed JSON output; it does not submit live transactions. CI now deploys the actual guard source to a temporary loopback Hardhat EVM and verifies the bridge's pre-sign checks there. The public PortalDot EVM endpoint and any live contract deployment have not been independently verified; the dotted line is not a public-network path.
 
 ## What is checked off-chain
 
@@ -29,7 +30,8 @@ The bridge CLI currently stops at the signed JSON output. The contract and its l
 - Receipt intent and authorization action must match by canonical SHA-256 digest.
 - Recipient and amount must match the PortalDot-specific mapping in the signed action.
 - The authorization must match the expected chain ID and have a valid nonce, authorization ID, issue time and expiry.
-- The bridge signer key must match the configured contract authority signer. The contract address must be explicitly configured.
+- The bridge signer key must match the configured contract authority signer.
+- Before signing, the bridge uses read-only RPC calls to verify chain ID, deployed bytecode, the Keccak runtime-code hash pinned in `PORTALDOT_GUARD_CODE_HASH`, and on-chain `authoritySigner()`.
 
 ## What the contract enforces
 
@@ -49,4 +51,4 @@ On 17 October 2026, the PortalDot team announced the updated V3 testnet EVM RPC 
 
 ## Validation evidence
 
-GitHub Actions passed the local contract and bridge tests plus Solidity compilation, and the separate integration job passed against an isolated Verigate API for [commit 78049cf](https://github.com/rudimentall1/verigate-portaldot/commit/78049cf2e5369efab8a3bbbaf47fcb5de4f1106c): [unit tests](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676086) and [PortalDot CI with ALLOW/BLOCK integration](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676047). The integration locally verifies Ed25519 signatures against a pinned temporary public key, produces a dry-run signature only for ALLOW, refuses BLOCK and broadcasts no transaction. These checks are not evidence of a live PortalDot deployment.
+The current migrated branch passed [78 tests and compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39189834946) and [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39189834992). Integration uses a temporary Verigate API and loopback Hardhat EVM with disposable issuer, deployer and bridge keys. It exercises ALLOW/BLOCK through real HTTP routes, deploys the actual guard source to the simulator, checks runtime-code hash and authority before signing ALLOW, and refuses BLOCK. Deployment/funding transactions stay on the local simulator; no public PortalDot RPC is contacted. This is not live deployment evidence.

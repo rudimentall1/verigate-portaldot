@@ -6,8 +6,9 @@
 2. Verigate evaluates the intent and policy. Any non-ALLOW decision must stop the flow.
 3. The bridge independently validates both signed Verigate artifacts against a pinned Ed25519 public key, then queries `/v1/verify` as a secondary check.
 4. The bridge compares the authorized action with the exact recipient, amount, intent/action identifier and short expiry it is about to encode.
-5. A dedicated EVM bridge key signs the EIP-712 TransferAuthorization.
-6. The PortalDot contract recovers that EVM signer and executes only the signed native-token payment.
+5. Before signing, the bridge verifies the configured chain ID, guard bytecode, pinned `PORTALDOT_GUARD_CODE_HASH`, and `authoritySigner()` using read-only RPC calls.
+6. A dedicated EVM bridge key signs the EIP-712 TransferAuthorization.
+7. The PortalDot contract recovers that EVM signer and executes only the signed native-token payment.
 
 ## Verigate issuer trust
 
@@ -21,6 +22,12 @@ The bridge requires `VERIGATE_PUBLIC_KEY_FILE` to identify a local PEM for the t
 - A signature from any address other than the immutable authoritySigner is rejected.
 - The contract performs native-token transfers only. It has no generic arbitrary-call or caller-controlled oracle interface.
 - Re-entrant execution is blocked, and the nonce is marked before the external call. A reverted transfer rolls the entire transaction back.
+
+## Pre-sign contract identity checks
+
+Before emitting an EIP-712 signature, the bridge requires `PORTALDOT_RPC_URL`, the expected chain ID, `PORTALDOT_GUARD_ADDRESS`, and a pinned 32-byte `PORTALDOT_GUARD_CODE_HASH`. It reads the chain ID and runtime bytecode, compares the runtime bytecode's Keccak hash with the pinned value, and calls `authoritySigner()` to compare the on-chain immutable signer with `AUTHORITY_SIGNER_ADDRESS`. Missing configuration, empty bytecode, chain mismatch, code-hash mismatch or authority mismatch stops signing.
+
+These checks catch many configuration mistakes and address substitutions, but they do not make the RPC endpoint trustworthy. An endpoint can lie about its chain ID and read responses. Independently confirm the RPC endpoint and pinned runtime-code hash through trusted sources; a matching chain ID alone is not proof of network identity.
 
 ## What it does not enforce
 
@@ -40,7 +47,7 @@ The demo supports a single native-token transfer. It is not a general wallet, to
 - Verigate verification endpoint unreachable (network error);
 - Verigate verification endpoint returning a non-2xx response (including HTTP 503).
 
-GitHub Actions passed bridge and contract tests plus Solidity compilation, and the isolated Verigate ALLOW/BLOCK integration for [commit 78049cf](https://github.com/rudimentall1/verigate-portaldot/commit/78049cf2e5369efab8a3bbbaf47fcb5de4f1106c): [unit tests](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676086) and [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676047). Unit tests cover pinned local Ed25519 verification, refusal of forged artifacts even when the remote verifier says valid, absent key configuration, invalid remote responses, network failure, HTTP 503 and cross-language number formatting. These are local automated checks, not live-network validation. Review dependency advisories and the trust boundary before using real testnet funds.
+The current migrated branch passed [78 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39189834946) and [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39189834992). Coverage includes local pinned Ed25519 verification, denied/forged artifacts, cross-language number formatting, wrong chain, empty code, code-hash and signer mismatch, local bridge-to-guard execution, and a no-transaction network-selection smoke test. The integration uses disposable Verigate state and a loopback EVM; it does not validate a live network. Review dependency advisories and trust boundaries before using real testnet funds.
 
 ## Live-network evidence
 
