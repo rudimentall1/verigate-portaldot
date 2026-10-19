@@ -9,14 +9,14 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 - Public repository: https://github.com/rudimentall1/verigate-portaldot
 - Core contract: `PortalDotAgentGuard` accepts only EIP-712-authorized native-token transfers and has no generic arbitrary-call method.
 - Bridge: checks the signed Verigate decision and execution authorization, binds the action to the exact recipient and base-unit amount, and creates an EIP-712 signature for an ALLOW decision only.
-- Verification: the current migrated branch passes [78 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39189834946) and [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39189834992). The bridge verifies Ed25519 artifacts locally and via `/v1/verify`, then checks chain ID, pinned runtime-code hash, and `authoritySigner()` over read-only RPC before signing.
+- Verification: code commit `5ea418769816206f9f75eafce6a914f6ab352a11` passes [101 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39197882529); latest-head [test/integration CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39197956367) passes. Preflight checks the JSON-RPC envelope and quantities, while the bridge checks chain ID, pinned runtime-code hash and `authoritySigner()` over read-only RPC before signing.
 - Local integration exercise: CI starts a disposable Verigate API and loopback Hardhat EVM, deploys the actual guard source to that simulator, confirms code hash and signer identity, signs EIP-712 only for ALLOW, and refuses BLOCK. No public PortalDot RPC or transaction is used.
 - Architecture and security boundary: [docs/architecture.md](architecture.md).
 - Video plan: [three-minute demo script](demo-script.md); clearly labels the local integration as a dry run, not a PortalDot deployment.
 
 ## Remaining before check-in
 
-1. Run RPC preflight using the EVM endpoint and chain ID announced by the PortalDot team on 17 October 2026.
+1. Obtain a canonical official announcement URL or direct PortalDot confirmation for the reported V3 EVM RPC and chain ID. Only then run read-only preflight; it checks response behavior and chain ID but does not authenticate network identity.
 2. Confirm native-token denomination and native/EVM wallet mapping with the team before using testnet funds.
 3. Deploy the guard only after the target chain is confirmed. Record the contract address, deployment transaction hash, block number, timestamp and explorer link where available.
 4. Record the [three-minute ALLOW/BLOCK demo](demo-script.md). Use the CI evidence artifact for the reproducible local integration; clearly state that it does not demonstrate a live transaction.
@@ -25,7 +25,7 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 ## Honest current limitations
 
 - No live PortalDot deployment is claimed.
-- `.env.example` now records `https://test-evm-rpc-v3.portaldot.dev` and chain ID `420420777` from the PortalDot team announcement on 17 October 2026. Live preflight is still required before deployment.
+- `.env.example` records the reported `https://test-evm-rpc-v3.portaldot.dev` endpoint and chain ID `420420777`, but the canonical announcement URL is not recorded in the repository and I could not independently reconfirm those exact values in the published developer docs during this review. Confirm these details with PortalDot before deployment or spending test funds.
 - The CLI outputs a signed authorization JSON but does not submit a transaction. It requires a pinned runtime-code hash; matching chain ID alone does not authenticate an RPC endpoint.
 - The guard and end-to-end signing flow are tested on local Hardhat only; local tests do not establish that PortalDot V3 EVM is reachable or that any live deployment exists.
 

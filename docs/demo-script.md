@@ -50,10 +50,10 @@
 
 ### 1:55–2:25 — Current limitation and next milestone
 
-**Show:** [RPC preflight section in README](../README.md#portaldot-v3-preflight) and `.env.example` with the RPC URL and chain ID announced by PortalDot.
+**Show:** [RPC preflight section in README](../README.md#portaldot-v3-preflight) and `.env.example`, noting that the reported endpoint and chain ID still need official independent confirmation.
 
 **Say:**
-> PortalDot has announced the updated EVM RPC and chain ID. We will run preflight first and only proceed if the endpoint responds with the expected chain ID. The bridge also requires `VERIGATE_PUBLIC_KEY_FILE` to point to the trusted issuer PEM; its fingerprint must be verified independently. No transaction was sent to public PortalDot. CI deploys/funds only the temporary local EVM, and it does not execute the bridge signature via `executeTransfer`.
+> The repository records reported V3 EVM RPC settings, but the canonical announcement source and compatibility have not yet been independently confirmed. A matching chain ID alone does not authenticate a network; we will get direct PortalDot confirmation before any deployment or test-fund use. The bridge also requires `VERIGATE_PUBLIC_KEY_FILE` to point to the trusted issuer PEM; its fingerprint must be verified independently. No transaction was sent to public PortalDot. CI deploys/funds only the temporary local EVM, and it does not execute the bridge signature via `executeTransfer`.
 
 ### 2:25–2:35 — Close
 

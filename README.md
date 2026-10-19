@@ -104,7 +104,7 @@ The bridge-signing CLI is an initial integration step, not a claim that a full a
 ## Scope and limitations
 
 - The first on-chain operation is a native-token payment only.
-- The PortalDot team announced the V3 EVM RPC and chain ID on 17 October 2026. Live preflight is still required, and token denomination plus native/EVM wallet mapping should be confirmed before using testnet funds.
+- The repository records a reported PortalDot V3 EVM endpoint and chain ID in `.env.example`, but the canonical announcement URL is not recorded here and I could not independently reconfirm those exact values in the public developer docs during this review. The published [PortalDot developer chain info](https://portaldot-dev.readthedocs.io/en/latest/chain-info.html) lists a mainnet Substrate WebSocket and POT precision; it does not establish that the reported EVM V3 test endpoint is authentic or clarify `tPOT` denomination and EVM/Substrate address mapping. Obtain direct confirmation from PortalDot before using testnet funds or deploying.
 - No live deployment, independent audit, production key management, or production readiness is claimed.
 - This is a separate PortalDot integration, not a copy of the Verigate repository.
 
