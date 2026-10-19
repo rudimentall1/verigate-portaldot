@@ -129,6 +129,7 @@ module.exports = {
   formatUnitsExact,
   calculateDeploymentCost,
   buildDeploymentReadiness,
+  deploymentEstimateExitCode,
   resolveEstimateAuthoritySigner,
   resolveEstimateFromAddresses,
   substrateRawToEvmWei,
