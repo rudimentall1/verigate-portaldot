@@ -28,7 +28,7 @@ The bridge CLI still stops at signed JSON output; it does not submit live transa
 - Decision must be exactly `ALLOW`; `WARN` and `BLOCK` are refused.
 - Both Ed25519 artifacts are submitted to the configured Verigate `/v1/verify` endpoint.
 - Receipt intent and authorization action must match by canonical SHA-256 digest.
-- Recipient and amount must match the PortalDot-specific mapping in the signed action.
+- Recipient must match the signed PortalDot mapping. Base-unit amounts in `amount_exact` and both `metadata.portaldot_v3.amount_base_units` fields must be canonical positive decimal strings; numeric amount fields are rejected instead of being coerced through JavaScript `Number`, which can lose precision above `Number.MAX_SAFE_INTEGER`.
 - The authorization must match the expected chain ID and have a valid nonce, authorization ID, issue time and expiry.
 - The bridge signer key must match the configured contract authority signer.
 - Before signing, the bridge uses read-only RPC calls to verify chain ID, deployed bytecode, the Keccak runtime-code hash pinned in `PORTALDOT_GUARD_CODE_HASH`, and on-chain `authoritySigner()`.
@@ -51,4 +51,4 @@ On 17 October 2026, the PortalDot team announced the updated V3 testnet EVM RPC 
 
 ## Validation evidence
 
-The migrated branch passed [91 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39196156125) and [PortalDot CI, including the isolated integration job](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39196156123) on commit `bd8325eb9ac9e6f0425ac10fed49ce68612de7c5`. Integration uses a temporary Verigate API and loopback Hardhat EVM with disposable issuer, deployer and bridge keys. It exercises ALLOW/BLOCK through real HTTP routes, deploys the actual guard source to the simulator, checks runtime-code hash and authority before signing ALLOW, and refuses BLOCK. Deployment/funding transactions stay on the local simulator; no public PortalDot RPC is contacted. This is not live deployment evidence.
+The migrated branch passed [94 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39196807227) and [PortalDot CI, including the isolated integration and deploy-network smoke checks](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39196807245) on commit `4668a385c91a2c5a9745fbf3eee0ff940a5d1269`. Tests include regressions for numeric transfer amounts and base-unit mappings, which must be canonical decimal strings. Integration uses a temporary Verigate API and loopback Hardhat EVM with disposable issuer, deployer and bridge keys. It exercises ALLOW/BLOCK through real HTTP routes, deploys the actual guard source to the simulator, checks runtime-code hash and authority before signing ALLOW, and refuses BLOCK. Deployment/funding transactions stay on the local simulator; no public PortalDot RPC is contacted. This is not live deployment evidence.
