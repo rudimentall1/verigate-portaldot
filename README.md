@@ -52,7 +52,7 @@ Copy .env.example to .env. Keep private keys out of Git.
 npm run preflight
 ```
 
-The preflight uses the endpoint and chain ID recorded in `.env.example`. It reads `eth_chainId` and `eth_blockNumber` and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Remote RPC endpoints must use HTTPS; plain HTTP is allowed only for loopback local development. **A matching chain ID alone does not authenticate an RPC endpoint.** Before using a funded key, independently confirm the RPC endpoint, inspect the expected chain in a trusted explorer, and understand the native-token denomination and EVM/Substrate address mapping. The deployment script repeats its configuration checks when invoked directly.
+The preflight uses the endpoint, chain ID, and `PORTALDOT_GENESIS_HASH` recorded in `.env`. It reads `eth_chainId`, `eth_blockNumber`, and `eth_getBlockByNumber("0x0", false)`; it refuses to continue if the chain ID differs or the genesis block hash does not match the independently confirmed pin. The genesis hash is required, not optional. Get it from PortalDot or a separately trusted explorer/checkpoint; do not blindly copy it from the same RPC being tested. Remote RPC endpoints must use HTTPS; plain HTTP is allowed only for loopback local development. **Neither a matching chain ID nor a matching hash returned by one untrusted RPC cryptographically authenticates that RPC.** Before using a funded key, independently confirm network identity, native gas-token denomination, tPOT base units, and EVM/Substrate account mapping. The direct deployment script repeats the genesis-pin check.
 
 ## Read-only RPC monitor
 
@@ -72,13 +72,13 @@ Copy `.env.example` to the untracked `.env`, preserve the announced RPC settings
 npm run deploy:portaldot
 ```
 
-The command runs network preflight before Hardhat deployment. Its JSON result includes the configured RPC origin, chain ID, contract address, transaction hash, block number, and runtime-code hash. The script labels the endpoint as a configured EVM RPC rather than claiming that the chain ID proves PortalDot identity. Save evidence only after independently confirming the transaction and deployed bytecode in a trusted explorer.
+The command runs preflight before deployment; direct invocation of the deployment script also checks the chain ID and requires the configured genesis-hash pin to match block 0. Its JSON result includes the configured RPC origin, chain ID, genesis hash, contract address, transaction hash, block number, and runtime-code hash. A genesis pin is a wrong-network guardrail, not proof that a potentially malicious RPC is honest. Save evidence only after independently confirming network identity, transaction and deployed bytecode in trusted sources.
 
 After verification, set `PORTALDOT_GUARD_ADDRESS` and the matching `PORTALDOT_GUARD_CODE_HASH` in `.env`. The code hash is checked before every bridge signature to reduce accidental/malicious contract-address substitution. It must be verified against the intended contract deployment; do not blindly copy values from an untrusted RPC response.
 
 ## Bridge signing CLI
 
-The CLI accepts a JSON response from Verigate's POST /v1/actions/authorize endpoint. It independently verifies both Ed25519 signatures against the locally pinned PEM path in `VERIGATE_PUBLIC_KEY_FILE`, then asks the configured `/v1/verify` endpoint for a second check. Before creating the EIP-712 signature, it also connects to `PORTALDOT_RPC_URL` using read-only calls, checks the live chain ID, requires contract bytecode at `PORTALDOT_GUARD_ADDRESS`, compares the runtime-code Keccak hash against `PORTALDOT_GUARD_CODE_HASH`, and verifies the contract's `authoritySigner()` against `AUTHORITY_SIGNER_ADDRESS`. Missing/mismatched values fail closed. Do not blindly trust a public key or RPC endpoint supplied by the same untrusted source; independently verify the issuer-key fingerprint, RPC identity, and deployed code.
+The CLI accepts a JSON response from Verigate's POST /v1/actions/authorize endpoint. It independently verifies both Ed25519 signatures against the locally pinned PEM path in `VERIGATE_PUBLIC_KEY_FILE`, then asks the configured `/v1/verify` endpoint for a second check. Before creating the EIP-712 signature, it also checks the live chain ID, requires a matching independently pinned `PORTALDOT_GENESIS_HASH` for block 0, requires contract bytecode at `PORTALDOT_GUARD_ADDRESS`, compares the runtime-code Keccak hash against `PORTALDOT_GUARD_CODE_HASH`, and verifies the contract's `authoritySigner()` against `AUTHORITY_SIGNER_ADDRESS`. Missing/mismatched values fail closed. Do not blindly trust a public key or RPC endpoint supplied by the same untrusted source; independently verify the issuer-key fingerprint, RPC identity, and deployed code.
 
 ```bash
 npm run bridge:sign -- ./authorization-response.json
