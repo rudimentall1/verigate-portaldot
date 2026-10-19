@@ -53,19 +53,23 @@ A match means the configured endpoint returned an `OriginalAccount` value whose 
 
 ## Exact manual read-only check
 
-With Polkadot CLI 0.7.0, you can also inspect the storage type and query a single key manually:
+With Polkadot CLI 1.25.0, you can inspect the storage type and query a single key manually at the exact finalized block returned by the read-only runtime inspector:
 
 ```bash
 npm install --global polkadot-cli@1.25.0
 export DOT_HOME="$(mktemp -d)"
 dot chain add portaldot-v3 --rpc wss://test-node-v3.portaldot.dev
 dot chain update portaldot-v3
-dot inspect Revive.OriginalAccount --chain portaldot-v3
-dot query Revive.OriginalAccount 0xYourCandidateH160 --chain portaldot-v3 --output json
+dot inspect portaldot-v3.Revive.OriginalAccount
+runtime_json="$(npm run --silent inspect:substrate-runtime)"
+finalized_hash="$(printf '%s' "$runtime_json" | node -e 'let s=""; process.stdin.on("data", c => s += c).on("end", () => console.log(JSON.parse(s).finalizedHead))')"
+dot portaldot-v3.query.Revive.OriginalAccount 0xYourCandidateH160 --output json --at "$finalized_hash"
 rm -rf "$DOT_HOME"
 ```
 
-Never query the storage map without a key in a shared CI workflow; a keyless query may enumerate many mapped accounts. The repository's CI probe only queries a fixed synthetic key.
+The `--at` hash pins the single storage read to the finalized head captured immediately beforehand. The repository's verifier performs the same pin automatically and validates the reported runtime name and ChainId first.
+
+Never query the storage map without a key in shared CI; a keyless query may enumerate mapped accounts. The repository's CI probe only queries a fixed synthetic H160 and synthetic SS58 fixture.
 
 ## Token units and storage-deposit implications
 
