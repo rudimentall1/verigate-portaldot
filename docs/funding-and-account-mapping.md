@@ -45,7 +45,7 @@ This repository implements both offline conversions and explicitly labels them a
 
 - `npm run address:substrate -- 0xYourH160` calculates the deterministic fallback SS58 address `H160 || 0xEE * 12`.
 - `npm run address:inspect -- <SS58-AccountId32> [candidate-H160]` validates and decodes the SS58 checksum, calculates the expected H160 under the current upstream derivation, and compares a candidate address without claiming live mapping.
-- `npm run verify:account-mapping -- <candidate-H160> <registered-SS58>` checks the actual `Revive.OriginalAccount` value for **one H160 key** using the live Substrate RPC. It validates the expected chain ID and SS58 checksum, compares raw AccountId32 bytes, and prints one of `mapping_matches`, `mapping_points_to_another_account`, or `no_mapping_entry`. It uses a temporary Polkadot CLI home, requires no private keys or seed phrase, and submits no extrinsic or transaction. Install the CLI version used by the verified probe with `npm install --global polkadot-cli@0.7.0`.
+- `npm run verify:account-mapping -- <candidate-H160> <registered-SS58>` checks the actual `Revive.OriginalAccount` value for **one H160 key** using the live Substrate RPC. It validates the expected chain ID and SS58 checksum, compares raw AccountId32 bytes, and prints one of `mapping_matches`, `mapping_points_to_another_account`, or `no_mapping_entry`. It uses a temporary Polkadot CLI home, requires no private keys or seed phrase, and submits no extrinsic or transaction. Install the CLI version used by the verified probe with `npm install --global polkadot-cli@1.25.0`.
 
 Run the live verifier locally, not in public CI, when the pair being compared is personally identifying. It logs the two public addresses to that local terminal; the repository's automated workflow only queries a synthetic H160 and never puts a user's wallet pair into an Actions log or artifact.
 
@@ -56,7 +56,7 @@ A match means the configured endpoint returned an `OriginalAccount` value whose 
 With Polkadot CLI 0.7.0, you can also inspect the storage type and query a single key manually:
 
 ```bash
-npm install --global polkadot-cli@0.7.0
+npm install --global polkadot-cli@1.25.0
 export DOT_HOME="$(mktemp -d)"
 dot chain add portaldot-v3 --rpc wss://test-node-v3.portaldot.dev
 dot chain update portaldot-v3
