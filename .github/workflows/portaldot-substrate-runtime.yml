@@ -64,10 +64,16 @@ jobs:
           }
           run_capture dot-chain-list dot chain list
           run_capture revive-pallet-metadata dot inspect Revive --chain portaldot-v3
-          run_capture revive-storage-index dot query.Revive --chain portaldot-v3
-          run_capture OriginalAccount-query-definition dot query.Revive.OriginalAccount --chain portaldot-v3
+          run_capture revive-storage-index dot query Revive --chain portaldot-v3
+          run_capture OriginalAccount-query-definition dot query Revive.OriginalAccount --chain portaldot-v3
           run_capture OriginalAccount-storage-definition dot inspect Revive.OriginalAccount --chain portaldot-v3
           run_capture AddressSuffix-storage-definition dot inspect Revive.AddressSuffix --chain portaldot-v3
+          run_capture revive-chain-id dot const Revive.ChainId --chain portaldot-v3
+          run_capture revive-native-to-eth-ratio dot const Revive.NativeToEthRatio --chain portaldot-v3
+          run_capture revive-auto-map dot const Revive.AutoMap --chain portaldot-v3
+          run_capture revive-deposit-per-byte dot const Revive.DepositPerByte --chain portaldot-v3
+          run_capture revive-deposit-per-item dot const Revive.DepositPerItem --chain portaldot-v3
+          run_capture revive-deposit-per-child-trie-item dot const Revive.DepositPerChildTrieItem --chain portaldot-v3
       - name: Upload runtime metadata evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
