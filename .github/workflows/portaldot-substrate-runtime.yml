@@ -5,6 +5,9 @@ on:
     branches: [main, chore/hardhat3-migration-preview]
     paths:
       - "scripts/substrate-runtime-preflight.mjs"
+      - "scripts/verify-account-mapping.mjs"
+      - "scripts/portaldot-address.js"
+      - "package.json"
       - "test/substrate-runtime-preflight.test.js"
       - ".github/workflows/portaldot-substrate-runtime.yml"
   workflow_dispatch:
@@ -15,7 +18,7 @@ permissions:
 jobs:
   runtime-metadata:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 6
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -77,6 +80,10 @@ jobs:
           run_capture revive-gas-scale dot const Revive.GasScale --chain portaldot-v3
           run_capture revive-code-hash-lockup-deposit-percent dot const Revive.CodeHashLockupDepositPercent --chain portaldot-v3
           run_capture revive-allow-evm-bytecode dot const Revive.AllowEVMBytecode --chain portaldot-v3
+          # Exercise the account-mapping verifier against a fixed synthetic H160
+          # and synthetic SS58 account only. Never put real wallet pairs in CI.
+          synthetic_ss58="$(node -e 'const { encodeSs58AccountId } = require("./scripts/portaldot-address.js"); process.stdout.write(encodeSs58AccountId(Buffer.alloc(32, 0x42), 42));')"
+          run_capture verify-one-key-synthetic npm run --silent verify:account-mapping -- 0x0000000000000000000000000000000000000001 "$synthetic_ss58"
       - name: Upload runtime metadata evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
