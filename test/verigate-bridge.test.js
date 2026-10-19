@@ -749,6 +749,38 @@ describe("On-chain PortalDot guard verification before signing", function () {
     expect(error.message).to.match(/No deployed contract bytecode/);
   });
 
+  it("rejects runtime bytecode that differs from the pinned guard code hash", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: ethers.keccak256("0x6001"),
+      providerFactory: async () => mockProvider(),
+      contractFactory: () => {
+        throw new Error("authoritySigner must not be queried after a code-hash mismatch");
+      }
+    }));
+    expect(error.message).to.match(/does not match PORTALDOT_GUARD_CODE_HASH/);
+  });
+
+  it("requires a pinned runtime-code hash before RPC requests", async function () {
+    let calls = 0;
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: "",
+      providerFactory: async () => {
+        calls += 1;
+        return mockProvider();
+      }
+    }));
+    expect(error.message).to.match(/PORTALDOT_GUARD_CODE_HASH must be/);
+    expect(calls).to.equal(0);
+  });
+
   it("rejects a deployed guard whose authority signer differs from configuration", async function () {
     const error = await capturedError(verifyGuardDeployment({
       rpcUrl,
