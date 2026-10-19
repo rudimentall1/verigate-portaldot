@@ -45,7 +45,6 @@ jobs:
           exit "$inspector_exit_code"
       - name: Decode live Revive storage metadata (read-only)
         id: decode
-        continue-on-error: true
         env:
           PORTALDOT_SUBSTRATE_RPC_URL: wss://test-node-v3.portaldot.dev
           DOT_HOME: ${{ runner.temp }}/polkadot-cli-home
