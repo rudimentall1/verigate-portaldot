@@ -213,14 +213,61 @@ async function main() {
     if (currentGuardBalance < amount) {
       throw new Error("Guard balance changed below the authorized amount before broadcast; no transaction sent.");
     }
+    const currentRelayerBalance = await provider.getBalance(relayerAddress);
+    const currentBudget = calculateExecutionBudget({
+      gasUnits,
+      gasPriceWei,
+      relayerBalanceWei: currentRelayerBalance,
+      safetyMarginBps: SAFETY_MARGIN_BPS
+    });
+    if (!currentBudget.isSufficient) {
+      throw new Error(
+        `Relayer fee budget fell below the required limit before broadcast; no transaction sent. ` +
+        `Current balance: ${formatUnitsExact(currentRelayerBalance, 18, 6)} POT; ` +
+        `required with margin: ${formatUnitsExact(currentBudget.costWithMarginWei, 18, 6)} POT.`
+      );
+    }
 
     const tx = await writableGuard.executeTransfer(
       recipient, amount, nonce, deadline, actionId, authorization.signature,
       { gasLimit: safetyGasLimit, gasPrice: gasPriceWei }
     );
-    const receipt = await tx.wait();
-    if (!receipt || Number(receipt.status) !== 1) {
-      throw new Error(`Execution transaction ${tx.hash} did not confirm successfully.`);
+    let receipt;
+    try {
+      receipt = await tx.wait();
+    } catch {
+      // A timeout or dropped RPC connection after broadcast does not prove that
+      // the transaction failed. Preserve the hash so callers do not resubmit blindly.
+      console.error(JSON.stringify({
+        status: "transaction_submitted_receipt_unavailable",
+        transactionBroadcast: true,
+        transactionHash: tx.hash,
+        note: "The transaction was broadcast but its receipt could not be confirmed. Inspect this hash on the intended network before retrying."
+      }, null, 2));
+      process.exitCode = 3;
+      return;
+    }
+    if (!receipt) {
+      console.error(JSON.stringify({
+        status: "transaction_submitted_receipt_unavailable",
+        transactionBroadcast: true,
+        transactionHash: tx.hash,
+        note: "The transaction was broadcast but no receipt was returned. Inspect this hash on the intended network before retrying."
+      }, null, 2));
+      process.exitCode = 3;
+      return;
+    }
+    if (Number(receipt.status) !== 1) {
+      console.error(JSON.stringify({
+        status: "transaction_reverted",
+        transactionBroadcast: true,
+        transactionHash: receipt.hash || tx.hash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString(),
+        note: "The transaction was mined but did not succeed. Inspect the receipt before considering another attempt."
+      }, null, 2));
+      process.exitCode = 3;
+      return;
     }
 
     let transferEventFound = false;
@@ -241,6 +288,13 @@ async function main() {
       }
     }
 
+    let guardBalanceAfterWei = null;
+    try {
+      guardBalanceAfterWei = (await provider.getBalance(guardAddress)).toString();
+    } catch {
+      // The receipt/event remains the primary execution evidence; don't hide its
+      // transaction hash if the subsequent balance read fails.
+    }
     console.log(JSON.stringify({
       ...result,
       status: transferEventFound ? "transfer_executed" : "transaction_confirmed_event_missing",
@@ -249,7 +303,8 @@ async function main() {
       blockNumber: receipt.blockNumber,
       gasUsed: receipt.gasUsed.toString(),
       effectiveGasPriceWei: receipt.gasPrice?.toString() ?? gasPriceWei.toString(),
-      guardBalanceAfterWei: (await provider.getBalance(guardAddress)).toString(),
+      guardBalanceAfterWei,
+      guardBalanceAfterReadSucceeded: guardBalanceAfterWei !== null,
       transferExecutedEventConfirmed: transferEventFound,
       note: "The transaction was submitted using the explicit --broadcast flag. Preserve its hash and independently verify the receipt on the intended network."
     }, null, 2));
