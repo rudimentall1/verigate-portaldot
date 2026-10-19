@@ -486,7 +486,7 @@ describe("Verigate bridge binding", function () {
     const item = response(2000000000);
     item.execution_authorization.payload.action.metadata.portaldot_v3.amount_base_units = "2000000";
     expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
-      .to.throw(/amount_exact must equal/);
+      .to.throw(/canonical positive base-unit integer strings/);
   });
 
   it("refuses a wrong chain and expired authorization", function () {
