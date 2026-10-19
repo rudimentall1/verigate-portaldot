@@ -125,7 +125,8 @@ try {
   const childEnv = { ...process.env };
   childEnv.PORTALDOT_RPC_URL = `http://127.0.0.1:${address.port}`;
   childEnv.PORTALDOT_CHAIN_ID = chainId.toString();
-  childEnv.PORTALDOT_GENESIS_HASH = genesisBlock.hash;
+  childEnv.PORTALDOT_SUBSTRATE_RPC_URL = "wss://test-node-v3.portaldot.dev";
+  childEnv.PORTALDOT_SUBSTRATE_GENESIS_HASH = "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd";
   delete childEnv.DEPLOYER_PRIVATE_KEY;
   delete childEnv.AUTHORITY_SIGNER_ADDRESS;
 
@@ -184,20 +185,20 @@ try {
   console.log("PASS: no transaction RPC methods were called.");
 
   const unpinnedGenesisEnv = { ...childEnv };
-  delete unpinnedGenesisEnv.PORTALDOT_GENESIS_HASH;
+  delete unpinnedGenesisEnv.PORTALDOT_SUBSTRATE_GENESIS_HASH;
   const countBeforeUnpinned = methodsSeen.length;
   const unpinnedResult = await runDeploy(unpinnedGenesisEnv);
   const unpinnedOutput = `${unpinnedResult.stdout ?? ""}\\n${unpinnedResult.stderr ?? ""}`;
   assert.equal(unpinnedResult.error, undefined, `Unpinned deployment smoke failed to launch: ${unpinnedResult.error?.message}`);
   assert.notEqual(unpinnedResult.status, 0, "Deployment must refuse to run without a pinned genesis hash.");
   assert(
-    unpinnedOutput.includes("PORTALDOT_GENESIS_HASH must be independently confirmed and pinned"),
+    unpinnedOutput.includes("PORTALDOT_SUBSTRATE_GENESIS_HASH must be a pinned 32-byte Substrate genesis hash"),
     `Expected unpinned path to refuse deployment before checking deployer credentials. Output:\\n${unpinnedOutput}`
   );
   assert.equal(
     methodsSeen.slice(countBeforeUnpinned).includes("eth_getBlockByNumber"),
     false,
-    "Without PORTALDOT_GENESIS_HASH, deployment must not require a genesis RPC response."
+    "Without PORTALDOT_SUBSTRATE_GENESIS_HASH, deployment must not require a genesis RPC response."
   );
   console.log("PASS: deployment refuses to proceed without an independently pinned genesis hash; no transaction RPC methods were called.");
 
@@ -247,7 +248,8 @@ try {
 
   const estimatorEnv = {
     ...childEnv,
-    PORTALDOT_GENESIS_HASH: genesisBlock.hash,
+    PORTALDOT_SUBSTRATE_RPC_URL: "wss://test-node-v3.portaldot.dev",
+    PORTALDOT_SUBSTRATE_GENESIS_HASH: "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
     AUTHORITY_SIGNER_ADDRESS: "0x2222222222222222222222222222222222222222",
     DEPLOYMENT_ESTIMATE_FROM: "0x3333333333333333333333333333333333333333"
   };
