@@ -131,7 +131,13 @@ function runDot(dotArgs, env, label) {
   return String(result.stdout ?? "").trim();
 }
 
-export function verifyOriginalAccountMapping({ h160, ss58Address, rpcUrl = DEFAULT_SUBSTRATE_RPC_URL }) {
+export function verifyOriginalAccountMapping({
+  h160,
+  ss58Address,
+  rpcUrl = DEFAULT_SUBSTRATE_RPC_URL,
+  runtimeInspector = inspectSubstrateRuntime,
+  commandRunner = runDot
+}) {
   const input = validateMappingInputs(h160, ss58Address);
   let url;
   try {
@@ -147,7 +153,7 @@ export function verifyOriginalAccountMapping({ h160, ss58Address, rpcUrl = DEFAU
 
   // Fingerprint the reported runtime/block before querying storage. This adds
   // useful context to the local result but does not authenticate the endpoint.
-  const runtimeSnapshot = await inspectSubstrateRuntime({ rpcUrl: url.toString() });
+  const runtimeSnapshot = await runtimeInspector({ rpcUrl: url.toString() });
   if (runtimeSnapshot.runtimeVersion.specName !== "portaldot-v3") {
     fail(`Refusing mapping query: runtime specName is ${String(runtimeSnapshot.runtimeVersion.specName)}, expected portaldot-v3.`);
   }
@@ -158,14 +164,14 @@ export function verifyOriginalAccountMapping({ h160, ss58Address, rpcUrl = DEFAU
     DOT_HOME: dotHome,
     DOT_NO_UPDATE_CHECK: "1"
   };
+  const command = (args, label) => commandRunner(args, env, label);
 
   try {
-    runDot(["chain", "add", "portaldot-v3", "--rpc", url.toString()], env, "Adding temporary PortalDot CLI endpoint");
-    runDot(["chain", "update", "portaldot-v3"], env, "Fetching PortalDot runtime metadata");
+    command(["chain", "add", "portaldot-v3", "--rpc", url.toString()], "Adding temporary PortalDot CLI endpoint");
+    command(["chain", "update", "portaldot-v3"], "Fetching PortalDot runtime metadata");
 
-    const chainIdOutput = runDot(
+    const chainIdOutput = command(
       ["const", "Revive.ChainId", "--chain", "portaldot-v3", "--output", "json"],
-      env,
       "Reading Revive.ChainId"
     );
     const chainIdValue = parseDotJsonValue(chainIdOutput, "Revive.ChainId");
@@ -179,9 +185,8 @@ export function verifyOriginalAccountMapping({ h160, ss58Address, rpcUrl = DEFAU
       fail(`Refusing mapping comparison: live Revive.ChainId is ${actualChainId}, expected ${EXPECTED_PORTALDOT_CHAIN_ID}.`);
     }
 
-    const storageOutput = runDot(
+    const storageOutput = command(
       ["query", "Revive.OriginalAccount", input.h160, "--chain", "portaldot-v3", "--output", "json"],
-      env,
       "Querying the single Revive.OriginalAccount entry"
     );
     const storageValue = parseDotJsonValue(storageOutput, "Revive.OriginalAccount query");
