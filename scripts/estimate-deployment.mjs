@@ -4,7 +4,7 @@ import { ethers as ethersLib } from "ethers";
 
 const require = createRequire(import.meta.url);
 const { requiredNetworkConfig, rpc, rpcResult, readGenesisHash } = require("./preflight.js");
-const { parseHexQuantity, formatUnitsExact, calculateDeploymentCost, resolveEstimateAuthoritySigner } = require("./deployment-estimate.js");
+const { parseHexQuantity, formatUnitsExact, calculateDeploymentCost, resolveEstimateAuthoritySigner, resolveEstimateFromAddresses } = require("./deployment-estimate.js");
 
 async function main() {
   const config = requiredNetworkConfig();
@@ -27,13 +27,17 @@ async function main() {
   const authoritySigner = authoritySelection.address;
 
   // This is a public address only. The script never signs or sends a transaction.
-  const estimateFrom = (process.env.DEPLOYMENT_ESTIMATE_FROM || "").trim() ||
-    (process.env.DEPLOYER_PRIVATE_KEY ? new ethersLib.Wallet(process.env.DEPLOYER_PRIVATE_KEY).address : "");
-  if (!estimateFrom || !ethersLib.isAddress(estimateFrom)) {
-    throw new Error(
-      "Set DEPLOYMENT_ESTIMATE_FROM to the public EVM address that will pay for deployment. " +
-      "Do not paste a private key into this setting."
-    );
+  // If both a public estimate target and local deployer key are configured, require
+  // them to resolve to the same H160 so the quote cannot silently cover another account.
+  const privateKeyAddress = process.env.DEPLOYER_PRIVATE_KEY
+    ? new ethersLib.Wallet(process.env.DEPLOYER_PRIVATE_KEY).address
+    : "";
+  const estimateFrom = resolveEstimateFromAddresses(
+    process.env.DEPLOYMENT_ESTIMATE_FROM,
+    privateKeyAddress
+  );
+  if (!ethersLib.isAddress(estimateFrom)) {
+    throw new Error("The selected deployer address is not a valid EVM address.");
   }
 
   const hre = (await import("hardhat")).default;
