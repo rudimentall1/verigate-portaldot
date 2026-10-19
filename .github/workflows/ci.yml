@@ -57,7 +57,7 @@ jobs:
           python scripts/verigate_local_demo.py --verigate-root "$GITHUB_WORKSPACE/verigate-upstream" --output-dir "$RUNNER_TEMP/verigate-portaldot-evidence"
       - name: Upload isolated integration evidence
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: isolated-verigate-api-evidence
           path: ${{ runner.temp }}/verigate-portaldot-evidence/
