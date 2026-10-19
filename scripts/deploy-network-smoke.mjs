@@ -82,8 +82,8 @@ await new Promise((resolveListen, reject) => {
 try {
   const address = server.address();
   assert(address && typeof address === "object", "Mock RPC did not bind to an ephemeral port.");
-  const cliPath = resolve("node_modules/hardhat/dist/src/cli.js");
-  assert(existsSync(cliPath), `Hardhat CLI not found: ${cliPath}`);
+  const hardhatBin = resolve("node_modules/.bin/hardhat");
+  assert(existsSync(hardhatBin), `Hardhat executable not found: ${hardhatBin}`);
 
   const env = { ...process.env };
   env.PORTALDOT_RPC_URL = `http://127.0.0.1:${address.port}`;
@@ -93,7 +93,7 @@ try {
 
   const result = spawnSync(
     process.execPath,
-    [cliPath, "run", "scripts/deploy.js", "--network", "portaldot"],
+    [hardhatBin, "--config", "./hardhat.config.js", "run", "scripts/deploy.js", "--network", "portaldot"],
     { cwd: process.cwd(), env, encoding: "utf8", timeout: 60_000 }
   );
   const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
