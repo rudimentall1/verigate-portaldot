@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const DEFAULT_SUBSTRATE_RPC_URL = "wss://test-node-v3.portaldot.dev";
 const RPC_TIMEOUT_MS = 10_000;
@@ -266,7 +268,7 @@ async function main() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   main().catch((error) => {
     process.stderr.write(`Substrate runtime inspection failed: ${rpcErrorText(error)}\n`);
     process.exitCode = 1;
