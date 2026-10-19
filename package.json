@@ -16,7 +16,8 @@
     "execute:authorization": "node scripts/execute-authorized-transfer.mjs",
     "monitor:rpc": "node scripts/monitor-rpc.js",
     "estimate:deployment": "npm run compile && node scripts/estimate-deployment.mjs",
-    "address:substrate": "node scripts/portaldot-address.js"
+    "address:substrate": "node scripts/portaldot-address.js",
+    "address:inspect": "node scripts/inspect-account-mapping.js"
   },
   "devDependencies": {
     "dotenv": "^16.4.7",
