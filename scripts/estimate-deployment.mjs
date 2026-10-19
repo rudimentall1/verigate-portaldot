@@ -64,7 +64,22 @@ async function main() {
     safetyMarginBps: 2000
   });
 
+  const deploymentBlockers = [];
+  if (authoritySignerIsPlaceholder) {
+    deploymentBlockers.push("AUTHORITY_SIGNER_ADDRESS is unset; estimate used the non-deployable placeholder 0x0000000000000000000000000000000000000001.");
+  }
+  if (!calc.isSufficient) {
+    deploymentBlockers.push("The selected deployer balance is below the estimated cost plus the 20% safety margin.");
+  }
+  // This command is deliberately an estimate, never a deployment authorization.
+  // It cannot prove account ownership, the H160-to-SS58 mapping, or independently
+  // authenticate the RPC operator, even when the quote and balance look sufficient.
+  deploymentBlockers.push("Readiness is not established by an estimate: independently verify the deployer-to-SS58 mapping, signer ownership, and RPC/network evidence before any separately authorized deployment.");
+
   const result = {
+    readiness: "NOT_READY_FOR_DEPLOYMENT",
+    readinessBlockers: deploymentBlockers,
+    estimateUsableForBudgetPlanning: !authoritySignerIsPlaceholder && calc.isSufficient,
     network: "PortalDot V3 EVM Testnet",
     rpcOrigin: new URL(config.rpcUrl).origin,
     expectedChainId: config.expectedChainId.toString(),
@@ -91,6 +106,7 @@ async function main() {
   };
   console.log(JSON.stringify(result, null, 2));
   if (!calc.isSufficient) process.exitCode = 2;
+  else if (authoritySignerIsPlaceholder) process.exitCode = 3;
 }
 
 main().catch((error) => {
