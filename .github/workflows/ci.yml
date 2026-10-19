@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -33,9 +33,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Check out PortalDot bridge
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Check out Verigate source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: rudimentall1/verigate
           ref: main
