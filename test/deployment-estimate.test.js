@@ -88,6 +88,29 @@ describe("PortalDot deployment estimator arithmetic", function () {
     expect(underfunded.readinessBlockers.some((item) => item.includes("balance"))).to.equal(true);
   });
 
+  it("returns nonzero status when a budget quote is not deployment authorization", function () {
+    expect(deploymentEstimateExitCode({
+      balanceSufficient: false,
+      authoritySignerIsPlaceholder: false,
+      readiness: "NOT_READY_FOR_DEPLOYMENT"
+    })).to.equal(2);
+    expect(deploymentEstimateExitCode({
+      balanceSufficient: true,
+      authoritySignerIsPlaceholder: true,
+      readiness: "NOT_READY_FOR_DEPLOYMENT"
+    })).to.equal(3);
+    expect(deploymentEstimateExitCode({
+      balanceSufficient: true,
+      authoritySignerIsPlaceholder: false,
+      readiness: "NOT_READY_FOR_DEPLOYMENT"
+    })).to.equal(4);
+    expect(deploymentEstimateExitCode({
+      balanceSufficient: true,
+      authoritySignerIsPlaceholder: false,
+      readiness: "READY_FOR_DEPLOYMENT"
+    })).to.equal(0);
+  });
+
   it("compares the 20 percent deployment-cost margin against balance exactly", function () {
     const enough = calculateDeploymentCost({
       gasUnits: 1000000n,
