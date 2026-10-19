@@ -27,6 +27,8 @@ jobs:
         run: npm test
       - name: Compile contracts
         run: npm run compile
+      - name: Verify deployment uses selected PortalDot network and never sends transactions
+        run: node scripts/deploy-network-smoke.mjs
 
   verigate-integration:
     runs-on: ubuntu-latest
