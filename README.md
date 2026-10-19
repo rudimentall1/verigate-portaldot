@@ -66,13 +66,15 @@ The monitor requests only `eth_chainId` and `eth_blockNumber`, reports the check
 
 ## Funding the EVM deployer address
 
-PortalDot V3 maps an EVM H160 address to a Substrate AccountId32. To print the documented Substrate twin for an EVM account without entering a private key:
+Substrate SS58 accounts and EVM H160 addresses are different account forms. The deterministic fallback SS58 account for an H160 is derived by appending twelve `0xEE` bytes, but native Substrate accounts may require a stateful `pallet_revive.map_account` mapping before they can act as an origin for EVM-compatible contracts. See [funding and account mapping](docs/funding-and-account-mapping.md) and the [Polkadot pallet-revive account guide](https://docs.polkadot.com/smart-contracts/for-eth-devs/accounts/). Treat the Polkadot guide as general implementation context, not proof of every PortalDot V3 runtime setting.
+
+To print the deterministic fallback SS58 address for an EVM account without entering a private key:
 
 ```bash
 npm run address:substrate -- 0xYourEvmAddress
 ```
 
-Send test POT to the returned SS58 account through the [PortalDot Node Console](https://node-console.portaldot.dev/) or your Substrate wallet. Before a substantial transfer, compare the returned account with the runtime mapping API or a small test transfer. The tool derives a public address only; it cannot sign or move funds.
+Before moving more than a small test amount, verify the derived recipient and compare the actual transfer extrinsic/events with `eth_getBalance` for the H160. Do not infer the reason for a balance difference without transaction evidence.
 
 ## Read-only deployment cost estimate
 
