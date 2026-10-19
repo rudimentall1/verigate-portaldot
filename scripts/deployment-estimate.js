@@ -81,6 +81,23 @@ function calculateDeploymentCost({ gasUnits, gasPriceWei, balanceWei, safetyMarg
   };
 }
 
+function buildDeploymentReadiness({ authoritySignerIsPlaceholder, balanceSufficient }) {
+  const readinessBlockers = [];
+  if (authoritySignerIsPlaceholder) {
+    readinessBlockers.push("AUTHORITY_SIGNER_ADDRESS is unset; estimate used the non-deployable placeholder 0x0000000000000000000000000000000000000001.");
+  }
+  if (balanceSufficient !== true) {
+    readinessBlockers.push("The selected deployer balance is below the estimated cost plus the 20% safety margin, or sufficiency could not be established.");
+  }
+  // Estimation alone cannot prove wallet ownership, H160-to-SS58 mapping, or RPC authenticity.
+  readinessBlockers.push("Readiness is not established by an estimate: independently verify the deployer-to-SS58 mapping, signer ownership, and RPC/network evidence before any separately authorized deployment.");
+  return {
+    readiness: "NOT_READY_FOR_DEPLOYMENT",
+    readinessBlockers,
+    estimateUsableForBudgetPlanning: !authoritySignerIsPlaceholder && balanceSufficient === true
+  };
+}
+
 function substrateRawToEvmWei(substrateRaw) {
   const text = typeof substrateRaw === "string" ? substrateRaw : String(substrateRaw);
   if (!/^(0|[1-9][0-9]*)$/.test(text)) throw new Error("Substrate raw balance must be a canonical non-negative decimal integer string.");
