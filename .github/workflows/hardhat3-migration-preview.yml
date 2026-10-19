@@ -126,18 +126,6 @@ jobs:
           fs.writeFileSync('scripts/deploy.mjs', migrated);
           NODE
           rm -rf artifacts cache dist
-          for file in .github/workflows/test.yml .github/workflows/ci.yml .github/workflows/dependency-audit.yml; do
-            sed -i 's/node-version: 20/node-version: 22/g' "$file"
-          done
-          node <<'NODE'
-          const fs = require('node:fs');
-          const file = '.github/workflows/test.yml';
-          let workflow = fs.readFileSync(file, 'utf8');
-          if (!/^  workflow_dispatch:/m.test(workflow)) {
-            workflow = workflow.replace('on:\n  push:\n  pull_request:\n', 'on:\n  push:\n  pull_request:\n  workflow_dispatch:\n');
-          }
-          fs.writeFileSync(file, workflow);
-          NODE
           cp hardhat.config.ts "$RUNNER_TEMP/hardhat3-preview/hardhat.config.candidate.ts"
       - name: Install candidate dependencies reproducibly
         shell: bash
@@ -205,7 +193,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      actions: write
     steps:
       - name: Check out the exact preview commit
         uses: actions/checkout@v4
@@ -229,12 +216,3 @@ jobs:
           git add -A
           git commit -m "chore: migrate PortalDot bridge to Hardhat 3"
           git push origin HEAD:chore/hardhat3-migration-preview
-      - name: Dispatch normal CI for the committed migration
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh workflow run test.yml --ref chore/hardhat3-migration-preview
-          gh workflow run ci.yml --ref chore/hardhat3-migration-preview
-          gh workflow run dependency-audit.yml --ref chore/hardhat3-migration-preview
