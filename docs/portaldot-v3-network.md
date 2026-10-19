@@ -64,9 +64,9 @@ npm run estimate:deployment
 
 It compiles the current contract, builds constructor init code, and calls `eth_estimateGas`, `eth_gasPrice`, and `eth_getBalance`. It includes a 20% safety margin and never signs or broadcasts. Rerun immediately before any explicitly authorized deployment with the actual authority signer and independently verified deployer H160. Runtime deposit constants may account for part of the unusually large estimate, but the prior preliminary quote has not yet been reconciled into a verified fee/deposit breakdown.
 
-## Optional genesis hash pin
+## Mandatory Substrate genesis pin
 
-`PORTALDOT_GENESIS_HASH` is optional additional protection. The Substrate endpoint reported genesis hash `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd` during inspection, but that response has not been independently authenticated. Do not hard-code it as a trust pin without independent confirmation. An untrusted RPC can lie about its own genesis hash, chain ID, balance and storage responses.
+`PORTALDOT_SUBSTRATE_RPC_URL` identifies the Substrate WebSocket endpoint, and `PORTALDOT_SUBSTRATE_GENESIS_HASH` must contain a 32-byte genesis hash independently confirmed through a trusted PortalDot source before preflight, estimation, deployment or bridge signing. The endpoint reported `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd` during inspection, but that response alone has not been independently authenticated. Do not treat that observed value as a trusted pin without confirmation. This Substrate hash is not an EVM block hash; the EVM chain ID is checked separately. An untrusted RPC can lie about its own genesis hash, chain ID, balance and storage responses.
 
 ## Evidence limitations
 
