@@ -1,0 +1,75 @@
+name: Dependency remediation preview
+
+on:
+  push:
+    branches:
+      - chore/dependency-remediation-preview
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/dependency-remediation-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install baseline locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Try non-breaking npm audit fixes (never force major upgrades)
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/dependency-remediation"
+          set +e
+          npm audit fix --ignore-scripts --no-fund > "$RUNNER_TEMP/dependency-remediation/audit-fix.log" 2>&1
+          fix_status=$?
+          echo "$fix_status" > "$RUNNER_TEMP/dependency-remediation/audit-fix.exit-code"
+          cp package.json package-lock.json "$RUNNER_TEMP/dependency-remediation/"
+          echo "npm audit fix exit code: $fix_status"
+          cat "$RUNNER_TEMP/dependency-remediation/audit-fix.log"
+          exit 0
+      - name: Reinstall candidate lockfile reproducibly
+        shell: bash
+        run: |
+          set +e
+          npm ci --no-fund > "$RUNNER_TEMP/dependency-remediation/npm-ci.log" 2>&1
+          status=$?
+          echo "$status" > "$RUNNER_TEMP/dependency-remediation/npm-ci.exit-code"
+          cat "$RUNNER_TEMP/dependency-remediation/npm-ci.log"
+          exit "$status"
+      - name: Test candidate and compile contracts
+        shell: bash
+        run: |
+          set +e
+          npm test > "$RUNNER_TEMP/dependency-remediation/npm-test.log" 2>&1
+          test_status=$?
+          echo "$test_status" > "$RUNNER_TEMP/dependency-remediation/npm-test.exit-code"
+          cat "$RUNNER_TEMP/dependency-remediation/npm-test.log"
+          npm run compile > "$RUNNER_TEMP/dependency-remediation/compile.log" 2>&1
+          compile_status=$?
+          echo "$compile_status" > "$RUNNER_TEMP/dependency-remediation/compile.exit-code"
+          cat "$RUNNER_TEMP/dependency-remediation/compile.log"
+          npm audit --json > "$RUNNER_TEMP/dependency-remediation/npm-audit.json"
+          audit_status=$?
+          echo "$audit_status" > "$RUNNER_TEMP/dependency-remediation/npm-audit.exit-code"
+          node -e 'const a=require(process.argv[1]); console.log(JSON.stringify(a.metadata?.vulnerabilities ?? null,null,2))' "$RUNNER_TEMP/dependency-remediation/npm-audit.json" || true
+          if [ "$test_status" -ne 0 ] || [ "$compile_status" -ne 0 ]; then exit 1; fi
+      - name: Upload candidate lockfile and reports for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-remediation-preview
+          path: ${{ runner.temp }}/dependency-remediation/
+          if-no-files-found: error
+          retention-days: 14
