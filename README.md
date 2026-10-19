@@ -64,6 +64,16 @@ npm run monitor:rpc
 
 The monitor requests only `eth_chainId` and `eth_blockNumber`, reports the check time, RPC origin, response latency, and block height as JSON, and exits non-zero on a chain-ID mismatch or RPC error. It sends no transactions, requires no private key, and is not a persistent background service. Use a scheduler or uptime platform only after reviewing its security and logging settings.
 
+## Funding the EVM deployer address
+
+PortalDot V3 maps an EVM H160 address to a Substrate AccountId32. To print the documented Substrate twin for an EVM account without entering a private key:
+
+```bash
+npm run address:substrate -- 0xYourEvmAddress
+```
+
+Send test POT to the returned SS58 account through the [PortalDot Node Console](https://node-console.portaldot.dev/) or your Substrate wallet. Before a substantial transfer, compare the returned account with the runtime mapping API or a small test transfer. The tool derives a public address only; it cannot sign or move funds.
+
 ## Read-only deployment cost estimate
 
 Before funding or broadcasting a deployment, estimate the actual compiled `PortalDotAgentGuard` creation bytecode against the configured testnet:
