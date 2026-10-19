@@ -54,6 +54,16 @@ npm run preflight
 
 The preflight uses the endpoint and chain ID from the PortalDot team announcement recorded in `.env.example`. It reads `eth_chainId` and `eth_blockNumber` and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Remote RPC endpoints must use HTTPS; plain HTTP is allowed only for loopback local development. It reads eth_chainId and eth_blockNumber and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Do not deploy or use a funded deployment key until preflight succeeds and token denomination and wallet mapping are understood. The deployment script repeats the configuration checks so it also fails closed when invoked directly.
 
+## Read-only RPC monitor
+
+Run a one-shot, read-only health check against the configured PortalDot EVM RPC:
+
+```bash
+npm run monitor:rpc
+```
+
+The monitor requests only `eth_chainId` and `eth_blockNumber`, reports the check time, RPC origin, response latency, and block height as JSON, and exits non-zero on a chain-ID mismatch or RPC error. It sends no transactions, requires no private key, and is not a persistent background service. Use a scheduler or uptime platform only after reviewing its security and logging settings.
+
 ## Contract deployment
 
 Copy `.env.example` to the untracked `.env`, preserve the announced RPC settings, and set `DEPLOYER_PRIVATE_KEY` and `AUTHORITY_SIGNER_ADDRESS` only when ready to deploy. The deployer and authority signer must be separate keys: the deployer pays deployment gas, while the authority signer is the dedicated EVM key used by the bridge. The deployment script refuses a zero authority address or the same address for both roles.
