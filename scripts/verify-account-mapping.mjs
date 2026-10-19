@@ -1,8 +1,9 @@
 import { createRequire } from "node:module";
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const { decodeSs58AccountId } = require("./portaldot-address.js");
@@ -193,7 +194,7 @@ function main(args = process.argv.slice(2)) {
   process.stdout.write(JSON.stringify(result, null, 2) + "\n");
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === new URL(import.meta.url).pathname) {
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     main();
   } catch (error) {
