@@ -1,70 +1,68 @@
 # Three-minute Hacker House demo
 
-**Goal:** show a working authorization flow, not just a contract idea. The current recording is a local integration demo. It must not be presented as a live PortalDot deployment.
+**Goal:** demonstrate the full authorization path from Verigate decision to an exact native-token transfer. The current demo runs entirely on temporary local services and must not be presented as a live PortalDot deployment.
 
 ## Evidence to use
 
-- [Latest successful PortalDot CI run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39189834992)
-- [Latest successful unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39189834946)
-- Download the `isolated-verigate-api-evidence` artifact from the PortalDot CI run. It contains `summary.json`, `allow-response.json`, `block-response.json`, and `bridge-signature-dry-run.json`. The artifact is retained for 14 days by GitHub Actions; rerun the workflow to regenerate it later.
+Open the repository's [GitHub Actions runs](https://github.com/rudimentall1/verigate-portaldot/actions) and choose the latest successful branch-head PortalDot CI run. Download the isolated-verigate-api-evidence artifact. It includes the ALLOW response, BLOCK response, EIP-712 authorization and summary.json with simulation and local execution evidence.
 
-## Recording plan (target: 2 minutes 35 seconds)
+## Recording plan (target: 2 minutes 40 seconds)
 
-### 0:00–0:20 — Problem and boundary
+### 0:00–0:20 — Problem and trust boundary
 
-**Show:** repository front page and the top of this README.
+**Show:** repository front page and [architecture diagram](architecture.md).
 
 **Say:**
-> AI agents should not execute a payment just because a model proposes it. Verigate makes the authorization decision. This PortalDot bridge accepts a narrowly defined native-token transfer only after the signed decision and execution authorization both validate.
+> An agent's proposal is not sufficient authority to move funds. Verigate evaluates the action and signs its decision; the bridge independently verifies both Ed25519 artifacts and only prepares an EIP-712 transfer authorization for ALLOW.
 
-### 0:20–0:45 — What is implemented
+### 0:20–0:45 — On-chain guard and executor
 
-**Show:** [architecture diagram](architecture.md), then `contracts/PortalDotAgentGuard.sol`.
-
-**Say:**
-> The bridge verifies both Ed25519 signatures locally against a pinned issuer public key and asks the API to validate them again. A test also confirms that an invalid signature is refused even when a mocked API replies `valid: true`. It binds the authorization to the exact recipient, amount, chain ID and expiry. The contract verifies an EIP-712 signature, rejects replayed nonces and exposes no arbitrary-call interface. The contract trusts the dedicated EVM bridge signer.
-
-### 0:45–1:25 — Reproducible integration result
-
-**Show:** the latest PortalDot CI run. Expand the `verigate-integration` job and show that `Run isolated Verigate ALLOW/BLOCK integration` and `Upload isolated integration evidence` passed. Then open `summary.json` from the downloaded artifact.
-
-**Point out these fields:**
-- `allow.decision = ALLOW`
-- `allow.decision_receipt_signature_valid = true`
-- `allow.execution_authorization_signature_valid = true`
-- `bridge_cli_allow_dry_run.signature_created = true`
-- `bridge_cli_allow_dry_run.deployed_on_isolated_loopback_evm = true`
-- `bridge_cli_allow_dry_run.runtime_code_hash_verified` records the local guard runtime-code hash
-- `block.decision = BLOCK`
-- `block.bridge_cli_refused_block = true`
+**Show:** contracts/PortalDotAgentGuard.sol, then scripts/execute-authorized-transfer.mjs.
 
 **Say:**
-> CI launches a temporary Verigate API with disposable test keys. The ALLOW case produces an EIP-712 signature only after the bridge validates the guard's configured chain ID, pinned runtime-code hash and authority signer. BLOCK is refused. Deployment/funding happens only in the disposable loopback Hardhat EVM; no public PortalDot RPC is used.
+> The guard accepts only a short-lived EIP-712 signature from its dedicated authority signer. Recipient, amount, nonce, deadline, chain and contract are bound. The executor validates the signature, checks the deployed runtime-code hash and authority, checks funds and relayer fees, and simulates before any broadcast. It is dry-run by default; a transaction requires an explicit --broadcast flag.
 
-### 1:25–1:55 — Contract safety checks
+### 0:45–1:30 — Reproducible full-path local integration
 
-**Show:** successful unit-test workflow or the `PortalDotAgentGuard` test file, focusing on replay protection, changed recipient/amount, expiry and invalid signatures.
+**Show:** the verigate-integration job and the downloaded summary.json.
 
-**Say:**
-> The local Hardhat tests cover replay, altered transfer details, expiry, malformed signatures, reentrancy and failed native transfers. Passing these tests proves the local contract behavior, not compatibility with a live PortalDot network.
-
-### 1:55–2:25 — Current limitation and next milestone
-
-**Show:** [RPC preflight section in README](../README.md#portaldot-v3-preflight) and `.env.example`, noting that the reported endpoint and chain ID still need official independent confirmation.
-
-**Say:**
-> The repository records reported V3 EVM RPC settings, but the canonical announcement source and compatibility have not yet been independently confirmed. A matching chain ID alone does not authenticate a network; we will get direct PortalDot confirmation before any deployment or test-fund use. The bridge also requires `VERIGATE_PUBLIC_KEY_FILE` to point to the trusted issuer PEM; its fingerprint must be verified independently. No transaction was sent to public PortalDot. CI deploys/funds only the temporary local EVM, and it does not execute the bridge signature via `executeTransfer`.
-
-### 2:25–2:35 — Close
-
-**Show:** public repository URL.
+Point out:
+- allow.decision = ALLOW and both Verigate signature checks are true.
+- block.decision = BLOCK and block.bridge_cli_refused_block = true.
+- executor_dry_run.status = simulation_passed.
+- executor_dry_run.transaction_broadcast = false.
+- executor_dry_run.guard_balance_unchanged = true.
+- local_execution.status = transfer_executed.
+- local_execution.transfer_executed_event_confirmed = true.
+- local_execution.balance_delta_matches_authorized_amount = true.
 
 **Say:**
-> The code, CI runs and reproducible local evidence are public. The live-network step is explicitly tracked rather than claimed prematurely.
+> CI starts a disposable Verigate API and a temporary Hardhat EVM bound to loopback. The signed ALLOW first passes a read-only simulation, then the executor broadcasts it only to that local EVM. The guard emits the exact transfer event and the recipient's balance delta equals the authorized amount. BLOCK is refused. These are local integration transactions, not PortalDot testnet transactions.
+
+### 1:30–1:55 — Contract protections
+
+**Show:** tests for replay protection, recipient/amount modification, expiry, malformed signatures and reentrancy.
+
+**Say:**
+> The tests cover altered transfer details, replay, expired authorization, invalid signatures, reentrancy and failed native transfers. They prove the tested code path on a local simulator, not the runtime configuration or availability of the public network.
+
+### 1:55–2:25 — What remains before live testnet use
+
+**Show:** deployment-cost-evidence.md, the [RPC preflight section](../README.md#portaldot-v3-preflight), and the open draft [PR #10](https://github.com/rudimentall1/verigate-portaldot/pull/10).
+
+**Say:**
+> The live deploy is still intentionally separate. The final authority signer, independently trusted contract fingerprint and current deployment budget must be configured and checked before deploying. No live contract address or testnet transaction is claimed. The executor's public-network broadcast path is opt-in and should not be used until the network configuration and deployed contract are verified.
+
+### 2:25–2:40 — Close
+
+**Show:** public repository and successful Actions run.
+
+**Say:**
+> The implementation, automated checks and local end-to-end evidence are public. The remaining live-network deployment is tracked honestly rather than being represented by a local simulation.
 
 ## Do not show or claim
 
-- Do not show `.env`, private keys, API tokens, or a real wallet balance.
-- Do not present the temporary local guard deployment, simulated chain ID, or dry-run signature as a live PortalDot deployment.
-- Do not claim a PortalDot transaction, RPC connection, testnet deployment or explorer verification.
-- Keep the whole video under three minutes. If live network details are confirmed later, replace the relevant segment with an actual preflight and verified testnet interaction.
+- Never show .env, private keys, API tokens or a real wallet balance.
+- Do not present the local guard, local transaction hashes or simulated chain ID as PortalDot testnet evidence.
+- Do not claim a public transfer, testnet deployment or explorer verification.
+- Keep the video under three minutes. If live deployment later completes, replace the relevant segment with independently verified transaction evidence.
