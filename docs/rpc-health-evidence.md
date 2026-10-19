@@ -61,3 +61,9 @@ Obtain confirmation from the [official PortalDot Discord](https://discord.gg/por
 
 Until then, this repo's status is: public RPC responsive and CI checks green, but EVM network identity and spending configuration are **not independently authenticated**. Do not deploy or send test funds solely on the basis of a matching chain ID or a green health check.
 
+## Additional software guardrail added on the preview branch
+
+The preflight and deployment path now require `PORTALDOT_GENESIS_HASH`: an independently confirmed 32-byte block-0 hash. Preflight reads `eth_getBlockByNumber("0x0", false)` and refuses to continue if that response is missing, malformed, or does not match the pin. Direct Hardhat deployment checks the same pin, and the bridge refuses to sign if the configured RPC's genesis response does not match.
+
+This is a fail-closed configuration guard against missing pins and ordinary wrong-network misconfiguration, **not cryptographic proof that a remote RPC is honest**: a malicious RPC can lie about multiple JSON-RPC responses. Do not fill in the pin by blindly copying the same untrusted endpoint's answer. Obtain a trusted value from PortalDot or a separately trusted explorer/checkpoint, then independently compare it. Until that value is confirmed and configured, deployment and bridge signing are expected to stop.
+
