@@ -121,7 +121,7 @@ describe("Read-only Revive OriginalAccount verifier", function () {
     expect(result.reportedChainId).to.equal("420420777");
     expect(result.queryScope).to.equal("one H160 key only");
     expect(result.transactionSubmitted).to.equal(false);
-    expect(calls.filter((call) => call.args[0] === "query")).to.have.lengthOf(1);
+    expect(calls.filter((call) => String(call.args[0]).includes(".query.Revive.OriginalAccount"))).to.have.lengthOf(1);
     expect(calls.some((call) => call.args[0] === "query" && call.args.length === 2)).to.equal(false);
     expect(calls.every((call) => call.env.DOT_NO_UPDATE_CHECK === "1")).to.equal(true);
   });
