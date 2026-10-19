@@ -57,17 +57,30 @@ async function main() {
     from: deployerAddress,
     data: deploymentTx.data
   }]);
-  const gasPriceHex = await ethers.provider.send("eth_gasPrice", []);
+  const estimatedGas = parseHexQuantity(estimatedGasHex, "eth_estimateGas result");
+  const feeData = await ethers.provider.getFeeData();
+  if (feeData.maxFeePerGas === null || feeData.maxPriorityFeePerGas === null) {
+    throw new Error("Refusing deployment: RPC did not provide complete EIP-1559 fee data; no transaction sent.");
+  }
+  const maxFeePerGas = feeData.maxFeePerGas;
+  const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+  if (maxFeePerGas <= 0n || maxPriorityFeePerGas < 0n || maxPriorityFeePerGas > maxFeePerGas) {
+    throw new Error("Refusing deployment: RPC returned invalid EIP-1559 fee parameters; no transaction sent.");
+  }
   const balanceHex = await ethers.provider.send("eth_getBalance", [deployerAddress, "latest"]);
   const budget = calculateDeploymentCost({
-    gasUnits: parseHexQuantity(estimatedGasHex, "eth_estimateGas result"),
-    gasPriceWei: parseHexQuantity(gasPriceHex, "eth_gasPrice result"),
+    gasUnits: estimatedGas,
+    gasPriceWei: maxFeePerGas,
     balanceWei: parseHexQuantity(balanceHex, "eth_getBalance result"),
     safetyMarginBps: 2000
   });
   console.log(JSON.stringify({
     preDeploymentBudgetCheck: true,
     deployer: deployerAddress,
+    feeModel: "EIP-1559 maxFeePerGas cap",
+    estimatedGasUnits: estimatedGas.toString(),
+    maxFeePerGasWei: maxFeePerGas.toString(),
+    maxPriorityFeePerGasWei: maxPriorityFeePerGas.toString(),
     estimatedCostPot: formatUnitsExact(budget.estimatedCostWei, 18, 6),
     requiredWithSafetyMarginPot: formatUnitsExact(budget.costWithMarginWei, 18, 6),
     deployerBalancePot: formatUnitsExact(budget.balanceWei, 18, 6),
@@ -81,7 +94,13 @@ async function main() {
     );
   }
 
-  const guard = await factory.deploy(authoritySigner);
+  // Pass the exact fee caps used in the budget check; do not let ethers silently
+  // populate a different maxFeePerGas after the balance guard has passed.
+  const guard = await factory.deploy(authoritySigner, {
+    gasLimit: estimatedGas,
+    maxFeePerGas,
+    maxPriorityFeePerGas
+  });
   const tx = guard.deploymentTransaction();
   const receipt = await tx.wait();
   const contractAddress = await guard.getAddress();
