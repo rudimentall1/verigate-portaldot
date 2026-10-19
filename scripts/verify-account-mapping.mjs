@@ -186,8 +186,13 @@ export async function verifyOriginalAccountMapping({
     }
 
     const storageOutput = command(
-      ["query", "Revive.OriginalAccount", input.h160, "--chain", "portaldot-v3", "--output", "json"],
-      "Querying the single Revive.OriginalAccount entry"
+      [
+        "query", "Revive.OriginalAccount", input.h160,
+        "--chain", "portaldot-v3",
+        "--output", "json",
+        "--at", runtimeSnapshot.finalizedHead
+      ],
+      "Querying the single Revive.OriginalAccount entry at the captured finalized block"
     );
     const storageValue = parseDotJsonValue(storageOutput, "Revive.OriginalAccount query");
     const result = compareOriginalAccountMapping({
