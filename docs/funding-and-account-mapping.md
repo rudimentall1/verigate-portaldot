@@ -82,7 +82,7 @@ Never query the storage map without a key in shared CI; a keyless query may enum
 
 The hackathon account supplied to PortalDot and funded by the team is the user's original Substrate address. Do not replace it in the application, and do not send further test funds to a derived fallback address based only on offline conversion.
 
-A previous investigation saw a difference between the Substrate wallet's transferable balance and an EVM RPC balance after a small transfer. That observation alone does not establish which H160 corresponds to the funded SS58 account or explain the balance difference. The live storage key/value types and important runtime constants are now known; the specific `OriginalAccount[H160]` entry for the candidate pair still needs to be checked. No additional transfer is a prerequisite for that query.
+A read-only check of the wallet-displayed H160 returned `no_mapping_entry` for the registered SS58 account. A separate H160 produced by the current upstream offline derivation returned `mapping_matches` for that SS58 account at the endpoint's reported finalized block. A separate EVM balance read returned non-zero balances for both H160s. These observations do not prove that the wallet-displayed H160 is incorrect, nor that the user controls the private key for the H160 found in storage. The two addresses must not be treated as interchangeable. Do not send further funds, call `map_account`, or use the derived H160 as a signer based on these observations alone. No transfer is needed to continue read-only investigation.
 
 Before any further funding or deployment:
 1. Run the one-key `verify:account-mapping` check locally against the candidate H160 and the registered SS58 account.
