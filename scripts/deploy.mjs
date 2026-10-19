@@ -1,4 +1,7 @@
 import "dotenv/config";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { parseExpectedGenesisHash, verifyGenesisHash } = require("./network-identity.js");
 const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
 
@@ -17,6 +20,8 @@ async function main() {
   if (network.chainId !== expectedChainId) {
     throw new Error(`Refusing deployment: expected chain ID ${expectedChainId}, got ${network.chainId}`);
   }
+  const expectedGenesisHash = parseExpectedGenesisHash(process.env.PORTALDOT_GENESIS_HASH);
+  const actualGenesisHash = await verifyGenesisHash(ethers.provider, expectedGenesisHash);
   if (!process.env.DEPLOYER_PRIVATE_KEY) {
     throw new Error("DEPLOYER_PRIVATE_KEY is missing. Put it in an untracked .env file; never commit it.");
   }
@@ -51,6 +56,7 @@ async function main() {
     network: "Configured EVM RPC (identity not proven by chain ID alone)",
     rpcOrigin: new URL(rpcUrl).origin,
     chainId: network.chainId.toString(),
+    genesisHash: actualGenesisHash,
     contract: "PortalDotAgentGuard",
     address: contractAddress,
     runtimeCodeHash: ethers.keccak256(runtimeCode),
