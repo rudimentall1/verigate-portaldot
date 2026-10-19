@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Prepare isolated candidate
         shell: bash
         run: |
@@ -33,6 +33,7 @@ jobs:
           const fs = require('node:fs');
           const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
           p.devDependencies.hardhat = '^3.20.0';
+          p.engines.node = '>=22.13.0';
           p.devDependencies['@nomicfoundation/hardhat-toolbox'] = '^7.0.0';
           fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
           NODE
