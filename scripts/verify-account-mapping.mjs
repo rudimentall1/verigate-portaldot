@@ -219,23 +219,21 @@ export async function verifyOriginalAccountMapping({
   }
 }
 
-function main(args = process.argv.slice(2)) {
+async function main(args = process.argv.slice(2)) {
   if (args.length < 2 || args.length > 3) {
     fail("Usage: npm run verify:account-mapping -- <candidate-H160> <registered-SS58-AccountId32> [wss://rpc]");
   }
-  const result = verifyOriginalAccountMapping({
+  const result = await verifyOriginalAccountMapping({
     h160: args[0],
     ss58Address: args[1],
     rpcUrl: args[2] || DEFAULT_SUBSTRATE_RPC_URL
   });
-  process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+  process.stdout.write(JSON.stringify(result, null, 2) + "\\n");
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try {
-    main();
-  } catch (error) {
-    process.stderr.write(`Account mapping verification stopped: ${error.message}\n`);
+  main().catch((error) => {
+    process.stderr.write(`Account mapping verification stopped: ${error.message}\\n`);
     process.exitCode = 1;
-  }
+  });
 }
