@@ -102,7 +102,17 @@ Before funding or broadcasting a deployment, estimate the actual compiled `Porta
 npm run estimate:deployment
 ```
 
-The estimator verifies the configured chain ID, builds constructor init code, calls only `eth_estimateGas`, `eth_gasPrice`, and `eth_getBalance`, and prints estimated cost in EVM POT units, live balance, and a 20% safety-margin result. It requires the public EVM address of the account that will deploy (or derives it locally from `DEPLOYER_PRIVATE_KEY`); the key is never sent, and the estimator does not sign or broadcast a transaction. If `AUTHORITY_SIGNER_ADDRESS` is unset, it uses a clearly labelled placeholder solely for a preliminary cost probe; this is not a deployment configuration. If the node refuses estimation because the account is underfunded, treat the estimate as inconclusive and re-run after funding the account. The estimate may include PortalDot's code-storage deposit, so use this project's current compiled bytecode rather than a generic sample size.
+The estimator verifies the configured chain ID and pinned Substrate genesis, builds constructor init code, calls `eth_estimateGas`, reads the latest block's `baseFeePerGas`, calls `eth_maxPriorityFeePerGas` and `eth_getBalance`, and prints estimated cost in EVM POT units, live balance, and a 20% safety-margin result. It requires the public EVM address of the account that will deploy (or derives it locally from `DEPLOYER_PRIVATE_KEY`); the key is never sent, and the estimator does not sign or broadcast a transaction. If `AUTHORITY_SIGNER_ADDRESS` is unset, it uses a clearly labelled placeholder solely for a preliminary cost probe; this is not a deployment configuration. If the node refuses estimation because the account is underfunded, treat the estimate as inconclusive and re-run after funding the account. The estimate may include PortalDot's code-storage deposit, so use this project's current compiled bytecode rather than a generic sample size.
+
+## Local deployer identity check
+
+Before any live RPC quote or deployment, compare the EVM address shown by the wallet with the address derived locally from the untracked `.env` `DEPLOYER_PRIVATE_KEY`:
+
+```bash
+npm run verify:deployer-address -- 0xWalletDisplayedEvmAddress --redact
+```
+
+The command derives the deployer address locally, prints no private key, and makes no RPC request or transaction. It compares the derived address with the supplied wallet address and, when configured, `DEPLOYMENT_ESTIMATE_FROM`; a configured authority signer must be a distinct non-zero address. A match is only a local key/address check: it does not verify PortalDot mapping, authenticate the RPC, estimate fees, or authorize deployment. Never paste a private key or seed phrase into chat.
 
 ## Contract deployment
 
@@ -112,7 +122,7 @@ Copy `.env.example` to the untracked `.env`, preserve the announced RPC settings
 npm run deploy:portaldot
 ```
 
-The command runs preflight before deployment; direct invocation also checks chain ID and any configured genesis-hash pin. Immediately before broadcasting, the deploy script now requests the exact constructor `eth_estimateGas`, `eth_gasPrice`, and deployer balance, computes a 20% safety margin, and refuses to broadcast if the budget is insufficient or any quote call fails. This is a guardrail, not a guarantee that the RPC is honest or fees cannot change. Its JSON result includes the configured RPC origin, chain ID, observed genesis hash, contract address, transaction hash, block number, and runtime-code hash. A pin is an extra wrong-network guardrail, not proof that a potentially malicious RPC is honest. Save evidence only after independently confirming network identity, transaction and deployed bytecode in trusted sources.
+The command runs preflight before deployment; direct invocation also checks chain ID and any configured genesis-hash pin. Immediately before broadcasting, the deploy script now requests the exact constructor `eth_estimateGas`, the latest block's `baseFeePerGas`, `eth_maxPriorityFeePerGas`, and deployer balance, computes a 20% safety margin, and refuses to broadcast if the budget is insufficient or any quote call fails. This is a guardrail, not a guarantee that the RPC is honest or fees cannot change. Its JSON result includes the configured RPC origin, chain ID, observed genesis hash, contract address, transaction hash, block number, and runtime-code hash. A pin is an extra wrong-network guardrail, not proof that a potentially malicious RPC is honest. Save evidence only after independently confirming network identity, transaction and deployed bytecode in trusted sources.
 
 After verification, set `PORTALDOT_GUARD_ADDRESS` and the matching `PORTALDOT_GUARD_CODE_HASH` in `.env`. The code hash is checked before every bridge signature to reduce accidental/malicious contract-address substitution. It must be verified against the intended contract deployment; do not blindly copy values from an untrusted RPC response.
 

@@ -19,7 +19,8 @@
     "address:substrate": "node scripts/portaldot-address.js",
     "address:inspect": "node scripts/inspect-account-mapping.js",
     "inspect:substrate-runtime": "node scripts/substrate-runtime-preflight.mjs",
-    "verify:account-mapping": "node scripts/verify-account-mapping.mjs"
+    "verify:account-mapping": "node scripts/verify-account-mapping.mjs",
+    "verify:deployer-address": "node scripts/verify-deployer-address.mjs"
   },
   "devDependencies": {
     "dotenv": "^16.4.7",

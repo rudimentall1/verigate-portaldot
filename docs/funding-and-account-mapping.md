@@ -51,6 +51,16 @@ Run the live verifier locally, not in public CI, when the pair being compared is
 
 A match means the configured endpoint returned an `OriginalAccount` value whose AccountId32 bytes equal the supplied SS58 account. A different value means the H160 resolves to another AccountId32 in that endpoint's reported state. A missing entry means no value was returned for that key. Since a single RPC can lie, treat the result as endpoint-reported evidence and obtain independent PortalDot confirmation before moving funds or deploying.
 
+## Local deployer key/address verification
+
+Before requesting a deployment quote, locally verify that the key configured in the untracked `.env` derives to the EVM address displayed by the intended wallet:
+
+```bash
+npm run verify:deployer-address -- 0xWalletDisplayedEvmAddress --redact
+```
+
+The check derives the address from `DEPLOYER_PRIVATE_KEY` on the local machine. It performs no RPC calls, signing, or transactions and never prints the private key. If `DEPLOYMENT_ESTIMATE_FROM` is configured, it must match the derived address. If `AUTHORITY_SIGNER_ADDRESS` is configured, it must be a distinct non-zero address. A successful result proves only that the local key derives to the supplied H160; it does not prove the runtime mapping to an SS58 account or independently authenticate the RPC.
+
 ## Exact manual read-only check
 
 With Polkadot CLI 1.25.0, you can inspect the storage type and query a single key manually at the exact finalized block returned by the read-only runtime inspector:
@@ -99,6 +109,6 @@ Current upstream `pallet-revive` documentation says `eth_estimateGas` must cover
 
 Treat these as the upstream semantics for comparison, not independent proof that PortalDot's endpoint conforms exactly. Do not multiply `estimateGas × gasPrice` by `GasScale` again or add an estimated per-byte deposit a second time unless a verified PortalDot-specific response establishes that the returned estimate excludes it.
 
-The estimator compiles the current contract and requests `eth_estimateGas`, `eth_gasPrice`, and `eth_getBalance`. It never signs or broadcasts. Set `DEPLOYMENT_ESTIMATE_FROM` to the public H160 that is independently verified to pay for deployment. If `AUTHORITY_SIGNER_ADDRESS` has not been selected yet, the estimator may use a clearly labelled non-zero placeholder for a preliminary cost probe, but it still requires the independently pinned genesis hash. That placeholder is not a deployment configuration; the real deployment script requires a dedicated, non-zero authority signer different from the deployer.
+The estimator compiles the current contract, verifies `eth_chainId` and the pinned Substrate genesis hash, requests `eth_estimateGas`, reads `baseFeePerGas` from `eth_getBlockByNumber("latest", false)`, requests `eth_maxPriorityFeePerGas` and `eth_getBalance`, and uses an EIP-1559 max-fee cap. It never signs or broadcasts. Set `DEPLOYMENT_ESTIMATE_FROM` to the public H160 that is independently verified to pay for deployment. If `AUTHORITY_SIGNER_ADDRESS` has not been selected yet, the estimator may use a clearly labelled non-zero placeholder for a preliminary cost probe, but it still requires the independently pinned genesis hash. That placeholder is not a deployment configuration; the real deployment script requires a dedicated, non-zero authority signer different from the deployer.
 
 The earlier quote with the placeholder signer is still preliminary. Do not use it alone to decide to fund an account. Re-run the quote after verifying the account mapping, signer, optimized bytecode and runtime deposit constants.
