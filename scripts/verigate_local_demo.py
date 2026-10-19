@@ -666,7 +666,7 @@ def main() -> int:
                     )
 
                 summary = {
-                    "test_instance": "isolated temporary Verigate API",
+                    "test_instance": "isolated temporary Verigate API plus loopback-only Hardhat EVM",
                     "base_url": base_url,
                     "policy": "only the ALLOW recipient is permitted",
                     "allow": {
@@ -683,7 +683,7 @@ def main() -> int:
                         "bridge_cli_refused_block": block_refused,
                         "response_file": str(block_path),
                     },
-                    "bridge_cli_allow_dry_run": {
+                    "bridge_cli_allow": {
                         "signature_created": True,
                         "signature_file": str(signed_path),
                         "authority_signer": test_wallets["bridgeAddress"],
@@ -692,7 +692,23 @@ def main() -> int:
                         "deployed_on_isolated_loopback_evm": True,
                         "domain_contract_is_dummy": False,
                     },
-                    "note": "The real PortalDotAgentGuard source was deployed only to a temporary loopback Hardhat EVM configured with the target chain ID. The bridge checked chain ID, deployed bytecode hash, and authoritySigner before signing. No public PortalDot RPC was contacted; the local deployment is not testnet evidence.",
+                    "executor_dry_run": {
+                        "status": dry_run_result["status"],
+                        "transaction_broadcast": dry_run_result["transactionBroadcast"],
+                        "guard_balance_unchanged": guard_balance_after_dry_run == funded_guard_balance,
+                    },
+                    "local_execution": {
+                        "status": execution_result["status"],
+                        "transaction_hash": execution_result["transactionHash"],
+                        "block_number": execution_result["blockNumber"],
+                        "transfer_executed_event_confirmed": execution_result["transferExecutedEventConfirmed"],
+                        "recipient": ALLOW_RECIPIENT,
+                        "authorized_amount_base_units": str(payment_amount),
+                        "recipient_balance_delta_base_units": str(recipient_balance_delta),
+                        "balance_delta_matches_authorized_amount": recipient_balance_delta == payment_amount,
+                        "local_guard_funding_transaction_hash": local_funding_hash,
+                    },
+                    "note": "The real PortalDotAgentGuard source was deployed only to a temporary loopback Hardhat EVM configured with the target chain ID. A signed ALLOW authorization passed a read-only simulation, then executed successfully on that local EVM and transferred the exact amount. BLOCK was refused. No public PortalDot RPC was contacted; local transactions are not testnet deployment evidence.",
                 }
                 summary_path = output_root / "summary.json"
                 summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
