@@ -50,9 +50,13 @@ describe("PortalDot RPC preflight configuration", function () {
     }
   });
 
-  it("refuses a missing or malformed genesis hash pin", function () {
+  it("allows an omitted optional genesis hash pin but rejects malformed configured pins", function () {
     configure("https://rpc.example.invalid", "420420777", null);
-    expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_GENESIS_HASH must be/);
+    expect(requiredNetworkConfig()).to.deep.equal({
+      rpcUrl: "https://rpc.example.invalid",
+      expectedChainId: 420420777n,
+      expectedGenesisHash: null
+    });
 
     configure("https://rpc.example.invalid", "420420777", "0x1234");
     expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_GENESIS_HASH must be/);
