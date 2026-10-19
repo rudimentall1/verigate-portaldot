@@ -60,6 +60,18 @@ function resolveEstimateAuthoritySigner(value) {
   return { address: configured, isPlaceholder: false };
 }
 
+function buildDeploymentTransactionOverrides({ gasUnits, maxFeePerGasWei, maxPriorityFeePerGasWei }) {
+  const gasLimit = BigInt(gasUnits);
+  const maxFeePerGas = BigInt(maxFeePerGasWei);
+  const maxPriorityFeePerGas = BigInt(maxPriorityFeePerGasWei);
+  if (gasLimit <= 0n) throw new Error("gasUnits must be positive.");
+  if (maxFeePerGas <= 0n) throw new Error("maxFeePerGasWei must be positive.");
+  if (maxPriorityFeePerGas < 0n || maxPriorityFeePerGas > maxFeePerGas) {
+    throw new Error("maxPriorityFeePerGasWei must be non-negative and no greater than maxFeePerGasWei.");
+  }
+  return { gasLimit, maxFeePerGas, maxPriorityFeePerGas };
+}
+
 function calculateDeploymentCost({ gasUnits, gasPriceWei, balanceWei, safetyMarginBps = 2000 }) {
   const gas = BigInt(gasUnits);
   const gasPrice = BigInt(gasPriceWei);
@@ -128,6 +140,7 @@ module.exports = {
   parseHexQuantity,
   formatUnitsExact,
   calculateDeploymentCost,
+  buildDeploymentTransactionOverrides,
   buildDeploymentReadiness,
   deploymentEstimateExitCode,
   resolveEstimateAuthoritySigner,
