@@ -34,7 +34,7 @@ const block = {
   timestamp: "0x1",
   transactions: [],
   uncles: [],
-  baseFeePerGas: "0x1",
+  baseFeePerGas: "0x2328",
   mixHash: `0x${"77".repeat(32)}`
 };
 const genesisBlock = { ...block, number: "0x0", hash: `0x${"aa".repeat(32)}` };
