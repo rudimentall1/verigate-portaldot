@@ -85,7 +85,7 @@ This tool validates the SS58 checksum and reports the offline derivation; it doe
 To compare one H160 with one registered SS58 account using PortalDot V3's actual `Revive.OriginalAccount` storage, install the matching CLI and run this locally:
 
 ```bash
-npm install --global polkadot-cli@0.7.0
+npm install --global polkadot-cli@1.25.0
 npm run verify:account-mapping -- 0xCandidateEvmAddress 5RegisteredSubstrateAddress
 ```
 
