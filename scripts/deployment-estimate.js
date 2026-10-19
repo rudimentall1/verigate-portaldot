@@ -26,6 +26,20 @@ function formatUnitsExact(value, decimals = EVM_DECIMALS, fractionDigits = 4) {
   return `${whole}.${frac}`;
 }
 
+function resolveEstimateAuthoritySigner(value) {
+  const configured = typeof value === "string" ? value.trim() : "";
+  if (!configured) {
+    return {
+      address: "0x0000000000000000000000000000000000000001",
+      isPlaceholder: true
+    };
+  }
+  if (!/^0x[a-fA-F0-9]{40}$/.test(configured) || /^0x0{40}$/i.test(configured)) {
+    throw new Error("AUTHORITY_SIGNER_ADDRESS must be a valid non-zero EVM address when supplied.");
+  }
+  return { address: configured, isPlaceholder: false };
+}
+
 function calculateDeploymentCost({ gasUnits, gasPriceWei, balanceWei, safetyMarginBps = 2000 }) {
   const gas = BigInt(gasUnits);
   const gasPrice = BigInt(gasPriceWei);
@@ -70,6 +84,7 @@ module.exports = {
   parseHexQuantity,
   formatUnitsExact,
   calculateDeploymentCost,
+  resolveEstimateAuthoritySigner,
   substrateRawToEvmWei,
   evmWeiToSubstrateRaw
 };
