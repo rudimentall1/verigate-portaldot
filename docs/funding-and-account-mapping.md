@@ -93,6 +93,10 @@ Before any further funding or deployment:
 
 ## Read-only deployment estimate
 
+Current upstream `pallet-revive` documentation says `eth_estimateGas` must cover the execution resources and the storage deposit required for the call. It also says `GasScale` scales gas price and gas estimation in opposite directions; the product is generally unchanged apart from rounding. See the [Polkadot Hub gas model](https://docs.polkadot.com/smart-contracts/for-eth-devs/gas-model/) and [upstream GasScale documentation](https://paritytech.github.io/polkadot-sdk/master/pallet_revive/pallet/trait.Config.html#tymethod.GasScale).
+
+Treat these as the upstream semantics for comparison, not independent proof that PortalDot's endpoint conforms exactly. Do not multiply `estimateGas × gasPrice` by `GasScale` again or add an estimated per-byte deposit a second time unless a verified PortalDot-specific response establishes that the returned estimate excludes it.
+
 The estimator compiles the current contract and requests `eth_estimateGas`, `eth_gasPrice`, and `eth_getBalance`. It never signs or broadcasts. Set `DEPLOYMENT_ESTIMATE_FROM` to the public H160 that is independently verified to pay for deployment. If `AUTHORITY_SIGNER_ADDRESS` has not been selected yet, the estimator may use a clearly labelled non-zero placeholder for a preliminary cost probe. That placeholder is not a deployment configuration; the real deployment script requires a dedicated, non-zero authority signer different from the deployer.
 
 The earlier quote with the placeholder signer is still preliminary. Do not use it alone to decide to fund an account. Re-run the quote after verifying the account mapping, signer, optimized bytecode and runtime deposit constants.
