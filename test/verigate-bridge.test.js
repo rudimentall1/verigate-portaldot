@@ -694,7 +694,7 @@ describe("Verigate bridge binding", function () {
       await deployer.sendTransaction({ to: guardAddress, value: ethers.parseEther("1") });
 
       process.env.PORTALDOT_CHAIN_ID = chainId.toString();
-      process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH = (await ethers.provider.getBlock(0)).hash;
+      process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH = TEST_GENESIS_HASH;
       process.env.PORTALDOT_RPC_URL = "http://127.0.0.1:8545";
       process.env.VERIGATE_BASE_URL = "https://verigate.example";
       process.env.VERIGATE_API_KEY = "disposable-test-api-key";
