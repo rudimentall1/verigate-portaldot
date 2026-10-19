@@ -43,7 +43,7 @@ In particular:
 
 - Creation bytecode size is not necessarily the byte length charged by the runtime for stored deployed code.
 - The previous estimate used a placeholder constructor signer and an unverified candidate H160.
-- `GasScale` and native/EVM denomination rules affect how EVM gas/fees should be interpreted.
+- The runtime reports `GasScale=5`. Current upstream `pallet-revive` documentation explains that `GasScale` scales the gas price and gas estimate in opposite directions, so the total gas cost normally cancels out apart from rounding. Do not multiply the observed `estimateGas × gasPrice` total by five again. See [upstream GasScale documentation](https://paritytech.github.io/polkadot-sdk/master/pallet_revive/pallet/trait.Config.html#tymethod.GasScale).
 - A quote from one RPC endpoint is neither a permanent price guarantee nor independent authentication of that endpoint.
 
 ## Decision
