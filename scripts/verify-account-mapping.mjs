@@ -171,7 +171,7 @@ export async function verifyOriginalAccountMapping({
     command(["chain", "update", "portaldot-v3"], "Fetching PortalDot runtime metadata");
 
     const chainIdOutput = command(
-      ["const", "Revive.ChainId", "--chain", "portaldot-v3", "--output", "json"],
+      ["portaldot-v3.const.Revive.ChainId", "--output", "json"],
       "Reading Revive.ChainId"
     );
     const chainIdValue = parseDotJsonValue(chainIdOutput, "Revive.ChainId");
@@ -187,8 +187,7 @@ export async function verifyOriginalAccountMapping({
 
     const storageOutput = command(
       [
-        "query", "Revive.OriginalAccount", input.h160,
-        "--chain", "portaldot-v3",
+        `portaldot-v3.query.Revive.OriginalAccount`, input.h160,
         "--output", "json",
         "--at", runtimeSnapshot.finalizedHead
       ],
