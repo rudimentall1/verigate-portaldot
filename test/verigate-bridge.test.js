@@ -9,6 +9,12 @@ const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
 const { validateAuthorizationBinding, verifyLocally, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate, verifyGuardDeployment } = require("../adapter/verigate-bridge");
 const TEST_GENESIS_HASH = "0x" + "ab".repeat(32);
+class TestWebSocket extends EventTarget {
+  constructor(url) { super(); this.url=url; queueMicrotask(()=>this.dispatchEvent(new Event("open"))); }
+  send(raw) { const q=JSON.parse(raw); queueMicrotask(()=>this.dispatchEvent(new MessageEvent("message",{data:JSON.stringify({jsonrpc:"2.0",id:q.id,result:TEST_GENESIS_HASH})}))); }
+  close() {}
+}
+globalThis.WebSocket=TestWebSocket;
 
 describe("Verigate bridge binding", function () {
   let recipient;
@@ -50,7 +56,7 @@ describe("Verigate bridge binding", function () {
   beforeEach(async function () {
     // Explicit fixture configuration; production code must not assume a chain ID.
     process.env.PORTALDOT_CHAIN_ID = "420420777";
-    process.env.PORTALDOT_GENESIS_HASH = TEST_GENESIS_HASH;
+    process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH = TEST_GENESIS_HASH;
     [, recipient, other] = await ethers.getSigners();
   });
 
@@ -642,7 +648,7 @@ describe("Verigate bridge binding", function () {
   it("executes an end-to-end Verigate ALLOW through bridge EIP-712 signing into the guard on a local chain", async function () {
     const envKeys = [
       "PORTALDOT_CHAIN_ID",
-      "PORTALDOT_GENESIS_HASH",
+      "PORTALDOT_SUBSTRATE_GENESIS_HASH",
       "PORTALDOT_RPC_URL",
       "VERIGATE_BASE_URL",
       "VERIGATE_API_KEY",
@@ -687,7 +693,7 @@ describe("Verigate bridge binding", function () {
       await deployer.sendTransaction({ to: guardAddress, value: ethers.parseEther("1") });
 
       process.env.PORTALDOT_CHAIN_ID = chainId.toString();
-      process.env.PORTALDOT_GENESIS_HASH = (await ethers.provider.getBlock(0)).hash;
+      process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH = (await ethers.provider.getBlock(0)).hash;
       process.env.PORTALDOT_RPC_URL = "http://127.0.0.1:8545";
       process.env.VERIGATE_BASE_URL = "https://verigate.example";
       process.env.VERIGATE_API_KEY = "disposable-test-api-key";
@@ -778,20 +784,14 @@ describe("On-chain PortalDot guard verification before signing", function () {
     expect(error.message).to.match(/expected 420420777; refusing to sign/);
   });
 
-  it("allows an omitted optional genesis pin while still checking chain, code and signer", async function () {
-    const result = await verifyGuardDeployment({
-      rpcUrl,
-      expectedChainId: "420420777",
-      guardAddress,
-      authoritySigner: expectedAuthority,
-      guardCodeHash: expectedCodeHash,
-      genesisHash: "",
+  it("refuses bridge verification when the Substrate genesis pin is omitted", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl, expectedChainId: "420420777", guardAddress, authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash, genesisHash: "",
       providerFactory: async () => mockProvider(),
       contractFactory: () => ({ authoritySigner: async () => expectedAuthority })
-    });
-    expect(result.genesisHash).to.equal(null);
-    expect(result.chainId).to.equal(420420777n);
-    expect(result.runtimeCodeHash).to.equal(expectedCodeHash);
+    }));
+    expect(error.message).to.match(/PORTALDOT_SUBSTRATE_GENESIS_HASH/);
   });
 
   it("rejects a mismatched genesis hash before reading contract bytecode", async function () {
@@ -805,7 +805,7 @@ describe("On-chain PortalDot guard verification before signing", function () {
       providerFactory: async () => mockProvider(),
       contractFactory: () => { throw new Error("Contract reads must not follow a genesis mismatch"); }
     }));
-    expect(error.message).to.match(/does not match PORTALDOT_GENESIS_HASH/);
+    expect(error.message).to.match(/does not match PORTALDOT_SUBSTRATE_GENESIS_HASH/);
   });
 
   it("rejects an address with no deployed contract bytecode", async function () {
@@ -935,14 +935,15 @@ describe("On-chain PortalDot guard verification before signing", function () {
 
 describe("PortalDot RPC preflight configuration", function () {
   const { requiredNetworkConfig, safeRpcOrigin } = require("../scripts/preflight");
-  const keys = ["PORTALDOT_RPC_URL", "PORTALDOT_CHAIN_ID", "PORTALDOT_GENESIS_HASH"];
+  const keys = ["PORTALDOT_RPC_URL", "PORTALDOT_CHAIN_ID", "PORTALDOT_SUBSTRATE_RPC_URL", "PORTALDOT_SUBSTRATE_GENESIS_HASH"];
   const testGenesisHash = "0x" + "ab".repeat(32);
   let originalEnv;
 
   beforeEach(function () {
     originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
     for (const key of keys) delete process.env[key];
-    process.env.PORTALDOT_GENESIS_HASH = testGenesisHash;
+    process.env.PORTALDOT_SUBSTRATE_RPC_URL = "wss://substrate.example.invalid";
+    process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH = testGenesisHash;
   });
 
   afterEach(function () {
@@ -994,7 +995,8 @@ describe("PortalDot RPC preflight configuration", function () {
     expect(requiredNetworkConfig()).to.deep.equal({
       rpcUrl: "http://127.0.0.1:8545",
       expectedChainId: 31337n,
-      expectedGenesisHash: testGenesisHash
+      substrateRpcUrl: "wss://substrate.example.invalid/",
+      expectedSubstrateGenesisHash: testGenesisHash
     });
   });
 
@@ -1004,7 +1006,8 @@ describe("PortalDot RPC preflight configuration", function () {
     expect(requiredNetworkConfig()).to.deep.equal({
       rpcUrl: "https://rpc.example/path",
       expectedChainId: 420420777n,
-      expectedGenesisHash: testGenesisHash
+      substrateRpcUrl: "wss://substrate.example.invalid/",
+      expectedSubstrateGenesisHash: testGenesisHash
     });
   });
 
