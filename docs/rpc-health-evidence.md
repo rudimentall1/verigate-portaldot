@@ -43,3 +43,21 @@ This second observation is consistent with the endpoint advancing from block `98
 ## Independent configuration confirmation remains outstanding
 
 The [published PortalDot developer Chain Info page](https://portaldot-dev.readthedocs.io/en/latest/chain-info.html) documents the Substrate mainnet websocket endpoint, SS58 format, and POT decimals; it does not document this EVM endpoint or chain ID. Until PortalDot confirms the EVM endpoint, chain ID, native gas token, and test-token denomination through a current official source or organizer channel, treat this endpoint as operationally responsive but not independently authenticated. Do not deploy or send funds based only on these RPC checks.
+
+## Public-source cross-check (19 October 2026)
+
+The public [Portaldot Hacker House listing distributed by DoraHacks](https://www.eventbrite.com/e/portaldot-hacker-house-2026-tickets-2002321816454) describes PortalDot V3.0 as EVM-compatible and mentions WASM/EVM execution and ERC-20/ERC-721 support. This supports the general project scope, but it does **not** publish the exact EVM RPC URL, chain ID, genesis block hash, EVM gas-token denomination, tPOT mapping, or an independent explorer/checkpoint for this endpoint.
+
+The [PortalDot developer Chain Info page](https://portaldot-dev.readthedocs.io/en/latest/chain-info.html) lists `wss://mainnet.portaldot.io`, SS58 format 42, and native POT with 14 decimals. Those are Substrate mainnet parameters and must not be silently reused as EVM testnet settings.
+
+### Decision gate before test-fund use
+
+Obtain confirmation from the [official PortalDot Discord](https://discord.gg/portaldot) or another current, independently verifiable PortalDot source for all of the following:
+
+- Exact EVM RPC URL and decimal chain ID.
+- A trusted explorer URL or expected genesis/checkpoint hash to validate network identity independently of that RPC.
+- Native gas-token symbol and decimals for EVM value units; whether this differs from Substrate POT's 14 decimals.
+- How EVM addresses/accounts map to PortalDot accounts, and how test gas/tokens are funded.
+
+Until then, this repo's status is: public RPC responsive and CI checks green, but EVM network identity and spending configuration are **not independently authenticated**. Do not deploy or send test funds solely on the basis of a matching chain ID or a green health check.
+
