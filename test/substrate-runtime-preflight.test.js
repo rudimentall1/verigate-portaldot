@@ -70,7 +70,7 @@ describe("PortalDot Substrate runtime metadata preflight", function () {
   it("defaults to the configured V3 Substrate WebSocket endpoint", function () {
     expect(DEFAULT_SUBSTRATE_RPC_URL).to.equal("wss://test-node-v3.portaldot.dev");
     expect(validateSubstrateRpcUrl(DEFAULT_SUBSTRATE_RPC_URL)).to.deep.equal({
-      url: DEFAULT_SUBSTRATE_RPC_URL,
+      url: "wss://test-node-v3.portaldot.dev/",
       origin: "wss://test-node-v3.portaldot.dev"
     });
   });
