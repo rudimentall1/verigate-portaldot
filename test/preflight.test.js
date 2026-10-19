@@ -2,11 +2,13 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { expect } = require("chai");
 const assert = require("node:assert/strict");
-const { requiredNetworkConfig, rpc } = require("../scripts/preflight");
+const { requiredNetworkConfig, rpc, readGenesisHash } = require("../scripts/preflight");
+const TEST_GENESIS_HASH = "0x" + "ab".repeat(32);
 
 describe("PortalDot RPC preflight configuration", function () {
   const originalRpc = process.env.PORTALDOT_RPC_URL;
   const originalChainId = process.env.PORTALDOT_CHAIN_ID;
+  const originalGenesisHash = process.env.PORTALDOT_GENESIS_HASH;
   const originalFetch = global.fetch;
 
   afterEach(function () {
@@ -14,14 +16,18 @@ describe("PortalDot RPC preflight configuration", function () {
     else process.env.PORTALDOT_RPC_URL = originalRpc;
     if (originalChainId === undefined) delete process.env.PORTALDOT_CHAIN_ID;
     else process.env.PORTALDOT_CHAIN_ID = originalChainId;
+    if (originalGenesisHash === undefined) delete process.env.PORTALDOT_GENESIS_HASH;
+    else process.env.PORTALDOT_GENESIS_HASH = originalGenesisHash;
     global.fetch = originalFetch;
   });
 
-  function configure(rpc, chainId) {
+  function configure(rpc, chainId, genesisHash = TEST_GENESIS_HASH) {
     if (rpc === undefined) delete process.env.PORTALDOT_RPC_URL;
     else process.env.PORTALDOT_RPC_URL = rpc;
     if (chainId === undefined) delete process.env.PORTALDOT_CHAIN_ID;
     else process.env.PORTALDOT_CHAIN_ID = chainId;
+    if (genesisHash === null) delete process.env.PORTALDOT_GENESIS_HASH;
+    else process.env.PORTALDOT_GENESIS_HASH = genesisHash;
   }
 
   function jsonRpcResponse(result, overrides = {}) {
@@ -42,6 +48,14 @@ describe("PortalDot RPC preflight configuration", function () {
       configure("https://rpc.example.invalid", chainId);
       expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_CHAIN_ID/);
     }
+  });
+
+  it("refuses a missing or malformed genesis hash pin", function () {
+    configure("https://rpc.example.invalid", "420420777", null);
+    expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_GENESIS_HASH must be/);
+
+    configure("https://rpc.example.invalid", "420420777", "0x1234");
+    expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_GENESIS_HASH must be/);
   });
 
   it("refuses invalid URLs and non-HTTP protocols", function () {
@@ -110,6 +124,21 @@ describe("PortalDot RPC preflight configuration", function () {
     );
   });
 
+  it("reads and compares the pinned genesis hash through eth_getBlockByNumber", async function () {
+    let requestOptions;
+    global.fetch = async (_url, options) => {
+      requestOptions = options;
+      return jsonRpcResponse({ hash: TEST_GENESIS_HASH, number: "0x0" });
+    };
+    expect(await readGenesisHash("https://rpc.example.invalid", TEST_GENESIS_HASH)).to.equal(TEST_GENESIS_HASH);
+    expect(JSON.parse(requestOptions.body)).to.deep.equal({
+      jsonrpc: "2.0", id: 1, method: "eth_getBlockByNumber", params: ["0x0", false]
+    });
+
+    global.fetch = async () => jsonRpcResponse({ hash: "0x" + "cd".repeat(32), number: "0x0" });
+    await assert.rejects(() => readGenesisHash("https://rpc.example.invalid", TEST_GENESIS_HASH), /does not match PORTALDOT_GENESIS_HASH/);
+  });
+
   it("rejects unsuccessful HTTP responses", async function () {
     global.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) });
     await assert.rejects(() => rpc("https://rpc.example.invalid", "eth_chainId"), /HTTP 503/);
@@ -119,7 +148,8 @@ describe("PortalDot RPC preflight configuration", function () {
     configure("https://rpc.example.invalid", "420420777");
     expect(requiredNetworkConfig()).to.deep.equal({
       rpcUrl: "https://rpc.example.invalid",
-      expectedChainId: 420420777n
+      expectedChainId: 420420777n,
+      expectedGenesisHash: TEST_GENESIS_HASH
     });
   });
 });
