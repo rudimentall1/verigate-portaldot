@@ -9,8 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 jobs:
   migration-preview:
@@ -170,6 +169,15 @@ jobs:
           echo "$audit_clean_status" > "$RUNNER_TEMP/hardhat3-preview/audit-clean.exit-code"
           cat "$RUNNER_TEMP/hardhat3-preview/audit-clean.log"
           if [ "$test_status" -ne 0 ] || [ "$compile_status" -ne 0 ]; then exit 1; fi
+      - name: Prepare source patch for isolated promotion
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f package-candidate.json hardhat.config.hardhat2.cjs scripts/deploy.js
+          git add -N .
+          git diff --binary > "$RUNNER_TEMP/hardhat3-preview/migration.patch"
+          test -s "$RUNNER_TEMP/hardhat3-preview/migration.patch"
       - name: Upload migration evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -190,19 +198,38 @@ jobs:
             fi
           done
 
-      - name: Commit validated migration on isolated branch
-        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/chore/hardhat3-migration-preview'
+
+  publish-validated-candidate:
+    needs: migration-preview
+    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/chore/hardhat3-migration-preview'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Check out the exact preview commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Download validated migration patch
+        uses: actions/download-artifact@v4
+        with:
+          name: hardhat3-migration-preview
+          path: preview-artifact
+      - name: Commit candidate files to the isolated branch
         shell: bash
         run: |
           set -euo pipefail
-          rm -f package-candidate.json hardhat.config.hardhat2.cjs scripts/deploy.js
+          test -s preview-artifact/migration.patch
+          git apply --check preview-artifact/migration.patch
+          git apply preview-artifact/migration.patch
+          git status --short
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "chore: migrate PortalDot bridge to Hardhat 3"
           git push origin HEAD:chore/hardhat3-migration-preview
-      - name: Dispatch normal CI for committed migration
-        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/chore/hardhat3-migration-preview'
+      - name: Dispatch normal CI for the committed migration
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
