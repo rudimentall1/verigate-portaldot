@@ -123,7 +123,7 @@ def wait_for_rpc(rpc_url: str, process: subprocess.Popen, log_path: Path, expect
     raise RuntimeError(
         "Temporary local EVM failed to start. Last probe: "
         + last_error
-        + "\\nHardhat node log:\\n"
+        + "\nHardhat node log:\n"
         + log_text[-5000:]
     )
 
@@ -493,18 +493,18 @@ def main() -> int:
                     timeout=60,
                     check=False,
                 )
-                deployment_output = deployment.stdout + "\\n" + deployment.stderr
+                deployment_output = deployment.stdout + "\n" + deployment.stderr
                 if deployment.returncode != 0:
                     raise RuntimeError(
                         "Could not deploy the test guard to the isolated local EVM: "
                         + deployment_output[-5000:]
                     )
                 address_match = re.search(
-                    r'"address"\\s*:\\s*"(0x[a-fA-F0-9]{40})"',
+                    r'"address"\s*:\s*"(0x[a-fA-F0-9]{40})"',
                     deployment_output,
                 )
                 code_hash_match = re.search(
-                    r'"runtimeCodeHash"\\s*:\\s*"(0x[a-fA-F0-9]{64})"',
+                    r'"runtimeCodeHash"\s*:\s*"(0x[a-fA-F0-9]{64})"',
                     deployment_output,
                 )
                 if address_match is None or code_hash_match is None:
