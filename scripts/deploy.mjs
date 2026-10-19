@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
-const { configuredGenesisHash, verifyGenesisHashIfConfigured } = require("./network-identity.js");
+const { parseExpectedSubstrateGenesisHash, validateSubstrateRpcUrl, verifySubstrateGenesisHash } = require("./substrate-genesis.js");
 const { parseHexQuantity, calculateDeploymentCost, formatUnitsExact } = require("./deployment-estimate.js");
 const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
@@ -21,13 +21,9 @@ async function main() {
   if (network.chainId !== expectedChainId) {
     throw new Error(`Refusing deployment: expected chain ID ${expectedChainId}, got ${network.chainId}`);
   }
-  const expectedGenesisHash = configuredGenesisHash(process.env.PORTALDOT_GENESIS_HASH);
-  if (!expectedGenesisHash) {
-    throw new Error(
-      "Refusing public deployment: PORTALDOT_GENESIS_HASH must be independently confirmed and pinned before deployment."
-    );
-  }
-  const actualGenesisHash = await verifyGenesisHashIfConfigured(ethers.provider, expectedGenesisHash);
+  const substrateRpcUrl = validateSubstrateRpcUrl(process.env.PORTALDOT_SUBSTRATE_RPC_URL);
+  const expectedSubstrateGenesisHash = parseExpectedSubstrateGenesisHash(process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH);
+  const actualSubstrateGenesisHash = await verifySubstrateGenesisHash(substrateRpcUrl, expectedSubstrateGenesisHash);
   if (!process.env.DEPLOYER_PRIVATE_KEY) {
     throw new Error("DEPLOYER_PRIVATE_KEY is missing. Put it in an untracked .env file; never commit it.");
   }
@@ -98,8 +94,8 @@ async function main() {
     network: "Configured EVM RPC (identity not proven by chain ID alone)",
     rpcOrigin: new URL(rpcUrl).origin,
     chainId: network.chainId.toString(),
-    genesisHash: actualGenesisHash,
-    genesisHashPinConfigured: Boolean(expectedGenesisHash),
+    substrateGenesisHash: actualSubstrateGenesisHash,
+    substrateGenesisHashPinConfigured: true,
     contract: "PortalDotAgentGuard",
     address: contractAddress,
     runtimeCodeHash: ethers.keccak256(runtimeCode),
@@ -107,7 +103,7 @@ async function main() {
     authoritySigner,
     transactionHash: receipt.hash,
     blockNumber: receipt.blockNumber,
-    note: "Deployment requires an independently confirmed genesis-hash pin and refuses to proceed without it. Independently verify transaction and bytecode before claiming live deployment evidence. Local Hardhat output is not live testnet evidence."
+    note: "Deployment requires a pinned Substrate genesis hash and matching EVM chain ID. One RPC cannot authenticate itself. Independently verify transaction and bytecode before claiming live deployment evidence. Local Hardhat output is not live testnet evidence."
   }, null, 2));
 }
 
