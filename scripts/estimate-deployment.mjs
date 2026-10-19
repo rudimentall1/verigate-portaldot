@@ -96,8 +96,12 @@ async function main() {
     note: "Read-only estimate only: no private key is used to sign, no transaction is sent. If authoritySignerIsPlaceholder is true, this is only a preliminary cost probe and is not a deployment configuration. PortalDot V3 may charge a code storage deposit through its gas estimate; an underfunded sender may cause estimation to fail. Confirm with the real authority signer and sufficient balance immediately before deployment."
   };
   console.log(JSON.stringify(result, null, 2));
+
+  // Distinguish quote failures from deployment readiness. A successful read-only
+  // quote is never an authorization to deploy while readiness blockers remain.
   if (!calc.isSufficient) process.exitCode = 2;
   else if (authoritySignerIsPlaceholder) process.exitCode = 3;
+  else if (readiness.readiness !== "READY_FOR_DEPLOYMENT") process.exitCode = 4;
 }
 
 main().catch((error) => {
