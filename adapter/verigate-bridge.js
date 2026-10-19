@@ -366,7 +366,22 @@ function verifyLocally(attestation, publicKeyPath = process.env.VERIGATE_PUBLIC_
 }
 
 async function verifyWithVerigate(baseUrl, attestation, apiKey) {
-  const response = await fetch(new URL("/v1/verify", baseUrl), {
+  let verifierBase;
+  try {
+    verifierBase = new URL(baseUrl);
+  } catch {
+    fail("VERIGATE_BASE_URL must be a valid absolute URL.");
+  }
+  const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+  if (verifierBase.username || verifierBase.password) {
+    fail("VERIGATE_BASE_URL must not embed credentials.");
+  }
+  if (verifierBase.protocol !== "https:" &&
+      !(verifierBase.protocol === "http:" && loopbackHosts.has(verifierBase.hostname))) {
+    fail("VERIGATE_BASE_URL must use HTTPS except for loopback development endpoints.");
+  }
+  const verifierUrl = new URL("/v1/verify", verifierBase);
+  const response = await fetch(verifierUrl, {
     method: "POST",
     redirect: "error",
     headers: {
