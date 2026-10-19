@@ -37,6 +37,7 @@ const block = {
   baseFeePerGas: "0x1",
   mixHash: `0x${"77".repeat(32)}`
 };
+const genesisBlock = { ...block, number: "0x0", hash: `0x${"aa".repeat(32)}` };
 
 function rpcResponse(request) {
   methodsSeen.push(request.method);
@@ -60,6 +61,8 @@ function rpcResponse(request) {
       result = "0x1";
       break;
     case "eth_getBlockByNumber":
+      result = request.params?.[0] === "0x0" ? genesisBlock : block;
+      break;
     case "eth_getBlockByHash":
       result = block;
       break;
@@ -113,6 +116,7 @@ try {
   const childEnv = { ...process.env };
   childEnv.PORTALDOT_RPC_URL = `http://127.0.0.1:${address.port}`;
   childEnv.PORTALDOT_CHAIN_ID = chainId.toString();
+  childEnv.PORTALDOT_GENESIS_HASH = genesisBlock.hash;
   delete childEnv.DEPLOYER_PRIVATE_KEY;
   delete childEnv.AUTHORITY_SIGNER_ADDRESS;
 
@@ -158,11 +162,15 @@ try {
     `Hardhat did not query the configured mock PortalDot RPC. Methods seen: ${methodsSeen.join(", ")}`
   );
   assert(
+    methodsSeen.includes("eth_getBlockByNumber"),
+    `Hardhat did not read the pinned genesis block. Methods seen: ${methodsSeen.join(", ")}`
+  );
+  assert(
     !methodsSeen.some((method) => transactionMethods.has(method)),
     `Deploy smoke test unexpectedly attempted a transaction RPC: ${methodsSeen.join(", ")}`
   );
 
-  console.log("PASS: --network portaldot reached the configured read-only mock RPC (chainId 420420777).");
+  console.log("PASS: --network portaldot read chainId and the configured genesis block from the read-only mock RPC.");
   console.log("PASS: deployment stopped at the missing DEPLOYER_PRIVATE_KEY guard.");
   console.log("PASS: no transaction RPC methods were called.");
 
