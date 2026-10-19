@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 const { expect } = require("chai");
 const { evaluateSnapshot, requiredConfig } = require("../scripts/monitor-rpc");
 

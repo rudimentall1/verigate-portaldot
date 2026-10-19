@@ -1,0 +1,102 @@
+
+> verigate-portaldot@0.1.0 test
+> hardhat test
+
+Downloading solc 0.8.24
+Downloading solc 0.8.24 (WASM build)
+
+Compiled 3 Solidity files with solc 0.8.24 (evm target: shanghai)
+
+Running Solidity tests
+
+
+Running Mocha tests
+
+
+  PortalDotAgentGuard
+    [32m✔[39m rejects deployment with a zero authority signer
+    [32m✔[39m executes a valid, exact payment and consumes its nonce
+    [32m✔[39m blocks a reentrant replay from a recipient contract
+    [32m✔[39m rejects a changed recipient
+    [32m✔[39m rejects a changed amount
+    [32m✔[39m rejects a changed action identifier
+    [32m✔[39m rejects signatures from an untrusted signer
+    [32m✔[39m rejects signatures made for a different chain id
+    [32m✔[39m rejects authorizations with a deadline more than five minutes away
+    [32m✔[39m rejects expired authorizations
+    [32m✔[39m rejects replay of a successfully used nonce
+    [32m✔[39m rejects zero amounts and zero recipients
+    [32m✔[39m rejects the guard as its own recipient
+    [32m✔[39m rejects transfers larger than the available balance without consuming the nonce
+    [32m✔[39m rejects malformed signatures
+    [32m✔[39m rejects signatures with an invalid recovery byte
+    [32m✔[39m rejects malleable high-s signatures
+    [32m✔[39m does not consume a nonce when the recipient rejects the native transfer
+    [32m✔[39m accepts an authorization whose deadline is exactly five minutes away
+
+  PortalDot RPC monitor
+    [32m✔[39m reports a healthy snapshot when the chain ID matches
+    [32m✔[39m flags a chain ID mismatch without treating it as healthy
+    [32m✔[39m rejects insecure remote HTTP RPC endpoints
+    [32m✔[39m accepts the announced PortalDot endpoint configuration
+
+  PortalDot RPC preflight configuration
+    [32m✔[39m refuses a missing RPC endpoint
+    [32m✔[39m refuses a missing or malformed chain ID
+    [32m✔[39m refuses invalid URLs and non-HTTP protocols
+    [32m✔[39m accepts an explicitly configured HTTP RPC and canonical chain ID
+
+  Verigate bridge binding
+    [32m✔[39m verifies both signed artifacts locally against the pinned Ed25519 key
+    [32m✔[39m refuses a forged artifact locally even if the remote verifier might approve it
+    [32m✔[39m fails closed if no pinned Verigate public key path is configured
+    [32m✔[39m refuses to sign when Verigate does not verify the decision receipt
+    [32m✔[39m refuses to sign when the execution authorization fails verification after the receipt passes
+    [32m✔[39m refuses to sign when the Verigate verification endpoint is unreachable
+    [32m✔[39m refuses to sign when Verigate verification times out
+    [32m✔[39m refuses to sign when the Verigate verification endpoint returns HTTP 503
+    [32m✔[39m refuses to sign when the Verigate verification endpoint returns malformed JSON
+    [32m✔[39m refuses to send verifier requests to remote HTTP endpoints
+    [32m✔[39m allows HTTP only for loopback verifier development
+    [32m✔[39m refuses credentials embedded in the verifier URL
+    [32m✔[39m sends the exact signed artifact to the configured Verigate verifier
+    [32m✔[39m matches Verigate's compact sorted-key UTF-8 canonical JSON
+    [32m✔[39m maps a valid ALLOW to an exact bounded transfer
+    [32m✔[39m refuses an action whose canonical digest no longer matches
+    [32m✔[39m refuses an authorization action that differs from the receipt intent
+    [32m✔[39m refuses BLOCK even when no execution authorization is present
+    [32m✔[39m refuses WARN and BLOCK
+    [32m✔[39m refuses a changed recipient mapping
+    [32m✔[39m refuses a changed amount mapping
+    [32m✔[39m refuses a wrong chain and expired authorization
+    [32m✔[39m refuses future-issued and overlong execution authorizations
+    [32m✔[39m refuses timestamps outside JavaScript's safe integer range
+    [32m✔[39m refuses to assume a chain ID when none is configured
+    [32m✔[39m refuses an invalid expected chain ID
+    [32m✔[39m refuses non-canonical chain ID encodings
+    [32m✔[39m refuses a transfer amount above the EVM uint256 limit
+    [32m✔[39m refuses an authorization ID not derived from the receipt signature and nonce
+    [32m✔[39m refuses a nonce that differs from the receipt intent
+    [32m✔[39m refuses a policy digest mismatch
+    [32m✔[39m accepts the exact uint256 maximum without numeric coercion
+    [32m✔[39m refuses zero and non-integer transfer amounts
+
+  PortalDot RPC preflight configuration
+    [32m✔[39m fails closed when the RPC URL is missing
+    [32m✔[39m fails closed when the chain ID is missing
+    [32m✔[39m rejects non-canonical or non-positive chain IDs
+    [32m✔[39m rejects malformed RPC URLs
+    [32m✔[39m rejects non-HTTP RPC URLs
+    [32m✔[39m rejects remote RPC endpoints over plain HTTP
+    [32m✔[39m allows HTTP only for loopback development endpoints
+    [32m✔[39m accepts explicit HTTP(S) configuration and parses chain ID exactly
+    [32m✔[39m redacts credentials, endpoint paths, and query tokens from the logged RPC origin
+    [32m✔[39m preserves Python float spellings in signed payloads
+    [32m✔[39m preserves Python float spellings when sending the signed payload to Verigate
+
+
+  71 passing (224ms)
+
+
+71 passing (71 mocha)
+

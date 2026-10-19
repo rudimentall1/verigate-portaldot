@@ -1,9 +1,12 @@
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 const { expect } = require("chai");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { ethers } = require("hardhat");
+const hre = (await import("hardhat")).default;
+const { ethers } = await hre.network.create();
 const { validateAuthorizationBinding, verifyLocally, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate } = require("../adapter/verigate-bridge");
 
 describe("Verigate bridge binding", function () {

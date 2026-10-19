@@ -1,5 +1,8 @@
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const hre = (await import("hardhat")).default;
+const { ethers } = await hre.network.create();
 
 describe("PortalDotAgentGuard", function () {
   const types = {

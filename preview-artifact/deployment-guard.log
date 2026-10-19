@@ -1,0 +1,4 @@
+
+Error: Refusing deployment: PORTALDOT_RPC_URL must be explicitly configured to the confirmed PortalDot EVM RPC endpoint.
+    at main (/home/runner/work/verigate-portaldot/verigate-portaldot/scripts/deploy.mjs:9:11)
+    at <anonymous> (/home/runner/work/verigate-portaldot/verigate-portaldot/scripts/deploy.mjs:58:1)
