@@ -169,6 +169,20 @@ describe("Authorized transfer executor input validation", function () {
     expect(() => validate(artifact)).to.throw(/exactly 65 bytes/);
   });
 
+  it("rejects malleable high-s signatures before contract simulation", async function () {
+    const artifact = await makeArtifact();
+    const signature = ethers.Signature.from(artifact.signature);
+    const curveOrder = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+    const highS = curveOrder - BigInt(signature.s);
+    const highV = signature.v === 27 ? 28 : 27;
+    artifact.signature = ethers.hexlify(ethers.concat([
+      signature.r,
+      ethers.toBeHex(highS, 32),
+      ethers.toBeHex(highV, 1)
+    ]));
+    expect(() => validate(artifact)).to.throw(/canonical low-s form/);
+  });
+
   it("requires the signed contract and reported authority to match configuration", async function () {
     const wrongContract = await makeArtifact({
       contract: "0x3000000000000000000000000000000000000003"
