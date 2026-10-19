@@ -65,20 +65,20 @@ jobs:
             printf '%s\n' "$result" > "$RUNNER_TEMP/substrate-runtime-evidence/$name-exit-code.txt"
           }
           run_capture dot-chain-list dot chain list
-          run_capture revive-pallet-metadata dot inspect Revive --chain portaldot-v3
-          run_capture OriginalAccount-storage-definition dot inspect Revive.OriginalAccount --chain portaldot-v3
-          run_capture AddressSuffix-storage-definition dot inspect Revive.AddressSuffix --chain portaldot-v3
+          run_capture revive-pallet-metadata dot inspect portaldot-v3.Revive
+          run_capture OriginalAccount-storage-definition dot inspect portaldot-v3.Revive.OriginalAccount
+          run_capture AddressSuffix-storage-definition dot inspect portaldot-v3.Revive.AddressSuffix
           # Query a synthetic H160 only; never enumerate the live mapping or log a user's candidate address.
-          run_capture synthetic-account-mapping-query dot query Revive.OriginalAccount 0x0000000000000000000000000000000000000001 --chain portaldot-v3
-          run_capture revive-chain-id dot const Revive.ChainId --chain portaldot-v3
-          run_capture revive-native-to-eth-ratio dot const Revive.NativeToEthRatio --chain portaldot-v3
-          run_capture revive-auto-map dot const Revive.AutoMap --chain portaldot-v3
-          run_capture revive-deposit-per-byte dot const Revive.DepositPerByte --chain portaldot-v3
-          run_capture revive-deposit-per-item dot const Revive.DepositPerItem --chain portaldot-v3
-          run_capture revive-deposit-per-child-trie-item dot const Revive.DepositPerChildTrieItem --chain portaldot-v3
-          run_capture revive-gas-scale dot const Revive.GasScale --chain portaldot-v3
-          run_capture revive-code-hash-lockup-deposit-percent dot const Revive.CodeHashLockupDepositPercent --chain portaldot-v3
-          run_capture revive-allow-evm-bytecode dot const Revive.AllowEVMBytecode --chain portaldot-v3
+          run_capture synthetic-account-mapping-query dot portaldot-v3.query.Revive.OriginalAccount 0x0000000000000000000000000000000000000001
+          run_capture revive-chain-id dot portaldot-v3.const.Revive.ChainId
+          run_capture revive-native-to-eth-ratio dot portaldot-v3.const.Revive.NativeToEthRatio
+          run_capture revive-auto-map dot portaldot-v3.const.Revive.AutoMap
+          run_capture revive-deposit-per-byte dot portaldot-v3.const.Revive.DepositPerByte
+          run_capture revive-deposit-per-item dot portaldot-v3.const.Revive.DepositPerItem
+          run_capture revive-deposit-per-child-trie-item dot portaldot-v3.const.Revive.DepositPerChildTrieItem
+          run_capture revive-gas-scale dot portaldot-v3.const.Revive.GasScale
+          run_capture revive-code-hash-lockup-deposit-percent dot portaldot-v3.const.Revive.CodeHashLockupDepositPercent
+          run_capture revive-allow-evm-bytecode dot portaldot-v3.const.Revive.AllowEVMBytecode
           # Exercise the account-mapping verifier against a fixed synthetic H160
           # and synthetic SS58 account only. Never put real wallet pairs in CI.
           synthetic_ss58="$(node -e 'const { encodeSs58AccountId } = require("./scripts/portaldot-address.js"); process.stdout.write(encodeSs58AccountId(Buffer.alloc(32, 0x42), 42));')"
