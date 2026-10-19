@@ -23,6 +23,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Verify deployment network guard with read-only mock RPC
+        run: node scripts/deploy-network-smoke.mjs
       - name: Run local contract and bridge tests
         run: npm test
       - name: Compile contracts
