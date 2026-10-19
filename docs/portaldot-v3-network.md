@@ -33,7 +33,7 @@ On 19 October 2026, the read-only Substrate endpoint returned chain name `Portal
 
 With a 14-decimal native denomination, the three observed deposit constants correspond to 0.06 POT per byte, 0.15 POT per storage item, and 0.0015 POT per child-trie item. These constants are evidence from one endpoint's reported runtime metadata; they are not, alone, a complete deployment-cost calculation or cryptographic network authentication.
 
-The raw metadata was 561,916 bytes and its returned SHA-256 varied between inspection runs despite the same reported `specVersion=3002`; consequently, the project does not pin that raw metadata digest or the endpoint-reported genesis hash as a trusted identity anchor. Record the runtime version and finalized block from the time of each inspection instead.
+The raw metadata was 561,916 bytes and its returned SHA-256 varied between inspection runs despite the same reported `specVersion=3002`; consequently, the project does not pin that raw metadata digest or the endpoint-reported genesis hash as a trusted identity anchor. Record the runtime version and finalized block from the time of each inspection instead. A sanitized snapshot from the read-only probe is versioned in [evidence/portaldot-v3-runtime-2026-10-19.json](../evidence/portaldot-v3-runtime-2026-10-19.json); it contains only the fixed synthetic H160 query, not a user account pair.
 
 ## Provenance
 
