@@ -394,6 +394,7 @@ def main() -> int:
                 for name in (
                     "PORTALDOT_RPC_URL",
                     "PORTALDOT_CHAIN_ID",
+                    "PORTALDOT_GENESIS_HASH",
                     "PORTALDOT_GUARD_ADDRESS",
                     "PORTALDOT_GUARD_CODE_HASH",
                     "DEPLOYER_PRIVATE_KEY",
@@ -426,6 +427,10 @@ def main() -> int:
                     stderr=subprocess.STDOUT,
                 )
                 wait_for_rpc(evm_rpc_url, evm_process, node_log_path, CHAIN_ID)
+                genesis_block = rpc_call(evm_rpc_url, "eth_getBlockByNumber", ["0x0", False])
+                if not isinstance(genesis_block, dict) or not re.fullmatch(r"0x[a-fA-F0-9]{64}", str(genesis_block.get("hash", ""))):
+                    raise RuntimeError("Temporary local EVM did not return a valid genesis block hash.")
+                local_genesis_hash = genesis_block["hash"]
                 unlocked_accounts = rpc_call(evm_rpc_url, "eth_accounts")
                 if not isinstance(unlocked_accounts, list) or not unlocked_accounts:
                     raise RuntimeError("Temporary local EVM exposes no unlocked test account for faucet funding.")
@@ -473,6 +478,7 @@ def main() -> int:
                 deploy_env.update({
                     "PORTALDOT_RPC_URL": evm_rpc_url,
                     "PORTALDOT_CHAIN_ID": str(CHAIN_ID),
+                    "PORTALDOT_GENESIS_HASH": local_genesis_hash,
                     "PORTALDOT_SIMULATED_CHAIN_ID": str(CHAIN_ID),
                     "DEPLOYER_PRIVATE_KEY": test_wallets["deployerPrivateKey"],
                     "BRIDGE_SIGNER_PRIVATE_KEY": "",
@@ -533,6 +539,7 @@ def main() -> int:
                     "PORTALDOT_GUARD_CODE_HASH": guard_code_hash,
                     "PORTALDOT_RPC_URL": evm_rpc_url,
                     "PORTALDOT_CHAIN_ID": str(CHAIN_ID),
+                    "PORTALDOT_GENESIS_HASH": local_genesis_hash,
                     "PORTALDOT_SIMULATED_CHAIN_ID": str(CHAIN_ID),
                     "DEPLOYER_PRIVATE_KEY": "",
                 })
