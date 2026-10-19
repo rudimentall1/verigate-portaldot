@@ -51,6 +51,10 @@ The project's GitHub Actions metadata probe uses the advertised Substrate WebSoc
 
 ## Read-only deployment estimate
 
+Current upstream `pallet-revive` documentation specifies that Ethereum-facing `eth_estimateGas` includes execution resource requirements **and storage deposits**; the returned estimate is intended to be sufficient for both. It also describes `GasScale` as scaling `eth_gasPrice` and the gas estimate in opposite directions, leaving the total `estimateGas × gasPrice` approximately unchanged except for rounding. See the [Polkadot Hub gas model](https://docs.polkadot.com/smart-contracts/for-eth-devs/gas-model/) and [upstream GasScale semantics](https://paritytech.github.io/polkadot-sdk/master/pallet_revive/pallet/trait.Config.html#tymethod.GasScale).
+
+PortalDot V3 reports the same runtime constants, but a single RPC response does not prove full upstream RPC conformance. Use the direct estimate as the primary budget signal; do not multiply the result by `GasScale` again or add the listed per-byte deposit a second time without evidence that the endpoint omitted it. Reconcile the quote with a fresh optimized-bytecode estimate and the current runtime response before deployment.
+
 This repository provides a read-only estimator:
 
 ```bash
