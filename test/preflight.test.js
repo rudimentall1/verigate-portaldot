@@ -50,16 +50,19 @@ describe("PortalDot RPC preflight configuration", function () {
     }
   });
 
-  it("allows an omitted optional genesis hash pin but rejects malformed configured pins", function () {
+  it("requires an independently pinned genesis hash and rejects malformed pins", function () {
     configure("https://rpc.example.invalid", "420420777", null);
-    expect(requiredNetworkConfig()).to.deep.equal({
-      rpcUrl: "https://rpc.example.invalid",
-      expectedChainId: 420420777n,
-      expectedGenesisHash: null
-    });
+    expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_GENESIS_HASH must be independently confirmed and pinned/);
 
     configure("https://rpc.example.invalid", "420420777", "0x1234");
     expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_GENESIS_HASH must be/);
+
+    configure("https://rpc.example.invalid", "420420777", TEST_GENESIS_HASH);
+    expect(requiredNetworkConfig()).to.deep.equal({
+      rpcUrl: "https://rpc.example.invalid",
+      expectedChainId: 420420777n,
+      expectedGenesisHash: TEST_GENESIS_HASH
+    });
   });
 
   it("refuses invalid URLs and non-HTTP protocols", function () {
