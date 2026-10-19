@@ -9,7 +9,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: write
 
 jobs:
   migration-preview:
@@ -126,6 +127,18 @@ jobs:
           fs.writeFileSync('scripts/deploy.mjs', migrated);
           NODE
           rm -rf artifacts cache dist
+          for file in .github/workflows/test.yml .github/workflows/ci.yml .github/workflows/dependency-audit.yml; do
+            sed -i 's/node-version: 20/node-version: 22/g' "$file"
+          done
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = '.github/workflows/test.yml';
+          let workflow = fs.readFileSync(file, 'utf8');
+          if (!/^  workflow_dispatch:/m.test(workflow)) {
+            workflow = workflow.replace('on:\n  push:\n  pull_request:\n', 'on:\n  push:\n  pull_request:\n  workflow_dispatch:\n');
+          }
+          fs.writeFileSync(file, workflow);
+          NODE
           cp hardhat.config.ts "$RUNNER_TEMP/hardhat3-preview/hardhat.config.candidate.ts"
       - name: Install candidate dependencies reproducibly
         shell: bash
@@ -152,6 +165,10 @@ jobs:
           audit_status=$?
           echo "$audit_status" > "$RUNNER_TEMP/hardhat3-preview/npm-audit.exit-code"
           node -e 'const a=require(process.argv[1]); console.log(JSON.stringify(a.metadata?.vulnerabilities ?? null,null,2))' "$RUNNER_TEMP/hardhat3-preview/npm-audit.json" || true
+          node -e 'const fs=require("node:fs"); const a=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); const total=a.metadata?.vulnerabilities?.total; console.log("Audit findings total:", total); if (total !== 0) process.exit(1)' "$RUNNER_TEMP/hardhat3-preview/npm-audit.json" > "$RUNNER_TEMP/hardhat3-preview/audit-clean.log" 2>&1
+          audit_clean_status=$?
+          echo "$audit_clean_status" > "$RUNNER_TEMP/hardhat3-preview/audit-clean.exit-code"
+          cat "$RUNNER_TEMP/hardhat3-preview/audit-clean.log"
           if [ "$test_status" -ne 0 ] || [ "$compile_status" -ne 0 ]; then exit 1; fi
       - name: Upload migration evidence
         if: always()
@@ -165,10 +182,32 @@ jobs:
         if: always()
         shell: bash
         run: |
-          for file in lockfile-generation npm-ci npm-test compile; do
+          for file in lockfile-generation npm-ci npm-test compile audit-clean; do
             path="$RUNNER_TEMP/hardhat3-preview/$file.exit-code"
             if [ ! -f "$path" ] || [ "$(cat "$path")" != "0" ]; then
               echo "Candidate stage failed: $file"
               exit 1
             fi
           done
+
+      - name: Commit validated migration on isolated branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/chore/hardhat3-migration-preview'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f package-candidate.json hardhat.config.hardhat2.cjs scripts/deploy.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: migrate PortalDot bridge to Hardhat 3"
+          git push origin HEAD:chore/hardhat3-migration-preview
+      - name: Dispatch normal CI for committed migration
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/chore/hardhat3-migration-preview'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run test.yml --ref chore/hardhat3-migration-preview
+          gh workflow run ci.yml --ref chore/hardhat3-migration-preview
+          gh workflow run dependency-audit.yml --ref chore/hardhat3-migration-preview
