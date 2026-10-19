@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { parseExpectedSubstrateGenesisHash, validateSubstrateRpcUrl, verifySubstrateGenesisHash } = require("./substrate-genesis.js");
 const { rpcResult } = require("./preflight.js");
-const { parseHexQuantity, calculateDeploymentCost, formatUnitsExact } = require("./deployment-estimate.js");
+const { parseHexQuantity, calculateDeploymentCost, buildDeploymentTransactionOverrides, formatUnitsExact } = require("./deployment-estimate.js");
 const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
 
@@ -105,11 +105,12 @@ async function main() {
 
   // Pass the exact fee caps used in the budget check; do not let ethers silently
   // populate a different maxFeePerGas after the balance guard has passed.
-  const guard = await factory.deploy(authoritySigner, {
-    gasLimit: estimatedGas,
-    maxFeePerGas,
-    maxPriorityFeePerGas
+  const transactionOverrides = buildDeploymentTransactionOverrides({
+    gasUnits: estimatedGas,
+    maxFeePerGasWei: maxFeePerGas,
+    maxPriorityFeePerGasWei: maxPriorityFeePerGas
   });
+  const guard = await factory.deploy(authoritySigner, transactionOverrides);
   const tx = guard.deploymentTransaction();
   const receipt = await tx.wait();
   const contractAddress = await guard.getAddress();
