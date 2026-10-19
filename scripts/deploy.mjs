@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { parseExpectedSubstrateGenesisHash, validateSubstrateRpcUrl, verifySubstrateGenesisHash } = require("./substrate-genesis.js");
+const { rpcResult } = require("./preflight.js");
 const { parseHexQuantity, calculateDeploymentCost, formatUnitsExact } = require("./deployment-estimate.js");
 const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
@@ -17,9 +18,11 @@ async function main() {
   }
   const expectedChainId = BigInt(chainIdText);
   const network = await ethers.provider.getNetwork();
+  const rpcChainIdHex = await rpcResult(rpcUrl, "eth_chainId", []);
+  const rpcChainId = parseHexQuantity(rpcChainIdHex, "eth_chainId result");
 
-  if (network.chainId !== expectedChainId) {
-    throw new Error(`Refusing deployment: expected chain ID ${expectedChainId}, got ${network.chainId}`);
+  if (network.chainId !== expectedChainId || rpcChainId !== expectedChainId || network.chainId !== rpcChainId) {
+    throw new Error(`Refusing deployment: expected chain ID ${expectedChainId}, provider reports ${network.chainId}, configured RPC reports ${rpcChainId}`);
   }
   const substrateRpcUrl = validateSubstrateRpcUrl(process.env.PORTALDOT_SUBSTRATE_RPC_URL);
   const expectedSubstrateGenesisHash = parseExpectedSubstrateGenesisHash(process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH);
@@ -53,21 +56,27 @@ async function main() {
   if (typeof deploymentTx.data !== "string" || !/^0x(?:[0-9a-fA-F]{2})+$/.test(deploymentTx.data)) {
     throw new Error("Refusing deployment: compiled contract creation bytecode is missing or malformed.");
   }
-  const estimatedGasHex = await ethers.provider.send("eth_estimateGas", [{
+  const estimatedGasHex = await rpcResult(rpcUrl, "eth_estimateGas", [{
     from: deployerAddress,
     data: deploymentTx.data
   }]);
   const estimatedGas = parseHexQuantity(estimatedGasHex, "eth_estimateGas result");
-  const feeData = await ethers.provider.getFeeData();
-  if (feeData.maxFeePerGas === null || feeData.maxPriorityFeePerGas === null) {
-    throw new Error("Refusing deployment: RPC did not provide complete EIP-1559 fee data; no transaction sent.");
+  // Use the same explicit configured RPC fee model as the read-only estimator.
+  // A missing EIP-1559 base fee is a hard stop; do not silently substitute another provider fee.
+  const latestBlock = await rpcResult(rpcUrl, "eth_getBlockByNumber", ["latest", false]);
+  if (!latestBlock || typeof latestBlock !== "object" || typeof latestBlock.baseFeePerGas !== "string") {
+    throw new Error("Refusing deployment: configured RPC did not return baseFeePerGas; no transaction sent.");
   }
-  const maxFeePerGas = feeData.maxFeePerGas;
-  const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
-  if (maxFeePerGas <= 0n || maxPriorityFeePerGas < 0n || maxPriorityFeePerGas > maxFeePerGas) {
+  const baseFeePerGas = parseHexQuantity(latestBlock.baseFeePerGas, "latest block baseFeePerGas");
+  const maxPriorityFeePerGas = parseHexQuantity(
+    await rpcResult(rpcUrl, "eth_maxPriorityFeePerGas", []),
+    "eth_maxPriorityFeePerGas result"
+  );
+  const maxFeePerGas = (baseFeePerGas * 2n) + maxPriorityFeePerGas;
+  if (maxFeePerGas <= 0n || maxPriorityFeePerGas > maxFeePerGas) {
     throw new Error("Refusing deployment: RPC returned invalid EIP-1559 fee parameters; no transaction sent.");
   }
-  const balanceHex = await ethers.provider.send("eth_getBalance", [deployerAddress, "latest"]);
+  const balanceHex = await rpcResult(rpcUrl, "eth_getBalance", [deployerAddress, "latest"]);
   const budget = calculateDeploymentCost({
     gasUnits: estimatedGas,
     gasPriceWei: maxFeePerGas,
