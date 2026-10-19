@@ -93,7 +93,7 @@ Before any further funding or deployment:
 
 ## Read-only deployment estimate
 
-The preflight and estimator now require `PORTALDOT_GENESIS_HASH` to be set to an independently confirmed value. The endpoint must return that exact genesis hash as well as the configured chain ID. A hash copied from the same RPC is not independent authentication; until PortalDot confirms the value through a separate trusted channel, the preflight, estimator and deployment intentionally fail closed.
+The preflight, estimator, deployment and bridge signing require `PORTALDOT_SUBSTRATE_RPC_URL` plus an independently confirmed `PORTALDOT_SUBSTRATE_GENESIS_HASH`, checked via Substrate `chain_getBlockHash(0)`. The EVM `eth_chainId` check remains separate. A hash copied from the same RPC is not independent authentication; until PortalDot confirms the Substrate pin through a trusted channel, these paths intentionally fail closed.
 
 Current upstream `pallet-revive` documentation says `eth_estimateGas` must cover the execution resources and the storage deposit required for the call. It also says `GasScale` scales gas price and gas estimation in opposite directions; the product is generally unchanged apart from rounding. See the [Polkadot Hub gas model](https://docs.polkadot.com/smart-contracts/for-eth-devs/gas-model/) and [upstream GasScale documentation](https://paritytech.github.io/polkadot-sdk/master/pallet_revive/pallet/trait.Config.html#tymethod.GasScale).
 
