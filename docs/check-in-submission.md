@@ -9,32 +9,32 @@ Copy and adapt this text for DoraHacks. It deliberately does not claim a live Po
 
 **One-line overview**
 
-Verigate PortalDot is an authorization bridge that prevents an AI agent's proposed native-token payment from being signed unless Verigate issues a valid signed `ALLOW` decision and execution authorization; a Solidity guard then enforces the resulting EIP-712 transfer constraints.
+Verigate PortalDot is an authorization bridge that prevents an AI agent's proposed native-token payment from being signed unless Verigate issues a valid signed ALLOW decision and execution authorization; a Solidity guard enforces the resulting EIP-712 transfer constraints.
 
 ## Current progress
 
 - **Public repository:** https://github.com/rudimentall1/verigate-portaldot
-- **Native-transfer guard:** `PortalDotAgentGuard` accepts only an EIP-712-authorized native-token transfer. It checks the trusted signer, recipient, amount, deadline and replay nonce, and has no arbitrary-call interface.
-- **Authorization bridge:** the bridge independently verifies both Verigate Ed25519 artifacts against a locally pinned issuer public key, asks the configured Verigate API verifier for a second check, binds the authorization to the exact action, recipient and base-unit amount, and produces a short-lived EIP-712 signature only for `ALLOW`.
-- **Pre-sign safety checks:** the bridge checks the configured chain ID, deployed guard runtime-code hash and on-chain `authoritySigner()`. Missing or mismatched configuration fails closed. A genesis-hash pin is an optional extra check, not a claim that one RPC endpoint can authenticate itself.
-- **Automated tests:** the current PR branch passed 117 tests and Solidity compilation, plus PortalDot integration CI, read-only RPC health checks and the dependency security audit. Latest branch-head results: [Test](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39215891700), [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39215891705), [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39215886934), and [dependency security audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39215891761).
-- **Isolated end-to-end evidence:** CI starts a disposable Verigate API and a loopback-only Hardhat EVM, deploys the actual guard source to that simulator, verifies signed `ALLOW` and `BLOCK` artifacts, creates a dry-run signature only for `ALLOW`, and refuses `BLOCK`. It sends no transaction to the public PortalDot network.
-- **Read-only network checks:** the configured PortalDot V3 EVM endpoint has responded to read-only RPC health checks and reported chain ID `420420777`. The endpoint and chain details are documented with their available provenance in [the network guide](https://github.com/rudimentall1/verigate-portaldot/blob/chore/hardhat3-migration-preview/docs/portaldot-v3-network.md).
+- **Native-transfer guard:** PortalDotAgentGuard accepts only an EIP-712-authorized native-token transfer. It checks the trusted signer, recipient, amount, deadline and replay nonce, and has no arbitrary-call interface.
+- **Authorization bridge:** the bridge independently verifies both Verigate Ed25519 artifacts against a locally pinned issuer public key, asks the configured Verigate API verifier for a second check, binds the authorization to the exact action, recipient and base-unit amount, and creates a short-lived EIP-712 signature only for ALLOW.
+- **Guarded executor:** the new execution CLI validates the signed EIP-712 domain and recovered signer, rejects unsafe integer encodings and mismatched transfer details, checks the guard's runtime-code hash and authoritySigner, verifies the authorization deadline and contract balance, simulates the exact transfer, and checks the relayer's gas budget with a 20% margin. It does not broadcast unless --broadcast is explicitly supplied.
+- **Automated checks:** the branch passed 132 tests and Solidity compilation, plus PortalDot integration CI, read-only RPC health and dependency security audit. Evidence: [132-test/compile run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217749830), [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217749634), [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217746423), and [dependency audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217749609).
+- **Full isolated execution evidence:** the integration harness starts a disposable Verigate API and a loopback-only Hardhat EVM, deploys the actual guard source to that simulator, verifies ALLOW and BLOCK artifacts, signs only ALLOW, proves executor dry-run does not change the guard balance, then executes the exact signed ALLOW transfer locally. It confirms the TransferExecuted event and recipient balance delta equal to the authorized amount; BLOCK is refused. No transfer is sent to the public PortalDot network by this integration workflow.
+- **Read-only network checks:** the configured V3 EVM endpoint responded to health checks and reported chain ID 420420777. The endpoint and unit conversion are documented with the available provenance in [the network guide](https://github.com/rudimentall1/verigate-portaldot/blob/chore/hardhat3-migration-preview/docs/portaldot-v3-network.md). This is not a cryptographic authentication of the RPC operator.
 - **Architecture and trust boundaries:** https://github.com/rudimentall1/verigate-portaldot/blob/chore/hardhat3-migration-preview/docs/architecture.md
 - **Demo recording plan:** https://github.com/rudimentall1/verigate-portaldot/blob/chore/hardhat3-migration-preview/docs/demo-script.md
 
 ## Outstanding work
 
-1. Confirm a final deploy configuration using a real dedicated authority signer and independently verified guard bytecode fingerprint.
-2. Re-run the read-only deployment estimate with that real signer and the selected public deployer address. A prior preliminary estimate used a placeholder constructor signer, so it is not a deployment-ready quote.
-3. Deploy the guard only after the estimate, available budget and network details have been checked. Record the contract address, transaction hash, block number and timestamp only after the transaction is confirmed.
-4. Record and publish an initial demo video no longer than three minutes. Clearly label the currently reproducible CI flow as a local dry run, not a live PortalDot transaction.
-5. Submit the progress summary and public repository on DoraHacks; confirm the event's current requirements and deadlines on the official listing and PortalDot Discord.
+1. Confirm the real dedicated authority signer and independently verify the intended guard's runtime bytecode fingerprint.
+2. Re-run the read-only deployment estimate with the real signer and selected deployer address. The earlier preliminary quote used a placeholder constructor signer and is not deployment-ready.
+3. Deploy only after the endpoint, guard configuration, current storage/gas estimate and available budget are verified. Record address, transaction hash, block number and timestamp only after confirmation.
+4. Record a demo video under three minutes, accurately labelling the automated execution as local EVM evidence rather than a live PortalDot transfer.
+5. Submit the summary and repository on DoraHacks; reconfirm the event's current requirements and deadlines.
 
 ## Testnet deployment status
 
-**Not deployed to the PortalDot testnet.** No contract address, deployment transaction hash or explorer link is claimed. CI checks and the RPC health workflow are read-only with respect to the public testnet; the automated end-to-end contract exercise uses only a local EVM simulator. The current branch is a draft pull request and has not been merged into `main`.
+**Not deployed to PortalDot testnet.** No live contract address, transaction hash or explorer link is claimed. The end-to-end transfer evidence is from a temporary loopback Hardhat EVM. The public RPC health workflow makes read-only queries; it does not send a transaction. The current development branch remains a draft pull request and is not merged into main.
 
 ## Reproducibility
 
-GitHub Actions runs the contract tests, Solidity compilation, bridge integration checks, RPC health check and dependency audit. The integration workflow can upload an `isolated-verigate-api-evidence` artifact containing disposable test data. That artifact is evidence of the local integration path only, not proof of a live PortalDot transaction.
+GitHub Actions runs contract tests, Solidity compilation, the isolated Verigate API integration, RPC health checks and dependency audit. Its evidence artifact contains the local ALLOW/BLOCK responses, signed authorization, executor dry-run summary and local transfer receipt details. That artifact proves only the local integration path, not a live PortalDot transaction.
