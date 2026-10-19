@@ -25,6 +25,10 @@ The runtime-reported `AutoMap=true` agrees with the current upstream [pallet-rev
 
 These observations come from one RPC endpoint and are not independent authentication of the network. The runtime's reported genesis hash should remain an observed value, not a pinned trust anchor, until independently confirmed.
 
+## Runtime evidence snapshot
+
+The sanitized read-only snapshot is committed in [evidence/portaldot-v3-runtime-2026-10-19.json](../evidence/portaldot-v3-runtime-2026-10-19.json), including the reported runtime version, Revive.OriginalAccount key/value types and selected runtime constants. It contains only a query for a fixed synthetic H160, not a user wallet pair.
+
 ## Keep the account types separate
 
 PortalDot V3 exposes a Substrate account interface and an EVM-compatible `pallet-revive` interface. The account identifiers and balance APIs are not interchangeable:
