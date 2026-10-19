@@ -21,10 +21,20 @@
 
 The estimator used its explicitly labelled placeholder authority signer (`0x0000000000000000000000000000000000000001`) because a final `AUTHORITY_SIGNER_ADDRESS` had not been selected. The placeholder is only for a preliminary quote and must not be used for deployment. The constructor argument is fixed-width, but the estimate must be re-run with the actual dedicated authority signer before deployment.
 
-PortalDot V3's estimate may account for code-storage deposit as well as ordinary transaction execution. Treat this as a live, preliminary requirement reported by the current RPC, not as a permanent price guarantee or an independent cryptographic proof that the RPC is trustworthy. The configured genesis-hash pin was unset in this run. Gas price, chain state, bytecode, signer, and runtime rules can change the result.
+## Interpreting the unusually large estimate
+
+A PortalDot V3 field guide linked from `docs/portaldot-v3-network.md` reports an indicative code-storage deposit around 0.08 POT per byte plus a base cost around 18 POT. Applying that *rough reference only* to 2,363 bytes gives:
+
+- Indicative deposit component: 2,363 × 0.08 = 189.04 POT
+- Plus indicative base cost: about 18 POT
+- Rough guide-derived total: about 207.04 POT
+
+That rough total is in the same order of magnitude as the RPC-derived 184.123588 POT, so the large estimate is not, by itself, evidence of an RPC bug. The figures do not match exactly and must not be treated as a fee formula for this contract. The guide describes another sample, and actual costs may depend on optimized deployed code size, runtime parameters, gas accounting, storage deposits, and chain state. In particular, creation bytecode size is not necessarily the exact stored runtime-code size used to calculate a deposit.
+
+Treat the RPC value as a preliminary live quote, not a permanent price guarantee or independent proof that the RPC is trustworthy. The configured genesis-hash pin was unset in this run. Re-run the estimate against the final compiled artifact, with the real dedicated authority signer and a verified deployer address, before any explicitly authorized deployment.
 
 ## Decision
 
-Do **not** deploy with the observed 0.9 POT balance. The estimate requires at least 220.948305 POT in the EVM account to meet the project's 20% margin, a shortfall of approximately 220.048306 POT at the time of measurement. This figure is the EVM-account shortfall, not a safe instruction for how much to transfer from Substrate: the earlier small transfer's 1 tPOT-to-0.9 POT difference has not been independently reconciled. Verify the transfer accounting before sending a larger amount.
+Do **not** deploy with the observed 0.9 POT balance. The quote reported a requirement of 220.948305 POT including the project's 20% margin, with a shortfall of approximately 220.048305 POT at the time of measurement. This is the reported EVM-account shortfall, **not** a safe instruction for how much to transfer from Substrate: the earlier small transfer's 1 tPOT-to-0.9 POT difference has not been independently reconciled, and the registered SS58 account's mapping to the candidate H160 remains unverified. Do not fund a derived fallback address based only on offline address conversion.
 
-A real deployment also requires a dedicated non-zero `AUTHORITY_SIGNER_ADDRESS` that differs from the deployer, and local configuration of the deployer key. Private keys must never be committed or shared in chat. Re-run the read-only estimate with the selected authority signer and current balance immediately before any explicitly authorized deployment.
+A real deployment also requires a dedicated non-zero `AUTHORITY_SIGNER_ADDRESS` that differs from the deployer, and local configuration of the deployer key. Private keys must never be committed or shared in chat. Verify the live runtime's account mapping and token denomination, then re-run the read-only estimate with the selected authority signer and current balance immediately before any explicitly authorized deployment.
