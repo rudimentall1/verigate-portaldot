@@ -411,6 +411,7 @@ async function verifyGuardDeployment(options = {}) {
   const chainIdText = String(options.expectedChainId ?? process.env.PORTALDOT_CHAIN_ID ?? "").trim();
   const guardAddress = options.guardAddress ?? process.env.PORTALDOT_GUARD_ADDRESS;
   const authorityAddress = options.authoritySigner ?? process.env.AUTHORITY_SIGNER_ADDRESS;
+  const expectedCodeHash = String(options.guardCodeHash ?? process.env.PORTALDOT_GUARD_CODE_HASH ?? "").trim();
 
   if (!rpcUrl) fail("PORTALDOT_RPC_URL is required to verify the deployed guard before signing.");
   if (!/^[1-9][0-9]*$/.test(chainIdText)) {
@@ -421,6 +422,9 @@ async function verifyGuardDeployment(options = {}) {
   }
   if (!authorityAddress || !ethers.isAddress(authorityAddress) || ethers.getAddress(authorityAddress) === ethers.ZeroAddress) {
     fail("AUTHORITY_SIGNER_ADDRESS must be a non-zero EVM address before verifying the deployed guard.");
+  }
+  if (!/^0x[a-fA-F0-9]{64}$/.test(expectedCodeHash)) {
+    fail("PORTALDOT_GUARD_CODE_HASH must be the independently verified 32-byte runtime-code hash of PortalDotAgentGuard.");
   }
 
   let parsedUrl;
@@ -458,6 +462,10 @@ async function verifyGuardDeployment(options = {}) {
     if (typeof code !== "string" || !/^0x(?:[0-9a-fA-F]{2})+$/.test(code)) {
       fail(`No deployed contract bytecode found at PORTALDOT_GUARD_ADDRESS ${address}; refusing to sign.`);
     }
+    const actualCodeHash = ethers.keccak256(code);
+    if (actualCodeHash.toLowerCase() !== expectedCodeHash.toLowerCase()) {
+      fail(`Deployed guard runtime-code hash ${actualCodeHash} does not match PORTALDOT_GUARD_CODE_HASH; refusing to sign.`);
+    }
 
     const makeContract = options.contractFactory ||
       ((contractAddress, rpcProvider) => new ethers.Contract(contractAddress, GUARD_READ_ABI, rpcProvider));
@@ -472,6 +480,7 @@ async function verifyGuardDeployment(options = {}) {
       chainId: network.chainId,
       guardAddress: address,
       authoritySigner: actualAuthority,
+      runtimeCodeHash: actualCodeHash,
       deployedCodeBytes: (code.length - 2) / 2
     };
   } finally {
