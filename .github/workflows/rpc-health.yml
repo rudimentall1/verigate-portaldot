@@ -2,7 +2,7 @@ name: PortalDot RPC health
 
 on:
   push:
-    branches: [main]
+    branches: [main, chore/hardhat3-migration-preview]
   workflow_dispatch:
   schedule:
     - cron: "17 * * * *"
