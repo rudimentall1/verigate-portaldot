@@ -615,7 +615,7 @@ describe("Verigate bridge binding", function () {
     let verifierCalls = 0;
 
     try {
-      const [deployer, relayer] = await ethers.getSigners();
+      const [deployer, , relayer] = await ethers.getSigners();
       const chainId = (await ethers.provider.getNetwork()).chainId;
       const now = Math.floor(Date.now() / 1000);
       const item = response(now);
