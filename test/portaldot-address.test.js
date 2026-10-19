@@ -66,7 +66,7 @@ describe("SS58 AccountId32 to H160 inspection", function () {
   it("reports an offline candidate mismatch without claiming the live mapping is disproved", function () {
     const result = inspectAccountMapping(
       "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB"
+      "0x9999999999999999999999999999999999999999"
     );
     expect(result.candidateMatchesOfflineDerivation).to.equal(false);
     expect(result.runtimeMappingConfirmed).to.equal(false);
