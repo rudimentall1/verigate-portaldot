@@ -61,7 +61,7 @@ describe("Read-only Revive OriginalAccount verifier", function () {
       ss58Address: accountOne
     });
     expect(missing.status).to.equal("no_mapping_entry");
-    expect(missing.mappingMatchesRegisteredAccount).to.equal(false);
+    expect(missing.mappingMatchesRegisteredAccount).to.equal(null);
   });
 
   it("accepts a hex-encoded AccountId32 value returned by an alternate CLI formatter", function () {
