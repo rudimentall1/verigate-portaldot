@@ -223,16 +223,41 @@ export async function verifyOriginalAccountMapping({
   }
 }
 
+export function redactMappingResult(result) {
+  return {
+    status: result.status,
+    mappingMatchesRegisteredAccount: result.mappingMatchesRegisteredAccount,
+    storageItem: result.storageItem,
+    checkedAt: result.checkedAt ?? null,
+    rpcOrigin: result.rpcOrigin ?? null,
+    reportedChainId: result.reportedChainId ?? null,
+    runtimeSnapshot: result.runtimeSnapshot ? {
+      runtimeVersion: result.runtimeSnapshot.runtimeVersion,
+      finalizedBlockNumber: result.runtimeSnapshot.finalizedBlockNumber,
+      finalizedHead: result.runtimeSnapshot.finalizedHead,
+      metadataBytes: result.runtimeSnapshot.metadataBytes,
+      metadataSha256Observed: result.runtimeSnapshot.metadataSha256Observed
+    } : null,
+    queryScope: result.queryScope,
+    runtimeMappingConfirmed: false,
+    independentNetworkAuthentication: false,
+    transactionSubmitted: false,
+    note: result.note
+  };
+}
+
 async function main(args = process.argv.slice(2)) {
-  if (args.length < 2 || args.length > 3) {
-    fail("Usage: npm run verify:account-mapping -- <candidate-H160> <registered-SS58-AccountId32> [wss://rpc]");
+  const redact = args.includes("--redact");
+  const positional = args.filter((arg) => arg !== "--redact");
+  if (positional.length < 2 || positional.length > 3) {
+    fail("Usage: npm run verify:account-mapping -- <candidate-H160> <registered-SS58-AccountId32> [wss://rpc] [--redact]");
   }
   const result = await verifyOriginalAccountMapping({
-    h160: args[0],
-    ss58Address: args[1],
-    rpcUrl: args[2] || DEFAULT_SUBSTRATE_RPC_URL
+    h160: positional[0],
+    ss58Address: positional[1],
+    rpcUrl: positional[2] || DEFAULT_SUBSTRATE_RPC_URL
   });
-  process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+  process.stdout.write(JSON.stringify(redact ? redactMappingResult(result) : result, null, 2) + "\n");
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
