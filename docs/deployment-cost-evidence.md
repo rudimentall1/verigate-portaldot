@@ -37,7 +37,9 @@ Those are runtime constants, not a full per-contract quote. The earlier communit
 
 ## Interpreting the quote
 
-The 184.123588 POT figure is the direct result of multiplying the endpoint's `eth_estimateGas` response by `eth_gasPrice` and formatting the result as 18-decimal EVM POT. It is not an independently verified breakdown of transaction fees, code deposits, code-hash lockup, storage items, or other runtime charges. The runtime constants above help explain why ordinary Ethereum gas intuition is insufficient, but they do not by themselves reconcile every part of the earlier estimate.
+The 184.123588 POT figure is the direct result of multiplying the endpoint's `eth_estimateGas` response by `eth_gasPrice` and formatting the result as 18-decimal EVM POT. Upstream `pallet-revive` documentation says Ethereum-facing `eth_estimateGas` is intended to cover the transaction's execution resources **and storage deposits**, so its output should not automatically be treated as a gas-only fee with the storage deposit added a second time. See the [Polkadot Hub gas model](https://docs.polkadot.com/smart-contracts/for-eth-devs/gas-model/) and the [pallet-revive `eth_estimate_gas` implementation documentation](https://paritytech.github.io/polkadot-sdk/master/pallet_revive/pallet/struct.Pallet.html#method.eth_estimate_gas).
+
+This does not establish that PortalDot V3's RPC fully conforms to current upstream estimation semantics, nor does it provide a component-by-component reconciliation of this old estimate. The runtime constants make a deposit-inclusive estimate plausible, but the earlier quote remains preliminary because it used a placeholder constructor signer and an unverified candidate H160.
 
 In particular:
 
