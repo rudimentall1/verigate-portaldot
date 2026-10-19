@@ -2,6 +2,7 @@ require("dotenv").config();
 const fs = require("node:fs");
 const crypto = require("node:crypto");
 const { ethers } = require("ethers");
+const { parseExpectedGenesisHash, verifyGenesisHash } = require("../scripts/network-identity.js");
 
 // Preserve Python JSON number spellings from Verigate's JSON artifacts. Python's
 // json.dumps distinguishes an integer (1) from an integral float (1.0), while
@@ -439,6 +440,7 @@ async function verifyGuardDeployment(options = {}) {
   const guardAddress = options.guardAddress ?? process.env.PORTALDOT_GUARD_ADDRESS;
   const authorityAddress = options.authoritySigner ?? process.env.AUTHORITY_SIGNER_ADDRESS;
   const expectedCodeHash = String(options.guardCodeHash ?? process.env.PORTALDOT_GUARD_CODE_HASH ?? "").trim();
+  const expectedGenesisHashValue = options.genesisHash ?? process.env.PORTALDOT_GENESIS_HASH;
 
   if (!rpcUrl) fail("PORTALDOT_RPC_URL is required to verify the deployed guard before signing.");
   if (!/^[1-9][0-9]*$/.test(chainIdText)) {
@@ -453,6 +455,7 @@ async function verifyGuardDeployment(options = {}) {
   if (!/^0x[a-fA-F0-9]{64}$/.test(expectedCodeHash)) {
     fail("PORTALDOT_GUARD_CODE_HASH must be the independently verified 32-byte runtime-code hash of PortalDotAgentGuard.");
   }
+  const expectedGenesisHash = parseExpectedGenesisHash(expectedGenesisHashValue);
 
   let parsedUrl;
   try {
@@ -483,6 +486,7 @@ async function verifyGuardDeployment(options = {}) {
     if (network.chainId !== expectedChainId) {
       fail(`Guard RPC is on chain ID ${network.chainId}, expected ${expectedChainId}; refusing to sign.`);
     }
+    const actualGenesisHash = await verifyGenesisHash(provider, expectedGenesisHash);
 
     const address = ethers.getAddress(guardAddress);
     const code = await provider.getCode(address);
@@ -505,6 +509,7 @@ async function verifyGuardDeployment(options = {}) {
 
     return {
       chainId: network.chainId,
+      genesisHash: actualGenesisHash,
       guardAddress: address,
       authoritySigner: actualAuthority,
       runtimeCodeHash: actualCodeHash,
