@@ -66,7 +66,7 @@ The monitor requests only `eth_chainId` and `eth_blockNumber`, reports the check
 
 ## Funding the EVM deployer address
 
-Substrate SS58 accounts and EVM H160 addresses are different account forms. The deterministic fallback SS58 account for an H160 is derived by appending twelve `0xEE` bytes, but native Substrate accounts may require a stateful `pallet_revive.map_account` mapping before they can act as an origin for EVM-compatible contracts. See [funding and account mapping](docs/funding-and-account-mapping.md) and the [Polkadot pallet-revive account guide](https://docs.polkadot.com/smart-contracts/for-eth-devs/accounts/). Treat the Polkadot guide as general implementation context, not proof of every PortalDot V3 runtime setting.
+Substrate SS58 accounts and EVM H160 addresses are different account forms. The deterministic fallback SS58 account for an H160 is derived by appending twelve `0xEE` bytes. A read-only inspection of PortalDot V3 runtime `specVersion=3002` decoded the actual `Revive.OriginalAccount` storage as H160 → `AccountId32`, with `Revive.AutoMap=true`; `Revive.AddressSuffix` is not present in this runtime. This does not reveal the mapping value for a specific wallet. See [funding and account mapping](docs/funding-and-account-mapping.md) for the observed runtime constants and the safe one-key query. The [Polkadot pallet-revive account guide](https://docs.polkadot.com/smart-contracts/for-eth-devs/accounts/) is general SDK context, not a substitute for the live mapping value.
 
 To print the deterministic fallback SS58 address for an EVM account without entering a private key:
 
@@ -80,7 +80,18 @@ To decode a Substrate SS58 AccountId32 and calculate its expected H160 under cur
 npm run address:inspect -- 5YourSubstrateAddress 0xCandidateEvmAddress
 ```
 
-This tool validates the SS58 checksum and reports the offline derivation; it does not query the PortalDot runtime or confirm a stateful mapping. The current upstream rule uses the last 20 bytes of `keccak256(AccountId32)` for ordinary Substrate accounts, but runtime versions may differ. A mismatch does not prove an address is wrong or unusable. Inspect the live runtime metadata/storage or get independent PortalDot confirmation before funding. Do not infer the reason for a balance difference without transaction evidence.
+This tool validates the SS58 checksum and reports the offline derivation; it does not query the PortalDot runtime or confirm a stateful mapping. The current upstream rule uses the last 20 bytes of `keccak256(AccountId32)` for ordinary Substrate accounts, but runtime versions may differ. A mismatch does not prove an address is wrong or unusable.
+
+To compare one H160 with one registered SS58 account using PortalDot V3's actual `Revive.OriginalAccount` storage, install the matching CLI and run this locally:
+
+```bash
+npm install --global polkadot-cli@0.7.0
+npm run verify:account-mapping -- 0xCandidateEvmAddress 5RegisteredSubstrateAddress
+```
+
+The command reads the chain's runtime metadata, checks the reported `Revive.ChainId`, queries exactly one H160 key, and compares the returned raw `AccountId32` bytes with the supplied SS58 account. It uses a temporary Polkadot CLI home, no private key or mnemonic, and makes no extrinsic or transaction. Its output distinguishes `mapping_matches`, `mapping_points_to_another_account`, and `no_mapping_entry`. Run this locally rather than putting a personally identifying address pair in public CI logs or artifacts. A one-RPC result is still not independent network authentication.
+
+Do not infer the reason for a balance difference without transaction evidence.
 
 ## Read-only deployment cost estimate
 
