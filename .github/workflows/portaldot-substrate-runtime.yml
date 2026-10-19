@@ -1,0 +1,50 @@
+name: PortalDot Substrate runtime metadata
+
+on:
+  push:
+    branches: [main, chore/hardhat3-migration-preview]
+    paths:
+      - "scripts/substrate-runtime-preflight.mjs"
+      - "test/substrate-runtime-preflight.test.js"
+      - ".github/workflows/portaldot-substrate-runtime.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Read-only Substrate runtime fingerprint
+        id: inspect
+        continue-on-error: true
+        env:
+          PORTALDOT_SUBSTRATE_RPC_URL: wss://test-node-v3.portaldot.dev
+        run: |
+          mkdir -p "$RUNNER_TEMP/substrate-runtime-evidence"
+          set +e
+          npm run --silent inspect:substrate-runtime > "$RUNNER_TEMP/substrate-runtime-evidence/runtime-metadata.json" 2>&1
+          inspector_exit_code=$?
+          printf '%s\n' "$inspector_exit_code" > "$RUNNER_TEMP/substrate-runtime-evidence/inspector-exit-code.txt"
+          cat "$RUNNER_TEMP/substrate-runtime-evidence/runtime-metadata.json"
+          exit "$inspector_exit_code"
+      - name: Upload runtime metadata evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: portaldot-substrate-runtime-metadata
+          path: ${{ runner.temp }}/substrate-runtime-evidence/
+          if-no-files-found: warn
+          retention-days: 14
