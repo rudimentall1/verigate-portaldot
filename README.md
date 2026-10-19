@@ -81,11 +81,11 @@ Before moving more than a small test amount, verify the derived recipient and co
 Before funding or broadcasting a deployment, estimate the actual compiled `PortalDotAgentGuard` creation bytecode against the configured testnet:
 
 ```bash
-# Set AUTHORITY_SIGNER_ADDRESS and DEPLOYMENT_ESTIMATE_FROM in the untracked .env
+# Set DEPLOYMENT_ESTIMATE_FROM in the untracked .env. AUTHORITY_SIGNER_ADDRESS is optional for a preliminary estimate.
 npm run estimate:deployment
 ```
 
-The estimator verifies the configured chain ID, builds the constructor init code for the selected authority signer, calls only `eth_estimateGas`, `eth_gasPrice`, and `eth_getBalance`, and prints estimated cost in EVM POT units, live balance, and a 20% safety-margin result. It requires the public EVM address of the account that will deploy (or derives it locally from `DEPLOYER_PRIVATE_KEY`); the key is never sent, and the estimator does not sign or broadcast a transaction. If the node refuses estimation because the account is underfunded, treat that as a failed estimate and obtain enough test funds or re-estimate with a suitable funded account. The estimated result may include PortalDot's code-storage deposit, so use this project's current compiled bytecode rather than the generic sample size from another project.
+The estimator verifies the configured chain ID, builds constructor init code, calls only `eth_estimateGas`, `eth_gasPrice`, and `eth_getBalance`, and prints estimated cost in EVM POT units, live balance, and a 20% safety-margin result. It requires the public EVM address of the account that will deploy (or derives it locally from `DEPLOYER_PRIVATE_KEY`); the key is never sent, and the estimator does not sign or broadcast a transaction. If `AUTHORITY_SIGNER_ADDRESS` is unset, it uses a clearly labelled placeholder solely for a preliminary cost probe; this is not a deployment configuration. If the node refuses estimation because the account is underfunded, treat the estimate as inconclusive and re-run after funding the account. The estimate may include PortalDot's code-storage deposit, so use this project's current compiled bytecode rather than a generic sample size.
 
 ## Contract deployment
 
