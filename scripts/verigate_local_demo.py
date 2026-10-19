@@ -656,6 +656,15 @@ def main() -> int:
                 execution_result = json.loads(execution.stdout)
                 if execution_result.get("status") != "transfer_executed" or execution_result.get("transactionBroadcast") is not True:
                     raise RuntimeError("Executor did not confirm the authorized transfer event on the isolated EVM.")
+                for safety_field in (
+                    "preBroadcastResimulationPassed",
+                    "preBroadcastGasQuoteRefreshed",
+                    "preBroadcastFeeBudgetPassed",
+                ):
+                    if execution_result.get(safety_field) is not True:
+                        raise RuntimeError(
+                            f"Executor did not report its last-moment safety check as passed: {safety_field}."
+                        )
                 recipient_balance_after = int(
                     rpc_call(evm_rpc_url, "eth_getBalance", [ALLOW_RECIPIENT, "latest"]), 16
                 )
@@ -702,6 +711,9 @@ def main() -> int:
                         "transaction_hash": execution_result["transactionHash"],
                         "block_number": execution_result["blockNumber"],
                         "transfer_executed_event_confirmed": execution_result["transferExecutedEventConfirmed"],
+                        "pre_broadcast_resimulation_passed": execution_result["preBroadcastResimulationPassed"],
+                        "pre_broadcast_gas_quote_refreshed": execution_result["preBroadcastGasQuoteRefreshed"],
+                        "pre_broadcast_fee_budget_passed": execution_result["preBroadcastFeeBudgetPassed"],
                         "recipient": ALLOW_RECIPIENT,
                         "authorized_amount_base_units": str(payment_amount),
                         "recipient_balance_delta_base_units": str(recipient_balance_delta),
