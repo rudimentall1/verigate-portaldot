@@ -29,7 +29,7 @@ The bridge requires VERIGATE_PUBLIC_KEY_FILE to identify a local PEM for the tru
 
 The executor:
 - rejects malformed or unsafe integer encodings instead of coercing through JavaScript Number;
-- recovers the signer locally from the EIP-712 signature and requires exact chain/contract/authority matches;
+- recovers the signer locally from the EIP-712 signature, rejects non-canonical high-s values and invalid recovery bytes, and requires exact chain/contract/authority matches;
 - rejects zero recipient, self-recipient, zero amount, expired/overlong authorization and tampered fields;
 - verifies the deployed guard runtime-code hash and on-chain authority signer using read-only RPC calls;
 - checks current guard funds and runs a read-only simulation and gas estimation;
