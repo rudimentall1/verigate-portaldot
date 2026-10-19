@@ -56,6 +56,7 @@ describe("Verigate bridge binding", function () {
   beforeEach(async function () {
     // Explicit fixture configuration; production code must not assume a chain ID.
     process.env.PORTALDOT_CHAIN_ID = "420420777";
+    process.env.PORTALDOT_SUBSTRATE_RPC_URL = "wss://substrate.example.invalid";
     process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH = TEST_GENESIS_HASH;
     [, recipient, other] = await ethers.getSigners();
   });
