@@ -2,7 +2,7 @@ require("dotenv").config();
 const fs = require("node:fs");
 const crypto = require("node:crypto");
 const { ethers } = require("ethers");
-const { parseExpectedGenesisHash, verifyGenesisHash } = require("../scripts/network-identity.js");
+const { configuredGenesisHash, verifyGenesisHashIfConfigured } = require("../scripts/network-identity.js");
 
 // Preserve Python JSON number spellings from Verigate's JSON artifacts. Python's
 // json.dumps distinguishes an integer (1) from an integral float (1.0), while
@@ -455,7 +455,7 @@ async function verifyGuardDeployment(options = {}) {
   if (!/^0x[a-fA-F0-9]{64}$/.test(expectedCodeHash)) {
     fail("PORTALDOT_GUARD_CODE_HASH must be the independently verified 32-byte runtime-code hash of PortalDotAgentGuard.");
   }
-  const expectedGenesisHash = parseExpectedGenesisHash(expectedGenesisHashValue);
+  const expectedGenesisHash = configuredGenesisHash(expectedGenesisHashValue);
 
   let parsedUrl;
   try {
@@ -486,7 +486,7 @@ async function verifyGuardDeployment(options = {}) {
     if (network.chainId !== expectedChainId) {
       fail(`Guard RPC is on chain ID ${network.chainId}, expected ${expectedChainId}; refusing to sign.`);
     }
-    const actualGenesisHash = await verifyGenesisHash(provider, expectedGenesisHash);
+    const actualGenesisHash = await verifyGenesisHashIfConfigured(provider, expectedGenesisHash);
 
     const address = ethers.getAddress(guardAddress);
     const code = await provider.getCode(address);
