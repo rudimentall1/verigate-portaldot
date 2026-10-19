@@ -52,14 +52,21 @@ async function main() {
     data: deploymentTx.data
   }]);
   const gasUnits = parseHexQuantity(estimateResponse, "eth_estimateGas result");
-  const feeData = await localEthers.provider.getFeeData();
-  if (feeData.maxFeePerGas === null || feeData.maxPriorityFeePerGas === null) {
-    throw new Error("RPC did not provide complete EIP-1559 fee data; no budget estimate made.");
+  // Fetch fee inputs directly from the explicitly configured PortalDot RPC.
+  // Avoid using a provider attached to the default Hardhat network for a live quote.
+  const latestBlock = await rpcResult(config.rpcUrl, "eth_getBlockByNumber", ["latest", false]);
+  if (!latestBlock || typeof latestBlock !== "object" || typeof latestBlock.baseFeePerGas !== "string") {
+    throw new Error("PortalDot RPC did not return baseFeePerGas; no EIP-1559 budget estimate made.");
   }
-  const maxFeePerGas = feeData.maxFeePerGas;
-  const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
-  if (maxFeePerGas <= 0n || maxPriorityFeePerGas < 0n || maxPriorityFeePerGas > maxFeePerGas) {
-    throw new Error("RPC returned invalid EIP-1559 fee parameters; no budget estimate made.");
+  const baseFeePerGas = parseHexQuantity(latestBlock.baseFeePerGas, "latest block baseFeePerGas");
+  const maxPriorityFeePerGas = parseHexQuantity(
+    await rpcResult(config.rpcUrl, "eth_maxPriorityFeePerGas", []),
+    "eth_maxPriorityFeePerGas result"
+  );
+  // Conservative standard cap: twice the current base fee plus the priority fee.
+  const maxFeePerGas = (baseFeePerGas * 2n) + maxPriorityFeePerGas;
+  if (maxFeePerGas <= 0n || maxPriorityFeePerGas > maxFeePerGas) {
+    throw new Error("PortalDot RPC returned invalid EIP-1559 fee parameters; no budget estimate made.");
   }
   const gasPriceWei = maxFeePerGas;
   const balanceWei = parseHexQuantity(
