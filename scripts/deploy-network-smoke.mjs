@@ -174,6 +174,24 @@ try {
   console.log("PASS: deployment stopped at the missing DEPLOYER_PRIVATE_KEY guard.");
   console.log("PASS: no transaction RPC methods were called.");
 
+  const unpinnedGenesisEnv = { ...childEnv };
+  delete unpinnedGenesisEnv.PORTALDOT_GENESIS_HASH;
+  const countBeforeUnpinned = methodsSeen.length;
+  const unpinnedResult = await runDeploy(unpinnedGenesisEnv);
+  const unpinnedOutput = `${unpinnedResult.stdout ?? ""}\\n${unpinnedResult.stderr ?? ""}`;
+  assert.equal(unpinnedResult.error, undefined, `Unpinned deployment smoke failed to launch: ${unpinnedResult.error?.message}`);
+  assert.notEqual(unpinnedResult.status, 0, "Deployment must stop at missing deployer key without optional genesis pin.");
+  assert(
+    unpinnedOutput.includes("DEPLOYER_PRIVATE_KEY is missing"),
+    `Expected unpinned path to stop at missing deployer key after network checks. Output:\\n${unpinnedOutput}`
+  );
+  assert.equal(
+    methodsSeen.slice(countBeforeUnpinned).includes("eth_getBlockByNumber"),
+    false,
+    "Without PORTALDOT_GENESIS_HASH, deployment must not require a genesis RPC response."
+  );
+  console.log("PASS: genesis hash pin is optional; no transaction RPC methods were called.");
+
   const rpcCallCountBeforeCredentialTest = methodsSeen.length;
   const credentialEnv = {
     ...childEnv,
