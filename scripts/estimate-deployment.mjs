@@ -4,7 +4,7 @@ import { ethers as ethersLib } from "ethers";
 
 const require = createRequire(import.meta.url);
 const { requiredNetworkConfig, rpc, rpcResult, readGenesisHash } = require("./preflight.js");
-const { parseHexQuantity, formatUnitsExact, calculateDeploymentCost } = require("./deployment-estimate.js");
+const { parseHexQuantity, formatUnitsExact, calculateDeploymentCost, resolveEstimateAuthoritySigner } = require("./deployment-estimate.js");
 
 async function main() {
   const config = requiredNetworkConfig();
@@ -22,14 +22,9 @@ async function main() {
   // selected yet, use a clearly labelled non-zero placeholder; the constructor
   // argument is fixed-width, so this still builds valid init code for cost probing.
   // Actual deployment continues to require AUTHORITY_SIGNER_ADDRESS in deploy.mjs.
-  const configuredAuthoritySigner = (process.env.AUTHORITY_SIGNER_ADDRESS || "").trim();
-  const authoritySignerIsPlaceholder = configuredAuthoritySigner.length === 0;
-  const authoritySigner = authoritySignerIsPlaceholder
-    ? "0x0000000000000000000000000000000000000001"
-    : configuredAuthoritySigner;
-  if (!ethersLib.isAddress(authoritySigner) || ethersLib.getAddress(authoritySigner) === ethersLib.ZeroAddress) {
-    throw new Error("AUTHORITY_SIGNER_ADDRESS must be a valid non-zero EVM address when supplied.");
-  }
+  const authoritySelection = resolveEstimateAuthoritySigner(process.env.AUTHORITY_SIGNER_ADDRESS);
+  const authoritySignerIsPlaceholder = authoritySelection.isPlaceholder;
+  const authoritySigner = authoritySelection.address;
 
   // This is a public address only. The script never signs or sends a transaction.
   const estimateFrom = (process.env.DEPLOYMENT_ESTIMATE_FROM || "").trim() ||
