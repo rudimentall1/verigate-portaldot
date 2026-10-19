@@ -116,38 +116,36 @@ try {
   delete childEnv.DEPLOYER_PRIVATE_KEY;
   delete childEnv.AUTHORITY_SIGNER_ADDRESS;
 
-  const child = spawn(
-    process.execPath,
-    [cliPath, "run", "scripts/deploy.mjs", "--network", "portaldot"],
-    { cwd: process.cwd(), env: childEnv, stdio: ["ignore", "pipe", "pipe"] }
-  );
-  let stdout = "";
-  let stderr = "";
-  child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; });
-  child.stderr.setEncoding("utf8").on("data", (chunk) => { stderr += chunk; });
+  async function runDeploy(childEnvironment) {
+    const child = spawn(
+      process.execPath,
+      [cliPath, "run", "scripts/deploy.mjs", "--network", "portaldot"],
+      { cwd: process.cwd(), env: childEnvironment, stdio: ["ignore", "pipe", "pipe"] }
+    );
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; });
+    child.stderr.setEncoding("utf8").on("data", (chunk) => { stderr += chunk; });
 
-  const result = await new Promise((resolveResult) => {
-    let settled = false;
-    const finish = (value) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      resolveResult(value);
-    };
-    const timer = setTimeout(() => {
-      child.kill("SIGKILL");
-      finish({ error: new Error("Hardhat deploy smoke process timed out after 60 seconds"), status: null });
-    }, 60_000);
-    child.once("error", (error) => finish({ error, status: null }));
-    child.once("close", (status, signal) => finish({
-      error: undefined,
-      status,
-      signal,
-      stdout,
-      stderr
-    }));
-  });
-  const output = `${result.stdout ?? stdout}\n${result.stderr ?? stderr}`;
+    return new Promise((resolveResult) => {
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolveResult(value);
+      };
+      const timer = setTimeout(() => {
+        child.kill("SIGKILL");
+        finish({ error: new Error("Hardhat deploy smoke process timed out after 60 seconds"), status: null });
+      }, 60_000);
+      child.once("error", (error) => finish({ error, status: null }));
+      child.once("close", (status, signal) => finish({ error: undefined, status, signal, stdout, stderr }));
+    });
+  }
+
+  const result = await runDeploy(childEnv);
+  const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
 
   assert.equal(result.error, undefined, `Hardhat deployment smoke process failed to launch: ${result.error?.message}`);
   assert.notEqual(result.status, 0, "Deployment script must refuse to deploy without DEPLOYER_PRIVATE_KEY.");
@@ -167,6 +165,26 @@ try {
   console.log("PASS: --network portaldot reached the configured read-only mock RPC (chainId 420420777).");
   console.log("PASS: deployment stopped at the missing DEPLOYER_PRIVATE_KEY guard.");
   console.log("PASS: no transaction RPC methods were called.");
+
+  const rpcCallCountBeforeCredentialTest = methodsSeen.length;
+  const credentialEnv = {
+    ...childEnv,
+    PORTALDOT_RPC_URL: `http://user:password@127.0.0.1:${address.port}`
+  };
+  const credentialResult = await runDeploy(credentialEnv);
+  const credentialOutput = `${credentialResult.stdout ?? ""}\n${credentialResult.stderr ?? ""}`;
+  assert.equal(credentialResult.error, undefined, `Hardhat credential-validation smoke failed to launch: ${credentialResult.error?.message}`);
+  assert.notEqual(credentialResult.status, 0, "Hardhat must refuse an RPC URL containing embedded credentials.");
+  assert(
+    credentialOutput.includes("PORTALDOT_RPC_URL must not embed credentials"),
+    `Expected Hardhat to reject embedded RPC credentials. Output:\n${credentialOutput}`
+  );
+  assert.equal(
+    methodsSeen.length,
+    rpcCallCountBeforeCredentialTest,
+    "A credentialed RPC URL must be rejected before any network request."
+  );
+  console.log("PASS: Hardhat rejects RPC URLs containing embedded credentials before network requests.");
 } finally {
   server.closeAllConnections?.();
   await new Promise((resolveClose) => server.close(() => resolveClose()));

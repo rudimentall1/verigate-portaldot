@@ -14,6 +14,9 @@ function requiredConfig(env = process.env) {
   } catch {
     throw new Error("PORTALDOT_RPC_URL must be an absolute URL.");
   }
+  if (parsed.username || parsed.password) {
+    throw new Error("PORTALDOT_RPC_URL must not embed credentials.");
+  }
   if (!["http:", "https:"].includes(parsed.protocol)) {
     throw new Error("RPC URL must use HTTP or HTTPS.");
   }
@@ -42,6 +45,7 @@ function evaluateSnapshot({ expectedChainId, actualChainId, blockNumber, latency
 async function rpc(rpcUrl, method) {
   const response = await fetch(rpcUrl, {
     method: "POST",
+    redirect: "error",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: [] }),
     signal: AbortSignal.timeout(8000)
@@ -85,4 +89,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { requiredConfig, evaluateSnapshot };
+module.exports = { requiredConfig, evaluateSnapshot, rpc };

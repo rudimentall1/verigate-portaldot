@@ -1,9 +1,14 @@
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { expect } = require("chai");
-const { evaluateSnapshot, requiredConfig } = require("../scripts/monitor-rpc");
+const { evaluateSnapshot, requiredConfig, rpc } = require("../scripts/monitor-rpc");
 
 describe("PortalDot RPC monitor", function () {
+  const originalFetch = global.fetch;
+
+  afterEach(function () {
+    global.fetch = originalFetch;
+  });
   it("reports a healthy snapshot when the chain ID matches", function () {
     expect(evaluateSnapshot({
       expectedChainId: 420420777n,
@@ -33,6 +38,23 @@ describe("PortalDot RPC monitor", function () {
       PORTALDOT_RPC_URL: "http://rpc.example",
       PORTALDOT_CHAIN_ID: "420420777"
     })).to.throw("Remote RPC endpoints must use HTTPS.");
+  });
+
+  it("rejects RPC URLs with embedded username/password credentials", function () {
+    expect(() => requiredConfig({
+      PORTALDOT_RPC_URL: "https://user:password@rpc.example.invalid",
+      PORTALDOT_CHAIN_ID: "420420777"
+    })).to.throw(/must not embed credentials/);
+  });
+
+  it("disables redirects for read-only JSON-RPC requests", async function () {
+    let requestOptions;
+    global.fetch = async (_url, options) => {
+      requestOptions = options;
+      return { ok: true, json: async () => ({ jsonrpc: "2.0", id: 1, result: "0x1" }) };
+    };
+    expect(await rpc("https://rpc.example.invalid", "eth_blockNumber")).to.equal("0x1");
+    expect(requestOptions.redirect).to.equal("error");
   });
 
   it("accepts the announced PortalDot endpoint configuration", function () {

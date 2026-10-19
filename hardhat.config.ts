@@ -23,6 +23,9 @@ if (rpcUrl && chainIdText) {
     throw new Error("PORTALDOT_CHAIN_ID must be a canonical positive decimal integer.");
   }
   const parsedUrl = new URL(rpcUrl);
+  if (parsedUrl.username || parsedUrl.password) {
+    throw new Error("PORTALDOT_RPC_URL must not embed credentials.");
+  }
   if (!["http:", "https:"].includes(parsedUrl.protocol)) {
     throw new Error("PORTALDOT_RPC_URL must use HTTP or HTTPS.");
   }
