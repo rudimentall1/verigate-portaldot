@@ -553,7 +553,7 @@ def main() -> int:
                     env=bridge_env,
                     capture_output=True,
                     text=True,
-                    timeout=12,
+                    timeout=30,
                     check=False,
                 )
                 if bridge_allow.returncode != 0:
@@ -571,7 +571,7 @@ def main() -> int:
                     env=bridge_env,
                     capture_output=True,
                     text=True,
-                    timeout=12,
+                    timeout=30,
                     check=False,
                 )
                 block_refused = (
