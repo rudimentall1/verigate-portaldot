@@ -11,6 +11,12 @@ PortalDot V3 exposes a Substrate account interface and an EVM-compatible `pallet
 
 The general Polkadot `pallet-revive` documentation describes this distinction and the `map_account` extrinsic: https://docs.polkadot.com/smart-contracts/for-eth-devs/accounts/ . This is general SDK guidance, **not proof of PortalDot V3's deployed runtime configuration**. PortalDot's runtime state or a team-confirmed procedure must establish the mapping.
 
+## Read-only mapping verification
+
+In upstream `pallet-revive` implementations, the `Revive.OriginalAccount` storage entry is the reverse mapping from an H160 address to an original `AccountId32`; it is relevant because a keccak-derived address cannot be reversed offline. See the upstream runtime API/code reference: https://github.com/paritytech/playground-cli/blob/main/CLAUDE.md and https://paritytech.github.io/polkadot-sdk/master/pallet_revive/pallet/struct.Pallet.html.
+
+This is a **candidate inspection path**, not confirmation that PortalDot V3 exposes the same storage name or configuration. Verify the live runtime metadata first. If `Revive.OriginalAccount` is exposed, query it for the exact H160 at the best/current head and record the block hash and returned AccountId32. A finalized-state read may lag a recently included mapping transaction. Decode the returned AccountId32 as SS58 using the network's correct SS58 prefix, then compare the raw 32 bytes with the registered account. A missing entry does not by itself prove that the account cannot use EVM contracts: runtime versions may use automatic mapping or a different mapper. Do not submit `map_account` or any other extrinsic as part of this read-only check.
+
 ## Incident-specific safety rule
 
 The hackathon account supplied to PortalDot and funded by the team is the user's original Substrate address. Do not replace it in the application, and do not send further test funds to a derived fallback address based only on offline address conversion.
@@ -18,7 +24,7 @@ The hackathon account supplied to PortalDot and funded by the team is the user's
 In the current investigation, the original SS58 account was reported to hold 500 transferable tPOT. The EVM RPC returned 0.9 POT for a candidate H160 after a 1-token transfer was attempted. That balance observation alone does **not** prove that the original SS58 account is mapped to that H160, nor does it explain the difference. The transfer's exact transaction/extrinsic and the live runtime mapping remain unverified.
 
 Before any further funding or deployment:
-1. Read the PortalDot V3 runtime metadata and relevant `pallet_revive` storage (including the original-account mapping, if exposed) or obtain explicit confirmation from the PortalDot team.
+1. Read the PortalDot V3 runtime metadata and inspect the relevant `pallet_revive` storage if exposed, or obtain explicit confirmation from the PortalDot team.
 2. Establish which H160 corresponds to the registered Substrate account and whether it is mapped/usable as a contract origin.
 3. Confirm the native token denomination and how `eth_getBalance` represents it.
 4. Run a read-only deployment estimate using the verified deployer H160 and the real intended authority signer.
