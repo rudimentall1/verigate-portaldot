@@ -30,7 +30,7 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 ## Honest current limitations
 
 - No live PortalDot contract deployment is claimed.
-- The storage schema and runtime constants have been read from one RPC endpoint, but the specific wallet's OriginalAccount mapping has not been queried here; one endpoint is not independent network authentication.
+- Read-only checks found no `OriginalAccount` entry for the wallet-displayed H160, while the offline-derived H160 mapped to the registered SS58 account at the endpoint's reported finalized block. This is endpoint-reported evidence only; it does not prove private-key control or independently authenticate the network.
 - Public RPC checks are read-only. Local transfer receipts come only from the loopback Hardhat integration.
 - No CI job sends a transaction to public PortalDot.
 - An HTTPS URL and reported chain ID do not independently authenticate a potentially malicious RPC.
