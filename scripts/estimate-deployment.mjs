@@ -18,9 +18,17 @@ async function main() {
     actualGenesisHash = await readGenesisHash(config.rpcUrl, config.expectedGenesisHash);
   }
 
-  const authoritySigner = (process.env.AUTHORITY_SIGNER_ADDRESS || "").trim();
-  if (!authoritySigner || !ethersLib.isAddress(authoritySigner) || ethersLib.getAddress(authoritySigner) === ethersLib.ZeroAddress) {
-    throw new Error("AUTHORITY_SIGNER_ADDRESS must be a valid non-zero EVM address so the exact deployment init code can be estimated.");
+  // Estimation does not sign or deploy. If the real authority signer has not been
+  // selected yet, use a clearly labelled non-zero placeholder; the constructor
+  // argument is fixed-width, so this still builds valid init code for cost probing.
+  // Actual deployment continues to require AUTHORITY_SIGNER_ADDRESS in deploy.mjs.
+  const configuredAuthoritySigner = (process.env.AUTHORITY_SIGNER_ADDRESS || "").trim();
+  const authoritySignerIsPlaceholder = configuredAuthoritySigner.length === 0;
+  const authoritySigner = authoritySignerIsPlaceholder
+    ? "0x0000000000000000000000000000000000000001"
+    : configuredAuthoritySigner;
+  if (!ethersLib.isAddress(authoritySigner) || ethersLib.getAddress(authoritySigner) === ethersLib.ZeroAddress) {
+    throw new Error("AUTHORITY_SIGNER_ADDRESS must be a valid non-zero EVM address when supplied.");
   }
 
   // This is a public address only. The script never signs or sends a transaction.
@@ -67,7 +75,8 @@ async function main() {
     genesisHashPinConfigured: Boolean(config.expectedGenesisHash),
     ...(actualGenesisHash ? { genesisHash: actualGenesisHash } : {}),
     deployerAddress: ethersLib.getAddress(estimateFrom),
-    authoritySigner: ethersLib.getAddress(authoritySigner),
+    authoritySignerForEstimate: ethersLib.getAddress(authoritySigner),
+    authoritySignerIsPlaceholder,
     contract: "PortalDotAgentGuard",
     creationBytecodeBytes: initCodeBytes,
     estimatedGasUnits: gasUnits.toString(),
@@ -81,7 +90,7 @@ async function main() {
     deployerBalancePot: formatUnitsExact(balanceWei, 18, 6),
     budgetStatus: calc.isSufficient ? "sufficient_with_20_percent_margin" : "insufficient_for_20_percent_margin",
     shortfallWei: calc.shortfallWei.toString(),
-    note: "Read-only estimate only: no private key is used to sign, no transaction is sent. PortalDot V3 may charge a code storage deposit through its gas estimate; confirm this result immediately before deployment. Values can change with bytecode, runtime state, gas price, and balance."
+    note: "Read-only estimate only: no private key is used to sign, no transaction is sent. If authoritySignerIsPlaceholder is true, this is only a preliminary cost probe and is not a deployment configuration. PortalDot V3 may charge a code storage deposit through its gas estimate; an underfunded sender may cause estimation to fail. Confirm with the real authority signer and sufficient balance immediately before deployment."
   };
   console.log(JSON.stringify(result, null, 2));
   if (!calc.isSufficient) process.exitCode = 2;
