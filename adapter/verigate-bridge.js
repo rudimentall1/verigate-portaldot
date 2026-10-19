@@ -441,7 +441,7 @@ async function verifyGuardDeployment(options = {}) {
   const authorityAddress = options.authoritySigner ?? process.env.AUTHORITY_SIGNER_ADDRESS;
   const expectedCodeHash = String(options.guardCodeHash ?? process.env.PORTALDOT_GUARD_CODE_HASH ?? "").trim();
   const substrateRpcUrl = options.substrateRpcUrl ?? process.env.PORTALDOT_SUBSTRATE_RPC_URL;
-  const expectedSubstrateGenesisHashValue = options.substrateGenesisHash ?? process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH;
+  const expectedSubstrateGenesisHashValue = options.substrateGenesisHash ?? options.genesisHash ?? process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH;
 
   if (!rpcUrl) fail("PORTALDOT_RPC_URL is required to verify the deployed guard before signing.");
   if (!/^[1-9][0-9]*$/.test(chainIdText)) {
