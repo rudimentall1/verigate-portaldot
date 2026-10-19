@@ -9,6 +9,11 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/dependency-audit.yml"
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/dependency-audit.yml"
 
 permissions:
   contents: read
