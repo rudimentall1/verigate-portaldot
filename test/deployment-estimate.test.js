@@ -5,6 +5,7 @@ const {
   parseHexQuantity,
   formatUnitsExact,
   calculateDeploymentCost,
+  resolveEstimateAuthoritySigner,
   substrateRawToEvmWei,
   evmWeiToSubstrateRaw,
   EVM_UNITS_PER_SUBSTRATE_UNIT
@@ -31,6 +32,23 @@ describe("PortalDot deployment estimator arithmetic", function () {
     expect(evmWeiToSubstrateRaw("1000000000000000000")).to.equal(100000000000000n);
     expect(() => substrateRawToEvmWei("01")).to.throw(/canonical non-negative decimal integer/);
     expect(() => evmWeiToSubstrateRaw(12345n)).to.throw(/not aligned/);
+  });
+
+  it("allows a clearly labelled placeholder only for preliminary cost estimation", function () {
+    expect(resolveEstimateAuthoritySigner("")).to.deep.equal({
+      address: "0x0000000000000000000000000000000000000001",
+      isPlaceholder: true
+    });
+    expect(resolveEstimateAuthoritySigner("  ")).to.deep.equal({
+      address: "0x0000000000000000000000000000000000000001",
+      isPlaceholder: true
+    });
+    expect(resolveEstimateAuthoritySigner("0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB")).to.deep.equal({
+      address: "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
+      isPlaceholder: false
+    });
+    expect(() => resolveEstimateAuthoritySigner("0x0000000000000000000000000000000000000000")).to.throw(/non-zero EVM address/);
+    expect(() => resolveEstimateAuthoritySigner("not-an-address")).to.throw(/non-zero EVM address/);
   });
 
   it("compares the 20 percent deployment-cost margin against balance exactly", function () {
