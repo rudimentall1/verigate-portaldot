@@ -56,6 +56,6 @@ The project has read-only evidence that the advertised Substrate endpoint report
 
 ## Validation evidence
 
-The [149-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39222765884) and [PortalDot integration run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39222765902) passed on revision f403afc. The isolated harness uses disposable Verigate state and a loopback-only Hardhat EVM: it issues ALLOW and BLOCK, signs only ALLOW, checks executor dry-run leaves state unchanged, then executes that exact signed transfer locally and checks the event and exact recipient balance delta. No public PortalDot transaction is used by that integration flow.
+The [151-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39223695565) and [PortalDot integration run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39223695574) passed on revision 6dfc78a, including the one-key mapping verifier's runtime fingerprint and mocked command flow. The isolated harness uses disposable Verigate state and a loopback-only Hardhat EVM: it issues ALLOW and BLOCK, signs only ALLOW, checks executor dry-run leaves state unchanged, then executes that exact signed transfer locally and checks the event and exact recipient balance delta. No public PortalDot transaction is used by that integration flow.
 
 The sanitized runtime observation is committed in evidence/portaldot-v3-runtime-2026-10-19.json. It records a synthetic-key query only; it contains no user wallet pair.
