@@ -5,6 +5,7 @@ const {
   parseHexQuantity,
   formatUnitsExact,
   calculateDeploymentCost,
+  buildDeploymentTransactionOverrides,
   buildDeploymentReadiness,
   deploymentEstimateExitCode,
   resolveEstimateAuthoritySigner,
@@ -110,6 +111,28 @@ describe("PortalDot deployment estimator arithmetic", function () {
       authoritySignerIsPlaceholder: false,
       readiness: "READY_FOR_DEPLOYMENT"
     })).to.equal(0);
+  });
+
+  it("passes the exact fee cap and gas limit used by the budget guard into the deployment transaction", function () {
+    expect(buildDeploymentTransactionOverrides({
+      gasUnits: 123456n,
+      maxFeePerGasWei: 9000n,
+      maxPriorityFeePerGasWei: 1000n
+    })).to.deep.equal({
+      gasLimit: 123456n,
+      maxFeePerGas: 9000n,
+      maxPriorityFeePerGas: 1000n
+    });
+    expect(() => buildDeploymentTransactionOverrides({
+      gasUnits: 0n,
+      maxFeePerGasWei: 9000n,
+      maxPriorityFeePerGasWei: 1000n
+    })).to.throw(/gasUnits must be positive/);
+    expect(() => buildDeploymentTransactionOverrides({
+      gasUnits: 123456n,
+      maxFeePerGasWei: 900n,
+      maxPriorityFeePerGasWei: 1000n
+    })).to.throw(/no greater than maxFeePerGasWei/);
   });
 
   it("compares the 20 percent deployment-cost margin against balance exactly", function () {
