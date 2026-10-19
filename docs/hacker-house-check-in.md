@@ -9,15 +9,15 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 - Public repository: https://github.com/rudimentall1/verigate-portaldot
 - Core contract: `PortalDotAgentGuard` accepts only EIP-712-authorized native-token transfers and has no generic arbitrary-call method.
 - Bridge: checks the signed Verigate decision and execution authorization, binds the action to the exact recipient and base-unit amount, and creates an EIP-712 signature for an ALLOW decision only.
-- Verification: code revision `ccf96f356c4e29bc60d0e0de1931a12fb3a95824` passes [108 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39201987993). The latest [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39201987956), [read-only RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39201987958), and [dependency security audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39201991674) also pass. Preflight and direct deployment require a configured genesis hash matching the read-only block-0 response; bridge signing enforces the same pin as well as chain ID, guard runtime-code hash, and `authoritySigner()`. The pin must be independently confirmed with PortalDot; a remote RPC can still lie about its responses.
+- Verification: code revision `33d4ada6e56ae26cca36f5888470971846e59c48` contains the latest optional-genesis-pin tests; the 108-test baseline on `ccf96f3` passed earlier CI. CI for the recent optional-pin changes is being rerun. Preflight/direct deployment use the published endpoint and chain ID; they optionally check a configured genesis hash. Bridge signing still checks chain ID, runtime-code hash, and `authoritySigner()`.
 - Local integration exercise: CI starts a disposable Verigate API and loopback Hardhat EVM, deploys the actual guard source to that simulator, confirms code hash and signer identity, signs EIP-712 only for ALLOW, and refuses BLOCK. No public PortalDot RPC or transaction is used.
 - Architecture and security boundary: [docs/architecture.md](architecture.md).
 - Video plan: [three-minute demo script](demo-script.md); clearly labels the local integration as a dry run, not a PortalDot deployment.
 
 ## Remaining before check-in
 
-1. Obtain a canonical official announcement URL or direct PortalDot confirmation for the reported V3 EVM RPC, chain ID, and genesis block hash. Set `PORTALDOT_GENESIS_HASH` only from an independently trusted source; preflight, direct deployment, and bridge signing now fail closed when the pin is missing or mismatched. A matching hash from the same untrusted RPC is not independent authentication.
-2. Confirm native-token denomination and native/EVM wallet mapping with the team before using testnet funds.
+1. Network parameters are recorded in [docs/portaldot-v3-network.md](portaldot-v3-network.md): EVM RPC, chain ID, Substrate endpoint, native precision, and account mapping. The genesis hash is an optional extra guard, not a missing parameter from the cited announcement.
+2. Estimate this contract's actual deployment storage deposit and gas using its creation bytecode, then compare the total against the deployer's EVM-reported balance. PortalDot V3 charges a code storage deposit that may exceed ordinary gas costs.
 3. Deploy the guard only after the target chain is confirmed. Record the contract address, deployment transaction hash, block number, timestamp and explorer link where available.
 4. Record the [three-minute ALLOW/BLOCK demo](demo-script.md). Use the CI evidence artifact for the reproducible local integration; clearly state that it does not demonstrate a live transaction.
 5. Publish a compact progress summary and open issues on DoraHacks. Keep development commits and test results public.
@@ -25,8 +25,8 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 ## Honest current limitations
 
 - No live PortalDot deployment is claimed.
-- `.env.example` records the reported `https://test-evm-rpc-v3.portaldot.dev` endpoint and chain ID `420420777`, but the canonical announcement URL is not recorded in the repository and I could not independently reconfirm those exact values in the published developer docs during this review. Confirm these details with PortalDot before deployment or spending test funds.
-- The CLI outputs a signed authorization JSON but does not submit a transaction. It requires a pinned runtime-code hash and independently confirmed genesis hash; these guardrails catch missing or inconsistent configuration but do not prove that a malicious RPC is honest.
+- `.env.example` records the published V3 testnet EVM endpoint and chain ID. Source provenance, the Substrate endpoint, native precision, EVM value units, address mapping, and code-deposit warning are documented in `docs/portaldot-v3-network.md`.
+- The CLI outputs a signed authorization JSON but does not submit a transaction. It requires a pinned runtime-code hash. A genesis hash is an optional extra guard when independently sourced; a chain ID and single RPC response do not cryptographically authenticate a potentially malicious RPC.
 - The guard and end-to-end signing flow are tested on local Hardhat only; local tests do not establish that PortalDot V3 EVM is reachable or that any live deployment exists.
 
 ## Submission checklist
