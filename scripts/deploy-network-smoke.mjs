@@ -125,6 +125,7 @@ try {
   const childEnv = { ...process.env };
   childEnv.PORTALDOT_RPC_URL = `http://127.0.0.1:${address.port}`;
   childEnv.PORTALDOT_CHAIN_ID = chainId.toString();
+  childEnv.NODE_OPTIONS = [childEnv.NODE_OPTIONS, `--import=${resolve("scripts/mock-substrate-websocket.mjs")}`].filter(Boolean).join(" ");
   childEnv.PORTALDOT_SUBSTRATE_RPC_URL = "wss://test-node-v3.portaldot.dev";
   childEnv.PORTALDOT_SUBSTRATE_GENESIS_HASH = "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd";
   delete childEnv.DEPLOYER_PRIVATE_KEY;
