@@ -384,18 +384,58 @@ def main() -> int:
                 allow_path.write_text(json.dumps(allow_response, indent=2), encoding="utf-8")
                 block_path.write_text(json.dumps(block_response, indent=2), encoding="utf-8")
 
-                # Run the actual Node bridge CLI against the fresh responses while
-                # the temporary Verigate verifier is still online. The signer key
-                # is generated in memory and the domain uses a dummy contract address.
-                # This signs data only; it cannot broadcast a transaction.
+                # Run a temporary Hardhat EVM bound only to loopback. The local
+                # simulator uses the PortalDot chain ID to exercise EIP-712 domain
+                # binding, but it is never the real PortalDot RPC and is not deployment evidence.
                 project_root = Path(__file__).resolve().parents[1]
+                evm_port = unused_loopback_port()
+                evm_rpc_url = f"http://127.0.0.1:{evm_port}"
+                hardhat_env = os.environ.copy()
+                for name in (
+                    "PORTALDOT_RPC_URL",
+                    "PORTALDOT_CHAIN_ID",
+                    "PORTALDOT_GUARD_ADDRESS",
+                    "PORTALDOT_GUARD_CODE_HASH",
+                    "DEPLOYER_PRIVATE_KEY",
+                    "BRIDGE_SIGNER_PRIVATE_KEY",
+                    "AUTHORITY_SIGNER_ADDRESS",
+                    "VERIGATE_BASE_URL",
+                    "VERIGATE_API_KEY",
+                    "VERIGATE_PUBLIC_KEY_FILE",
+                ):
+                    hardhat_env[name] = ""
+                hardhat_env["PORTALDOT_SIMULATED_CHAIN_ID"] = str(CHAIN_ID)
+                node_log_path = runtime_root / "hardhat-node.log"
+                evm_log_file = node_log_path.open("w", encoding="utf-8")
+                evm_process = subprocess.Popen(
+                    [
+                        "node",
+                        "node_modules/hardhat/dist/src/cli.js",
+                        "node",
+                        "--hostname",
+                        "127.0.0.1",
+                        "--port",
+                        str(evm_port),
+                    ],
+                    cwd=project_root,
+                    env=hardhat_env,
+                    stdout=evm_log_file,
+                    stderr=subprocess.STDOUT,
+                )
+                wait_for_rpc(evm_rpc_url, evm_process, node_log_path, CHAIN_ID)
+                unlocked_accounts = rpc_call(evm_rpc_url, "eth_accounts")
+                if not isinstance(unlocked_accounts, list) or not unlocked_accounts:
+                    raise RuntimeError("Temporary local EVM exposes no unlocked test account for faucet funding.")
+
                 wallet_result = subprocess.run(
                     [
                         "node",
                         "-e",
                         "const { Wallet } = require('ethers'); "
-                        "const w = Wallet.createRandom(); "
-                        "process.stdout.write(JSON.stringify({privateKey:w.privateKey,address:w.address}));",
+                        "const b = Wallet.createRandom(); const d = Wallet.createRandom(); "
+                        "process.stdout.write(JSON.stringify({"
+                        "bridgePrivateKey:b.privateKey,bridgeAddress:b.address,"
+                        "deployerPrivateKey:d.privateKey,deployerAddress:d.address}));",
                     ],
                     cwd=project_root,
                     capture_output=True,
@@ -404,15 +444,90 @@ def main() -> int:
                     check=False,
                 )
                 if wallet_result.returncode != 0:
-                    raise RuntimeError("Could not create an ephemeral bridge test key: " + wallet_result.stderr[-2000:])
-                test_wallet = json.loads(wallet_result.stdout)
+                    raise RuntimeError("Could not create ephemeral bridge/deployer keys: " + wallet_result.stderr[-2000:])
+                test_wallets = json.loads(wallet_result.stdout)
+                funding_hash = rpc_call(
+                    evm_rpc_url,
+                    "eth_sendTransaction",
+                    [{
+                        "from": unlocked_accounts[0],
+                        "to": test_wallets["deployerAddress"],
+                        "value": "0x16345785d8a0000",
+                    }],
+                )
+                if not isinstance(funding_hash, str) or not funding_hash.startswith("0x"):
+                    raise RuntimeError("Temporary local EVM did not accept the test deployer funding request.")
+                funded_balance = int(rpc_call(
+                    evm_rpc_url, "eth_getBalance", [test_wallets["deployerAddress"], "latest"]
+                ), 16)
+                if funded_balance <= 0:
+                    raise RuntimeError("Temporary test deployer account was not funded on the isolated local EVM.")
+
+                # Deploy the repository's actual PortalDotAgentGuard source to the
+                # loopback EVM. The deployer and authority signer are disposable,
+                # distinct keys. No real PortalDot RPC URL is used by this process.
+                deploy_env = env.copy()
+                deploy_env.update({
+                    "PORTALDOT_RPC_URL": evm_rpc_url,
+                    "PORTALDOT_CHAIN_ID": str(CHAIN_ID),
+                    "PORTALDOT_SIMULATED_CHAIN_ID": str(CHAIN_ID),
+                    "DEPLOYER_PRIVATE_KEY": test_wallets["deployerPrivateKey"],
+                    "BRIDGE_SIGNER_PRIVATE_KEY": "",
+                    "AUTHORITY_SIGNER_ADDRESS": test_wallets["bridgeAddress"],
+                    "PORTALDOT_GUARD_ADDRESS": "",
+                    "PORTALDOT_GUARD_CODE_HASH": "",
+                })
+                deployment = subprocess.run(
+                    [
+                        "node",
+                        "node_modules/hardhat/dist/src/cli.js",
+                        "run",
+                        "scripts/deploy.mjs",
+                        "--network",
+                        "portaldot",
+                    ],
+                    cwd=project_root,
+                    env=deploy_env,
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    check=False,
+                )
+                deployment_output = deployment.stdout + "\\n" + deployment.stderr
+                if deployment.returncode != 0:
+                    raise RuntimeError(
+                        "Could not deploy the test guard to the isolated local EVM: "
+                        + deployment_output[-5000:]
+                    )
+                address_match = re.search(
+                    r'"address"\\s*:\\s*"(0x[a-fA-F0-9]{40})"',
+                    deployment_output,
+                )
+                code_hash_match = re.search(
+                    r'"runtimeCodeHash"\\s*:\\s*"(0x[a-fA-F0-9]{64})"',
+                    deployment_output,
+                )
+                if address_match is None or code_hash_match is None:
+                    raise RuntimeError(
+                        "Local EVM deployment output did not include an address and runtime code hash: "
+                        + deployment_output[-5000:]
+                    )
+                guard_address = address_match.group(1)
+                guard_code_hash = code_hash_match.group(1)
+
                 bridge_env = env.copy()
-                bridge_env["VERIGATE_BASE_URL"] = base_url
-                bridge_env["VERIGATE_PUBLIC_KEY_FILE"] = env["VERIGATE_PUBLIC_KEY"]
-                bridge_env["BRIDGE_SIGNER_PRIVATE_KEY"] = test_wallet["privateKey"]
-                bridge_env["AUTHORITY_SIGNER_ADDRESS"] = test_wallet["address"]
-                bridge_env["PORTALDOT_GUARD_ADDRESS"] = "0x000000000000000000000000000000000000dEaD"
-                bridge_env["PORTALDOT_CHAIN_ID"] = str(CHAIN_ID)
+                bridge_env.update({
+                    "VERIGATE_BASE_URL": base_url,
+                    "VERIGATE_PUBLIC_KEY_FILE": env["VERIGATE_PUBLIC_KEY"],
+                    "BRIDGE_SIGNER_PRIVATE_KEY": test_wallets["bridgePrivateKey"],
+                    "AUTHORITY_SIGNER_ADDRESS": test_wallets["bridgeAddress"],
+                    "PORTALDOT_GUARD_ADDRESS": guard_address,
+                    "PORTALDOT_GUARD_CODE_HASH": guard_code_hash,
+                    "PORTALDOT_RPC_URL": evm_rpc_url,
+                    "PORTALDOT_CHAIN_ID": str(CHAIN_ID),
+                    "PORTALDOT_SIMULATED_CHAIN_ID": str(CHAIN_ID),
+                    "DEPLOYER_PRIVATE_KEY": "",
+                })
 
                 bridge_allow = subprocess.run(
                     ["node", "adapter/verigate-bridge.js", str(allow_path)],
@@ -472,10 +587,13 @@ def main() -> int:
                     "bridge_cli_allow_dry_run": {
                         "signature_created": True,
                         "signature_file": str(signed_path),
-                        "authority_signer": test_wallet["address"],
-                        "domain_contract_is_dummy": True,
+                        "authority_signer": test_wallets["bridgeAddress"],
+                        "guard_address": guard_address,
+                        "runtime_code_hash_verified": guard_code_hash,
+                        "deployed_on_isolated_loopback_evm": True,
+                        "domain_contract_is_dummy": False,
                     },
-                    "note": "Temporary test-only issuer/bridge keys and test recipients. The bridge CLI generated a typed signature for a dummy contract domain; no transaction was broadcast and this signature is not deployment evidence.",
+                    "note": "The real PortalDotAgentGuard source was deployed only to a temporary loopback Hardhat EVM configured with the target chain ID. The bridge checked chain ID, deployed bytecode hash, and authoritySigner before signing. No public PortalDot RPC was contacted; the local deployment is not testnet evidence.",
                 }
                 summary_path = output_root / "summary.json"
                 summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
