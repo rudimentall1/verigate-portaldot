@@ -404,7 +404,84 @@ async function verifyWithVerigate(baseUrl, attestation, apiKey) {
   if (result.valid !== true) fail(`Verigate signature was not validated: ${result.reason || "unknown reason"}`);
 }
 
-async function signAuthorization(response) {
+const GUARD_READ_ABI = ["function authoritySigner() view returns (address)"];
+
+async function verifyGuardDeployment(options = {}) {
+  const rpcUrl = String(options.rpcUrl ?? process.env.PORTALDOT_RPC_URL ?? "").trim();
+  const chainIdText = String(options.expectedChainId ?? process.env.PORTALDOT_CHAIN_ID ?? "").trim();
+  const guardAddress = options.guardAddress ?? process.env.PORTALDOT_GUARD_ADDRESS;
+  const authorityAddress = options.authoritySigner ?? process.env.AUTHORITY_SIGNER_ADDRESS;
+
+  if (!rpcUrl) fail("PORTALDOT_RPC_URL is required to verify the deployed guard before signing.");
+  if (!/^[1-9][0-9]*$/.test(chainIdText)) {
+    fail("PORTALDOT_CHAIN_ID must be a canonical positive decimal integer before verifying the deployed guard.");
+  }
+  if (!guardAddress || !ethers.isAddress(guardAddress) || ethers.getAddress(guardAddress) === ethers.ZeroAddress) {
+    fail("PORTALDOT_GUARD_ADDRESS must be a non-zero EVM address.");
+  }
+  if (!authorityAddress || !ethers.isAddress(authorityAddress) || ethers.getAddress(authorityAddress) === ethers.ZeroAddress) {
+    fail("AUTHORITY_SIGNER_ADDRESS must be a non-zero EVM address before verifying the deployed guard.");
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(rpcUrl);
+  } catch {
+    fail("PORTALDOT_RPC_URL must be a valid absolute URL for guard verification.");
+  }
+  if (parsedUrl.username || parsedUrl.password) {
+    fail("PORTALDOT_RPC_URL must not embed credentials.");
+  }
+  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+    fail("PORTALDOT_RPC_URL must use HTTP or HTTPS for guard verification.");
+  }
+  const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+  if (parsedUrl.protocol === "http:" && !loopbackHosts.has(parsedUrl.hostname.toLowerCase())) {
+    fail("Remote RPC endpoints must use HTTPS for guard verification.");
+  }
+
+  const expectedChainId = BigInt(chainIdText);
+  let provider;
+  const ownsProvider = typeof options.providerFactory !== "function";
+  try {
+    provider = ownsProvider
+      ? new ethers.JsonRpcProvider(rpcUrl)
+      : await options.providerFactory(rpcUrl);
+
+    const network = await provider.getNetwork();
+    if (network.chainId !== expectedChainId) {
+      fail(`Guard RPC is on chain ID ${network.chainId}, expected ${expectedChainId}; refusing to sign.`);
+    }
+
+    const address = ethers.getAddress(guardAddress);
+    const code = await provider.getCode(address);
+    if (typeof code !== "string" || !/^0x(?:[0-9a-fA-F]{2})+$/.test(code)) {
+      fail(`No deployed contract bytecode found at PORTALDOT_GUARD_ADDRESS ${address}; refusing to sign.`);
+    }
+
+    const makeContract = options.contractFactory ||
+      ((contractAddress, rpcProvider) => new ethers.Contract(contractAddress, GUARD_READ_ABI, rpcProvider));
+    const guard = makeContract(address, provider);
+    const actualAuthority = ethers.getAddress(await guard.authoritySigner());
+    const expectedAuthority = ethers.getAddress(authorityAddress);
+    if (actualAuthority !== expectedAuthority) {
+      fail(`Deployed guard authoritySigner ${actualAuthority} does not match AUTHORITY_SIGNER_ADDRESS ${expectedAuthority}; refusing to sign.`);
+    }
+
+    return {
+      chainId: network.chainId,
+      guardAddress: address,
+      authoritySigner: actualAuthority,
+      deployedCodeBytes: (code.length - 2) / 2
+    };
+  } finally {
+    if (ownsProvider && provider && typeof provider.destroy === "function") {
+      await provider.destroy();
+    }
+  }
+}
+
+async function signAuthorization(response, options = {}) {
   const transfer = validateAuthorizationBinding(response);
   const baseUrl = process.env.VERIGATE_BASE_URL || "http://127.0.0.1:8000";
   const apiKey = process.env.VERIGATE_API_KEY || "";
@@ -429,6 +506,10 @@ async function signAuthorization(response) {
   if (ethers.getAddress(wallet.address) !== ethers.getAddress(process.env.AUTHORITY_SIGNER_ADDRESS)) {
     fail("BRIDGE_SIGNER_PRIVATE_KEY does not match AUTHORITY_SIGNER_ADDRESS.");
   }
+
+  // Bind every EIP-712 signature to an actually deployed guard on the configured
+  // chain and verify that its on-chain immutable authority matches this signer.
+  await verifyGuardDeployment({ providerFactory: options.providerFactory });
 
   const domain = {
     name: "PortalDotAgentGuard",
@@ -481,4 +562,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { validateAuthorizationBinding, verifyLocally, verifyWithVerigate, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers };
+module.exports = { validateAuthorizationBinding, verifyLocally, verifyWithVerigate, verifyGuardDeployment, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers };
