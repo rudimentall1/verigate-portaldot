@@ -2,7 +2,7 @@
 
 A focused PortalDot V3 Hacker House project exploring how an AI agent's proposed payment can be gated by an explicit, signed execution authorization.
 
-**Status (15 October 2026):** the repository has a native-payment guard, bridge-signing CLI, RPC preflight, local Hardhat tests, and a real-API integration harness. The latest successful [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783295) and [unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783332) validate the pinned-key integration and contract tests; subsequent edits here are documentation-only. The integration job starts a disposable loopback Verigate API, locally verifies both Ed25519 artifacts against a pinned public key, checks them through the API as a second layer, signs a dry-run EIP-712 authorization only for ALLOW, refuses BLOCK, and uploads its test evidence. A forged signature is refused locally even when a test verifier responds `valid: true`. No transaction is broadcast. The bridge preserves source numeric spellings in signed JSON because Python distinguishes `1` from `1.0`, while standard JavaScript parsing collapses them. The PortalDot team announced the updated V3 testnet endpoint `https://test-evm-rpc-v3.portaldot.dev` and EVM chain ID `420420777` on 17 October 2026. `.env.example` now uses those announced values; run preflight to verify live connectivity and chain ID before any deployment. No live PortalDot deployment is claimed.
+**Status (19 October 2026):** the repository has a native-payment guard, an Ed25519-verifying bridge signer, preflight and RPC monitoring, Hardhat 3 local tests, and a real-API integration harness. The current migrated branch has **72 passing tests** and successful PortalDot CI, including a read-only network-selection smoke test and a local cross-layer authorization test. Before issuing an EIP-712 signature, the bridge now verifies the configured chain ID, checks that the guard address has runtime bytecode, compares its Keccak runtime-code hash to `PORTALDOT_GUARD_CODE_HASH`, and checks that on-chain `authoritySigner()` matches the configured authority. These checks reduce configuration errors but do not make an untrusted RPC endpoint trustworthy; independently verify the endpoint and contract bytecode. No live PortalDot deployment is claimed.
 
 ## What this MVP demonstrates
 
@@ -18,7 +18,7 @@ See [architecture and trust boundaries](docs/architecture.md) for the flow diagr
 
 ## Quick start
 
-Requires Node.js 20 or newer.
+Requires Node.js 22.13.0 or newer.
 
 ```bash
 npm install
@@ -30,9 +30,9 @@ The tests use a local Hardhat chain. Passing local tests is not evidence that Po
 
 ## Isolated Verigate API integration check
 
-The helper runs a second, temporary Verigate instance on loopback port 8001 with a disposable database, issuer keys and a narrow test policy. It creates a fresh test agent identity and capability, submits signed ALLOW and BLOCK actions through the real HTTP endpoints, verifies the returned Ed25519 artifacts, then runs the PortalDot bridge CLI against both responses. The ALLOW case signs only against a dummy contract address; the BLOCK case must be refused.
+The helper runs a temporary Verigate instance on loopback port 8001 with a disposable database, issuer keys and a narrow test policy. It submits ALLOW and BLOCK through the real HTTP routes and verifies the returned Ed25519 artifacts. It also starts an isolated Hardhat EVM bound to `127.0.0.1`, configures that simulator with chain ID `420420777` solely for EIP-712 domain testing, funds a disposable deployer, and deploys the repository's actual `PortalDotAgentGuard` source. The bridge must verify the local guard's chain, non-empty bytecode, runtime-code hash and authority signer before signing ALLOW; BLOCK is refused.
 
-It does not use the running Verigate server on port 8000, read its .env, or modify its database. Temporary private keys and database files are deleted after the run. Output JSON files are retained in a separate operating-system temp folder. No chain transaction is sent.
+The simulator is not the public PortalDot testnet, and the configured chain ID is not proof of network identity. Temporary private keys, issuer keys, and runtime database files are deleted after the run. Only sanitized response/signature fixtures and a summary are retained. The test does not contact a public RPC endpoint, and all EVM deployment/funding activity stays on the loopback simulator.
 
 Run from this repository in PowerShell, using the Python environment from your own Verigate checkout:
 
@@ -52,7 +52,7 @@ Copy .env.example to .env. Keep private keys out of Git.
 npm run preflight
 ```
 
-The preflight uses the endpoint and chain ID from the PortalDot team announcement recorded in `.env.example`. It reads `eth_chainId` and `eth_blockNumber` and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Remote RPC endpoints must use HTTPS; plain HTTP is allowed only for loopback local development. It reads eth_chainId and eth_blockNumber and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Do not deploy or use a funded deployment key until preflight succeeds and token denomination and wallet mapping are understood. The deployment script repeats the configuration checks so it also fails closed when invoked directly.
+The preflight uses the endpoint and chain ID recorded in `.env.example`. It reads `eth_chainId` and `eth_blockNumber` and refuses deployment if the endpoint is unreachable or the reported chain ID differs from the configured value. Remote RPC endpoints must use HTTPS; plain HTTP is allowed only for loopback local development. **A matching chain ID alone does not authenticate an RPC endpoint.** Before using a funded key, independently confirm the RPC endpoint, inspect the expected chain in a trusted explorer, and understand the native-token denomination and EVM/Substrate address mapping. The deployment script repeats its configuration checks when invoked directly.
 
 ## Read-only RPC monitor
 
@@ -72,13 +72,13 @@ Copy `.env.example` to the untracked `.env`, preserve the announced RPC settings
 npm run deploy:portaldot
 ```
 
-The command runs network preflight before Hardhat deployment. Deployment is not verified yet. Save the actual address, transaction hash, block number, timestamp, and explorer link under evidence/ only after confirmation on the live expected chain.
+The command runs network preflight before Hardhat deployment. Its JSON result includes the configured RPC origin, chain ID, contract address, transaction hash, block number, and runtime-code hash. The script labels the endpoint as a configured EVM RPC rather than claiming that the chain ID proves PortalDot identity. Save evidence only after independently confirming the transaction and deployed bytecode in a trusted explorer.
 
-After deployment, set PORTALDOT_GUARD_ADDRESS in .env.
+After verification, set `PORTALDOT_GUARD_ADDRESS` and the matching `PORTALDOT_GUARD_CODE_HASH` in `.env`. The code hash is checked before every bridge signature to reduce accidental/malicious contract-address substitution. It must be verified against the intended contract deployment; do not blindly copy values from an untrusted RPC response.
 
 ## Bridge signing CLI
 
-The CLI accepts a JSON response from Verigate's POST /v1/actions/authorize endpoint. Before contacting the API verifier, it independently verifies both Ed25519 signatures against the locally pinned PEM path in `VERIGATE_PUBLIC_KEY_FILE`. It then asks the configured `/v1/verify` endpoint for a second check and signs only the narrowly defined transfer mapping. Do not blindly trust a public key downloaded from the same endpoint: verify its fingerprint through an independent trusted channel.
+The CLI accepts a JSON response from Verigate's POST /v1/actions/authorize endpoint. It independently verifies both Ed25519 signatures against the locally pinned PEM path in `VERIGATE_PUBLIC_KEY_FILE`, then asks the configured `/v1/verify` endpoint for a second check. Before creating the EIP-712 signature, it also connects to `PORTALDOT_RPC_URL` using read-only calls, checks the live chain ID, requires contract bytecode at `PORTALDOT_GUARD_ADDRESS`, compares the runtime-code Keccak hash against `PORTALDOT_GUARD_CODE_HASH`, and verifies the contract's `authoritySigner()` against `AUTHORITY_SIGNER_ADDRESS`. Missing/mismatched values fail closed. Do not blindly trust a public key or RPC endpoint supplied by the same untrusted source; independently verify the issuer-key fingerprint, RPC identity, and deployed code.
 
 ```bash
 npm run bridge:sign -- ./authorization-response.json
