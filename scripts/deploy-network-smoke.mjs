@@ -221,6 +221,30 @@ try {
   );
   console.log("PASS: Hardhat rejects RPC URLs containing embedded credentials before network requests.");
 
+  const underfundedEnv = {
+    ...childEnv,
+    DEPLOYER_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    AUTHORITY_SIGNER_ADDRESS: "0x2222222222222222222222222222222222222222"
+  };
+  const beforeBudgetGuard = methodsSeen.length;
+  const underfundedResult = await runDeploy(underfundedEnv);
+  const underfundedOutput = `${underfundedResult.stdout ?? ""}\\n${underfundedResult.stderr ?? ""}`;
+  assert.equal(underfundedResult.error, undefined, `Underfunded deploy smoke failed to launch: ${underfundedResult.error?.message}`);
+  assert.notEqual(underfundedResult.status, 0, "Deployment must refuse the mocked insufficient deployment budget.");
+  assert(
+    underfundedOutput.includes("Refusing deployment: balance 500.000000 POT is below the estimated deployment cost plus 20% safety margin"),
+    `Expected a pre-broadcast budget refusal. Output:\\n${underfundedOutput}`
+  );
+  const budgetMethods = methodsSeen.slice(beforeBudgetGuard);
+  for (const method of ["eth_estimateGas", "eth_gasPrice", "eth_getBalance"]) {
+    assert(budgetMethods.includes(method), `Deployment budget guard did not call read-only method ${method}.`);
+  }
+  assert(
+    !budgetMethods.some((method) => transactionMethods.has(method)),
+    `Pre-deployment budget guard attempted transaction RPC methods: ${budgetMethods.join(", ")}`
+  );
+  console.log("PASS: deployment refuses an insufficient live-RPC budget before any transaction RPC method is called.");
+
   const estimatorEnv = {
     ...childEnv,
     PORTALDOT_GENESIS_HASH: "",
