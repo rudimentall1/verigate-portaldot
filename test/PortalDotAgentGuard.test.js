@@ -144,6 +144,26 @@ describe("PortalDotAgentGuard", function () {
     ).to.be.revertedWithCustomError(guard, "InvalidAuthoritySignature");
   });
 
+  it("rejects a valid signature replayed against a different guard deployment", async function () {
+    const auth = await authorization();
+    const signature = await signAuth(authority, auth);
+
+    const factory = await ethers.getContractFactory("PortalDotAgentGuard");
+    const otherGuard = await factory.deploy(authority.address);
+    await otherGuard.waitForDeployment();
+    await deployer.sendTransaction({
+      to: await otherGuard.getAddress(),
+      value: ethers.parseEther("5")
+    });
+
+    await expect(
+      otherGuard.executeTransfer(
+        auth.recipient, auth.amount, auth.nonce, auth.deadline, auth.actionId, signature
+      )
+    ).to.be.revertedWithCustomError(otherGuard, "InvalidAuthoritySignature");
+    expect(await otherGuard.usedNonces(auth.nonce)).to.equal(false);
+  });
+
   it("rejects authorizations with a deadline more than five minutes away", async function () {
     const latest = await ethers.provider.getBlock("latest");
     const auth = await authorization({ deadline: BigInt(latest.timestamp + 600), nonce: 17n });
