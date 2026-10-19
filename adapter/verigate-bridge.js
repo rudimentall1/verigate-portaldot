@@ -242,9 +242,13 @@ function validateAuthorizationBinding(response, options = {}) {
     fail("Execution authorization has no valid action digest.");
   }
 
-  const issuedAt = Number(authPayload.issued_at);
-  const expiresAt = Number(authPayload.expires_at);
-  if (!Number.isSafeInteger(issuedAt) || !Number.isSafeInteger(expiresAt) || !Number.isSafeInteger(now) || expiresAt <= now) {
+  // Authorization timestamps are JSON numbers in Verigate artifacts. Do not
+  // coerce strings such as "2000000240" into trusted clock values.
+  const issuedAt = authPayload.issued_at;
+  const expiresAt = authPayload.expires_at;
+  if (typeof issuedAt !== "number" || !Number.isSafeInteger(issuedAt) ||
+      typeof expiresAt !== "number" || !Number.isSafeInteger(expiresAt) ||
+      !Number.isSafeInteger(now) || expiresAt <= now) {
     fail("Execution authorization is expired or has invalid timestamps.");
   }
   if (issuedAt > now + 15 || expiresAt <= issuedAt || expiresAt - issuedAt > 300) {
