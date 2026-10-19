@@ -61,7 +61,7 @@ export function compareOriginalAccountMapping({ rawStorageValue, h160, ss58Addre
       registeredSubstrateAddress: input.ss58Address,
       registeredAccountIdHex: input.accountIdHex,
       mappingValueAccountIdHex: null,
-      mappingMatchesRegisteredAccount: false,
+      mappingMatchesRegisteredAccount: null,
       rpcReportedStateRead: true,
       independentNetworkAuthentication: false,
       transactionSubmitted: false,
