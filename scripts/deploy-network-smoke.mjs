@@ -172,8 +172,8 @@ try {
     `Hardhat did not query the configured mock PortalDot RPC. Methods seen: ${methodsSeen.join(", ")}`
   );
   assert(
-    methodsSeen.includes("eth_getBlockByNumber"),
-    `Hardhat did not read the pinned genesis block. Methods seen: ${methodsSeen.join(", ")}`
+    !methodsSeen.includes("eth_getBlockByNumber"),
+    `Hardhat must not use EVM block 0 as a substitute for Substrate genesis identity. Methods seen: ${methodsSeen.join(", ")}`
   );
   assert(
     !methodsSeen.some((method) => transactionMethods.has(method)),
