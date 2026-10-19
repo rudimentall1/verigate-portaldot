@@ -130,7 +130,7 @@ export function verifyOriginalAccountMapping({ h160, ss58Address, rpcUrl = DEFAU
     fail("Substrate RPC URL must be a valid absolute WebSocket URL.");
   }
   if (url.username || url.password) fail("Substrate RPC URL must not embed credentials.");
-  const isLoopback = new Set(["localhost", "127.0.0.1", "[::1]").has(url.hostname.toLowerCase());
+  const isLoopback = new Set(["localhost", "127.0.0.1", "[::1]"]).has(url.hostname.toLowerCase());
   if (url.protocol !== "wss:" && !(url.protocol === "ws:" && isLoopback)) {
     fail("Substrate RPC must use WSS; plain WS is allowed only on loopback.");
   }
