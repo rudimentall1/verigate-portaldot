@@ -14,6 +14,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -81,6 +82,50 @@ def verify_attestation(base_url: str, artifact: dict[str, Any]) -> tuple[bool, s
     if status != 200 or not isinstance(result, dict):
         return False, f"verification endpoint returned HTTP {status}: {result}"
     return result.get("valid") is True, str(result.get("reason", "no reason returned"))
+
+
+def unused_loopback_port() -> int:
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return int(probe.getsockname()[1])
+
+
+def rpc_call(rpc_url: str, method: str, params: list[Any] | None = None, timeout: float = 5.0) -> Any:
+    status, body = http_json(
+        rpc_url,
+        {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or []},
+        timeout=timeout,
+    )
+    if status != 200 or not isinstance(body, dict):
+        raise RuntimeError(f"Local EVM RPC {method} returned HTTP {status}: {body}")
+    if body.get("error") is not None:
+        raise RuntimeError(f"Local EVM RPC {method} failed: {body['error']}")
+    if "result" not in body:
+        raise RuntimeError(f"Local EVM RPC {method} response has no result: {body}")
+    return body["result"]
+
+
+def wait_for_rpc(rpc_url: str, process: subprocess.Popen, log_path: Path, expected_chain_id: int, seconds: float = 20.0) -> None:
+    deadline = time.monotonic() + seconds
+    last_error = "not attempted"
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            break
+        try:
+            actual = int(rpc_call(rpc_url, "eth_chainId", timeout=1.0), 16)
+            if actual == expected_chain_id:
+                return
+            last_error = f"RPC reports chain ID {actual}; expected {expected_chain_id}"
+        except Exception as exc:  # expected while Hardhat starts
+            last_error = str(exc)
+        time.sleep(0.25)
+    log_text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.exists() else ""
+    raise RuntimeError(
+        "Temporary local EVM failed to start. Last probe: "
+        + last_error
+        + "\\nHardhat node log:\\n"
+        + log_text[-5000:]
+    )
 
 
 def main() -> int:
@@ -153,6 +198,8 @@ def main() -> int:
     )
 
     sys.path.insert(0, str(source_root))
+    evm_process: subprocess.Popen | None = None
+    evm_log_file = None
 
     try:
         from cryptography.hazmat.primitives import serialization
@@ -444,6 +491,15 @@ def main() -> int:
                     process.kill()
                     process.wait(timeout=5)
     finally:
+        if evm_process is not None:
+            evm_process.terminate()
+            try:
+                evm_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                evm_process.kill()
+                evm_process.wait(timeout=5)
+        if evm_log_file is not None:
+            evm_log_file.close()
         # Delete all temporary runtime state and test issuer private keys; preserve
         # only the response artifacts and summary in output_root.
         shutil.rmtree(runtime_root, ignore_errors=True)
