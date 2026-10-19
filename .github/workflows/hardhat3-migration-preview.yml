@@ -1,0 +1,94 @@
+name: Hardhat 3 migration preview
+
+on:
+  push:
+    branches:
+      - chore/hardhat3-migration-preview
+    paths:
+      - ".github/workflows/hardhat3-migration-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migration-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Prepare isolated candidate
+        shell: bash
+        run: |
+          set -e
+          mkdir -p "$RUNNER_TEMP/hardhat3-preview"
+          cp package.json package-lock.json "$RUNNER_TEMP/hardhat3-preview/"
+          npm ci --no-audit --no-fund
+          node <<'NODE'
+          const fs = require('node:fs');
+          const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          p.devDependencies.hardhat = '^3.20.0';
+          p.devDependencies['@nomicfoundation/hardhat-toolbox'] = '^7.0.0';
+          fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          NODE
+          cp package.json "$RUNNER_TEMP/hardhat3-preview/package-candidate.json"
+      - name: Generate candidate lockfile (no repository changes)
+        shell: bash
+        run: |
+          set +e
+          npm install --package-lock-only --ignore-scripts --no-fund > "$RUNNER_TEMP/hardhat3-preview/lockfile-generation.log" 2>&1
+          status=$?
+          echo "$status" > "$RUNNER_TEMP/hardhat3-preview/lockfile-generation.exit-code"
+          cat "$RUNNER_TEMP/hardhat3-preview/lockfile-generation.log"
+          if [ "$status" -eq 0 ]; then cp package-lock.json "$RUNNER_TEMP/hardhat3-preview/package-lock-candidate.json"; fi
+          exit 0
+      - name: Install candidate dependencies
+        shell: bash
+        run: |
+          set +e
+          npm ci --no-fund > "$RUNNER_TEMP/hardhat3-preview/npm-ci.log" 2>&1
+          status=$?
+          echo "$status" > "$RUNNER_TEMP/hardhat3-preview/npm-ci.exit-code"
+          cat "$RUNNER_TEMP/hardhat3-preview/npm-ci.log"
+          exit 0
+      - name: Test candidate and compile contracts
+        shell: bash
+        run: |
+          set +e
+          npm test > "$RUNNER_TEMP/hardhat3-preview/npm-test.log" 2>&1
+          test_status=$?
+          echo "$test_status" > "$RUNNER_TEMP/hardhat3-preview/npm-test.exit-code"
+          cat "$RUNNER_TEMP/hardhat3-preview/npm-test.log"
+          npm run compile > "$RUNNER_TEMP/hardhat3-preview/compile.log" 2>&1
+          compile_status=$?
+          echo "$compile_status" > "$RUNNER_TEMP/hardhat3-preview/compile.exit-code"
+          cat "$RUNNER_TEMP/hardhat3-preview/compile.log"
+          npm audit --json > "$RUNNER_TEMP/hardhat3-preview/npm-audit.json"
+          audit_status=$?
+          echo "$audit_status" > "$RUNNER_TEMP/hardhat3-preview/npm-audit.exit-code"
+          node -e 'const a=require(process.argv[1]); console.log(JSON.stringify(a.metadata?.vulnerabilities ?? null,null,2))' "$RUNNER_TEMP/hardhat3-preview/npm-audit.json" || true
+          exit 0
+      - name: Upload migration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardhat3-migration-preview
+          path: ${{ runner.temp }}/hardhat3-preview/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Mark candidate result
+        if: always()
+        shell: bash
+        run: |
+          for file in lockfile-generation npm-ci npm-test compile; do
+            path="$RUNNER_TEMP/hardhat3-preview/$file.exit-code"
+            if [ ! -f "$path" ] || [ "$(cat "$path")" != "0" ]; then
+              echo "Candidate stage failed: $file"
+              exit 1
+            fi
+          done
