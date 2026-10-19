@@ -2,7 +2,7 @@
 
 ## Read-only PortalDot runtime fingerprint
 
-[portaldot-v3-runtime-2026-10-19.json](portaldot-v3-runtime-2026-10-19.json) records the runtime spec reported by the advertised Substrate WSS endpoint, decoded Revive storage schema, selected runtime constants, and one synthetic H160 lookup. The corresponding GitHub Actions run is https://github.com/rudimentall1/verigate-portaldot/actions/runs/39221376587.
+[portaldot-v3-runtime-2026-10-19.json](portaldot-v3-runtime-2026-10-19.json) records the runtime spec reported by the advertised Substrate WSS endpoint, decoded Revive storage schema, selected runtime constants, and one synthetic H160 lookup. The latest pinned-state probe is https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225053317; its artifact is https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225053317/artifacts/12172714887.
 
 The runtime metadata shows Revive.OriginalAccount keyed by H160 and storing AccountId32; Revive.AddressSuffix is absent; AutoMap=true and NativeToEthRatio=10000 were reported. The synthetic key query returned no value, as expected. This evidence does not include a user's wallet pair and does not establish its live mapping.
 
