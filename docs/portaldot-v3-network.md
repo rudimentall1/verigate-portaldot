@@ -21,7 +21,7 @@ The [Allowance testnet field guide](https://github.com/Oziman13/allowance/blob/m
 
 - Substrate POT precision is 14 decimals (`10^14` raw units per POT).
 - EVM native `value` uses 18-decimal units. The chain field guide describes a `10^4` conversion between Substrate raw balances and EVM value units. The bridge therefore accepts exact integer strings in EVM base units; human-readable amounts must be converted explicitly before signing.
-- The field guide's offline address converter maps an H160 by appending twelve `0xEE` bytes to form AccountId32 and then encoding SS58 with prefix 42. See [`fallback_address.py`](https://github.com/Oziman13/allowance/blob/main/script/fallback_address.py). Where the runtime account-mapping API is available, prefer querying the runtime over reimplementing address mapping in app code.
+- The field guide's offline address converter maps an H160 by appending twelve `0xEE` bytes to form AccountId32 and then encoding SS58 with prefix 42. See [`fallback_address.py`](https://github.com/Oziman13/allowance/blob/main/script/fallback_address.py). This repo now implements the same documented derivation in `scripts/portaldot-address.js`, exposed as `npm run address:substrate -- 0xYourEvmAddress`; a regression test checks the published sample vector. Where the runtime account-mapping API is available, prefer querying the runtime to confirm the derived account before moving funds.
 
 ### Project-specific cost estimate
 
