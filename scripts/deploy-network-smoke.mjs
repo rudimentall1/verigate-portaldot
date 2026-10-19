@@ -70,7 +70,14 @@ function rpcResponse(request) {
       result = "0x3e8";
       break;
     case "eth_getBalance":
-      result = `0x${(500n * 10n ** 18n).toString(16)}`;
+      // The Hardhat test signer is intentionally underfunded; the estimator fixture
+      // uses a separate address with 500 POT so it exercises the estimate threshold.
+      result = request.params?.[0]?.toLowerCase() === "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+        ? "0x0"
+        : `0x${(500n * 10n ** 18n).toString(16)}`;
+      break;
+    case "eth_getTransactionCount":
+      result = "0x0";
       break;
     case "eth_getBlockByNumber":
       result = request.params?.[0] === "0x0" ? genesisBlock : block;
@@ -237,7 +244,7 @@ try {
   assert.equal(underfundedResult.error, undefined, `Underfunded deploy smoke failed to launch: ${underfundedResult.error?.message}`);
   assert.notEqual(underfundedResult.status, 0, "Deployment must refuse the mocked insufficient deployment budget.");
   assert(
-    underfundedOutput.includes("Refusing deployment: balance 500.000000 POT is below the estimated deployment cost plus 20% safety margin"),
+    underfundedOutput.includes("Refusing deployment: balance 0.000000 POT is below the estimated deployment cost plus 20% safety margin"),
     `Expected a pre-broadcast budget refusal. Output:\\n${underfundedOutput}`
   );
   const budgetMethods = methodsSeen.slice(beforeBudgetGuard);
