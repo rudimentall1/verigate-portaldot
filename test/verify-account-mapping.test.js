@@ -92,8 +92,8 @@ describe("Read-only Revive OriginalAccount verifier", function () {
     };
     const commandRunner = (args, env, label) => {
       calls.push({ args, env, label });
-      if (args[0] === "const") return '"420420777"';
-      if (args[0] === "query") {
+      if (String(args[0]).includes(".const.Revive.ChainId")) return '"420420777"';
+      if (String(args[0]).includes(".query.Revive.OriginalAccount")) {
         expect(args).to.include(h160);
         expect(args[0]).to.include("Revive.OriginalAccount");
         expect(args).to.include("--output");
