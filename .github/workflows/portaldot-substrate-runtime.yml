@@ -83,7 +83,7 @@ jobs:
           # and synthetic SS58 account only. Never put real wallet pairs in CI.
           synthetic_ss58="$(node -e 'const { encodeSs58AccountId } = require("./scripts/portaldot-address.js"); process.stdout.write(encodeSs58AccountId(Buffer.alloc(32, 0x42), 42));')"
           set +e
-          npm run --silent verify:account-mapping -- 0x0000000000000000000000000000000000000001 "$synthetic_ss58" > "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt" 2>&1
+          npm run --silent verify:account-mapping -- 0x0000000000000000000000000000000000000001 "$synthetic_ss58" --redact > "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt" 2>&1
           mapping_exit_code=$?
           set -e
           printf '%s\n' "$mapping_exit_code" > "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic-exit-code.txt"
@@ -91,7 +91,7 @@ jobs:
             cat "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt"
             exit "$mapping_exit_code"
           fi
-          node -e 'const fs = require("node:fs"); const p = process.argv[1]; const r = JSON.parse(fs.readFileSync(p, "utf8")); if (r.status !== "no_mapping_entry" || r.mappingMatchesRegisteredAccount !== null || r.queryScope !== "one H160 key only" || r.transactionSubmitted !== false || !/^0x[a-fA-F0-9]{64}$/.test(r.runtimeSnapshot?.finalizedHead ?? "")) throw new Error("Synthetic mapping query did not return a correctly pinned no_mapping_entry result."); process.stdout.write(JSON.stringify({status:r.status, finalizedBlockNumber:r.runtimeSnapshot.finalizedBlockNumber, finalizedHead:r.runtimeSnapshot.finalizedHead, queryScope:r.queryScope, transactionSubmitted:r.transactionSubmitted}, null, 2)+"\n");' "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt"
+          node -e 'const fs = require("node:fs"); const p = process.argv[1]; const r = JSON.parse(fs.readFileSync(p, "utf8")); if (r.status !== "no_mapping_entry" || r.mappingMatchesRegisteredAccount !== null || r.queryScope !== "one H160 key only" || r.transactionSubmitted !== false || !/^0x[a-fA-F0-9]{64}$/.test(r.runtimeSnapshot?.finalizedHead ?? "") || Object.hasOwn(r, "candidateH160") || Object.hasOwn(r, "registeredSubstrateAddress") || Object.hasOwn(r, "mappingValueAccountIdHex")) throw new Error("Synthetic mapping query did not return a redacted, correctly pinned no_mapping_entry result."); process.stdout.write(JSON.stringify({status:r.status, finalizedBlockNumber:r.runtimeSnapshot.finalizedBlockNumber, finalizedHead:r.runtimeSnapshot.finalizedHead, queryScope:r.queryScope, transactionSubmitted:r.transactionSubmitted}, null, 2)+"\n");' "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt"
       - name: Upload runtime metadata evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
