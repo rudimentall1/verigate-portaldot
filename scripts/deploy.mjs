@@ -41,17 +41,24 @@ async function main() {
   const guard = await factory.deploy(authoritySigner);
   const tx = guard.deploymentTransaction();
   const receipt = await tx.wait();
+  const contractAddress = await guard.getAddress();
+  const runtimeCode = await ethers.provider.getCode(contractAddress);
+  if (typeof runtimeCode !== "string" || !/^0x(?:[0-9a-fA-F]{2})+$/.test(runtimeCode)) {
+    throw new Error("Deployment receipt exists but no runtime bytecode was found at the deployed address.");
+  }
 
   console.log(JSON.stringify({
-    network: "PortalDot V3 testnet",
+    network: "Configured EVM RPC (identity not proven by chain ID alone)",
+    rpcOrigin: new URL(rpcUrl).origin,
     chainId: network.chainId.toString(),
     contract: "PortalDotAgentGuard",
-    address: await guard.getAddress(),
+    address: contractAddress,
+    runtimeCodeHash: ethers.keccak256(runtimeCode),
     deployer: deployerAddress,
     authoritySigner,
     transactionHash: receipt.hash,
     blockNumber: receipt.blockNumber,
-    note: "Save this actual output in evidence/. Do not treat local Hardhat deployments as PortalDot evidence."
+    note: "Independently verify the RPC, deployed bytecode, and transaction before claiming PortalDot deployment evidence. Local Hardhat output is not live testnet evidence."
   }, null, 2));
 }
 
