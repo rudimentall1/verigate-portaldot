@@ -7,7 +7,8 @@ import {
   validateMappingInputs,
   parseDotJsonValue,
   compareOriginalAccountMapping,
-  verifyOriginalAccountMapping
+  verifyOriginalAccountMapping,
+  redactMappingResult
 } from "../scripts/verify-account-mapping.mjs";
 
 describe("Read-only Revive OriginalAccount verifier", function () {
@@ -147,6 +148,40 @@ describe("Read-only Revive OriginalAccount verifier", function () {
     }
     expect(errorMessage).to.match(/expected portaldot-v3/);
     expect(calls).to.equal(0);
+  });
+
+  it("redacts both wallet addresses from a mapping result while preserving the decision and state reference", function () {
+    const result = compareOriginalAccountMapping({
+      rawStorageValue: accountOne,
+      h160,
+      ss58Address: accountOne
+    });
+    result.checkedAt = "2026-10-19T08:00:00.000Z";
+    result.rpcOrigin = "wss://test-node-v3.portaldot.dev";
+    result.reportedChainId = "420420777";
+    result.runtimeSnapshot = {
+      runtimeVersion: { specName: "portaldot-v3", specVersion: 3002 },
+      finalizedBlockNumber: "100714",
+      finalizedHead: "0x" + "ab".repeat(32),
+      genesisHashReportedByEndpoint: "0x" + "cd".repeat(32),
+      metadataBytes: 561916,
+      metadataSha256Observed: "a".repeat(64)
+    };
+    result.queryScope = "one H160 key only";
+
+    const redacted = redactMappingResult(result);
+    const serialized = JSON.stringify(redacted);
+    expect(redacted.status).to.equal("mapping_matches");
+    expect(redacted.mappingMatchesRegisteredAccount).to.equal(true);
+    expect(redacted.runtimeSnapshot.finalizedBlockNumber).to.equal("100714");
+    expect(redacted.runtimeSnapshot.finalizedHead).to.equal("0x" + "ab".repeat(32));
+    expect(redacted.queryScope).to.equal("one H160 key only");
+    expect(redacted.transactionSubmitted).to.equal(false);
+    expect(serialized).not.to.include(h160);
+    expect(serialized).not.to.include(accountOne);
+    expect(redacted).not.to.have.property("registeredSubstrateAddress");
+    expect(redacted).not.to.have.property("mappingValueAccountIdHex");
+    expect(redacted).not.to.have.property("accountIdHex");
   });
 
   it("accepts a hex-encoded AccountId32 value returned by an alternate CLI formatter", function () {
