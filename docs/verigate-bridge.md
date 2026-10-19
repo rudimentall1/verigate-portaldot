@@ -12,7 +12,7 @@ The bridge signer is the security boundary between Verigate's Ed25519 execution 
 6. Check that the signed action maps exactly to a PortalDot native transfer: recipient, raw base-unit amount, chain ID, asset and network.
 7. Use read-only RPC calls to verify the configured chain ID, non-empty guard bytecode, pinned `PORTALDOT_GUARD_CODE_HASH`, and on-chain `authoritySigner()` against `AUTHORITY_SIGNER_ADDRESS`.
 8. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing. The signed `issued_at` and `expires_at` fields must be safe-integer JSON numbers; string-encoded timestamps are rejected rather than coerced.
-9. Sign EIP-712 data using the dedicated bridge key; never broadcast automatically from this CLI.
+9. Sign EIP-712 data using the dedicated bridge key. The signing CLI outputs JSON and never broadcasts.
 
 ## Required signed intent convention
 
@@ -43,10 +43,13 @@ The deployer key pays deployment gas. The bridge signer key is configured as the
 
 Verigate signs compact, sorted-key JSON with Python's `json.dumps(..., ensure_ascii=False)`. Python preserves the distinction between integer `1` and float `1.0`; standard JavaScript `JSON.parse` followed by `JSON.stringify` does not. The CLI therefore retains the original numeric tokens from the Verigate JSON artifact when building canonical hashes and when asking `/v1/verify` to verify the payload. Do not parse and re-serialize the signed artifact through a JavaScript client before saving it. A changed numeric representation fails closed rather than being accepted as the original signature.
 
+## Guarded execution CLI
+
+The separate executor accepts the bridge's signed JSON. It revalidates the EIP-712 domain and recovered signer, rejects non-canonical or altered transfer fields, checks deadline, deployed guard runtime-code hash and on-chain authority signer, confirms the guard balance, then runs a read-only simulation and estimates relayer fees with a 20% margin. Without --broadcast it returns a simulation result and does not submit a transaction. With --broadcast it repeats critical checks immediately before submitting the exact signed transfer. The relayer private key pays gas and must be distinct from the authority signer. Use broadcast only after independently verifying the target network, deployed contract, balance and fee budget.
+
 ## Remaining work
 
-- Run the current CLI against a real response from the configured Verigate instance.
-- Test authorization expiry, action mismatch, invalid signatures and denied decisions end to end.
+- Complete the final branch-head test and integration CI run after executor changes.
 - Obtain the issuer public key through a trusted channel, verify its fingerprint, and keep the pinned PEM under controlled deployment configuration. Never commit private keys.
 - Never record a transaction hash or deployed address until it is confirmed on the live expected chain.
 
@@ -55,4 +58,4 @@ Verigate signs compact, sorted-key JSON with Python's `json.dumps(..., ensure_as
 
 Run `scripts/verigate_local_demo.py` with the Python interpreter from the Verigate checkout. The harness creates an isolated temporary Verigate API instance, seeds a test-only identity and capability, submits ALLOW and BLOCK requests through the actual HTTP routes, and verifies Ed25519 artifacts. It also starts an isolated loopback Hardhat EVM, deploys the actual PortalDotAgentGuard source using disposable deployer and bridge keys, pins that local deployment's runtime-code hash, and runs the bridge against the actual guard address. ALLOW signs only after chain, code-hash and authority checks pass; BLOCK is refused.
 
-The harness never uses the normal Verigate database or issuer keys. Temporary private keys, node state and database files are deleted after the run. CI runs it on pushes and pull requests. Its test deployment and funding transactions remain on the loopback simulator; it does not contact public PortalDot RPC or prove a live testnet deployment.
+The harness never uses the normal Verigate database or issuer keys. Temporary private keys, node state and database files are deleted after the run. CI runs it on pushes and pull requests. In addition to signing ALLOW and refusing BLOCK, it runs the executor without --broadcast and proves the guard balance does not change, then executes the ALLOW transfer against the local simulator. It confirms TransferExecuted and checks the recipient balance increase equals the authorized amount. All those transactions remain on loopback; this does not prove a live testnet deployment.
