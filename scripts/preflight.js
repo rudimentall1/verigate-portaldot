@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { configuredGenesisHash, assertGenesisHashMatches } = require("./network-identity.js");
+const { parseExpectedSubstrateGenesisHash, validateSubstrateRpcUrl, verifySubstrateGenesisHash } = require("./substrate-genesis.js");
 
 function requiredNetworkConfig() {
   const rpcUrl = (process.env.PORTALDOT_RPC_URL || "").trim();
@@ -9,10 +9,8 @@ function requiredNetworkConfig() {
     throw new Error("PORTALDOT_CHAIN_ID must be explicitly set to the confirmed positive decimal chain ID.");
   }
 
-  const expectedGenesisHash = configuredGenesisHash(process.env.PORTALDOT_GENESIS_HASH);
-  if (!expectedGenesisHash) {
-    throw new Error("PORTALDOT_GENESIS_HASH must be independently confirmed and pinned before preflight, estimation, or deployment.");
-  }
+  const substrateRpcUrl = validateSubstrateRpcUrl(process.env.PORTALDOT_SUBSTRATE_RPC_URL);
+  const expectedSubstrateGenesisHash = parseExpectedSubstrateGenesisHash(process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH);
 
   let parsedUrl;
   try {
@@ -31,7 +29,7 @@ function requiredNetworkConfig() {
     throw new Error("Remote RPC endpoints must use HTTPS. Plain HTTP is allowed only for local loopback development.");
   }
 
-  return { rpcUrl, expectedChainId: BigInt(chainIdText), expectedGenesisHash };
+  return { rpcUrl, expectedChainId: BigInt(chainIdText), substrateRpcUrl, expectedSubstrateGenesisHash };
 }
 
 function safeRpcOrigin(rpcUrl) {
@@ -76,19 +74,12 @@ async function rpc(rpcUrl, method) {
   return result;
 }
 
-async function readGenesisHash(rpcUrl, expectedGenesisHash) {
-  const block = await rpcResult(rpcUrl, "eth_getBlockByNumber", ["0x0", false]);
-  if (!block || typeof block !== "object" || Array.isArray(block)) {
-    throw new Error("eth_getBlockByNumber: RPC did not return a genesis block object.");
-  }
-  return assertGenesisHashMatches(expectedGenesisHash, block.hash);
-}
-
 async function main() {
-  const { rpcUrl, expectedChainId, expectedGenesisHash } = requiredNetworkConfig();
+  const { rpcUrl, expectedChainId, substrateRpcUrl, expectedSubstrateGenesisHash } = requiredNetworkConfig();
   console.log(`Configured PortalDot EVM RPC origin: ${safeRpcOrigin(rpcUrl)}`);
   console.log(`Expected chain ID: ${expectedChainId}`);
-  console.log(`Expected genesis hash: ${expectedGenesisHash}`);
+  console.log(`Substrate RPC origin: ${new URL(substrateRpcUrl).origin}`);
+  console.log(`Expected Substrate genesis hash: ${expectedSubstrateGenesisHash}`);
 
   const [chainHex, blockHex] = await Promise.all([
     rpc(rpcUrl, "eth_chainId"),
@@ -99,13 +90,13 @@ async function main() {
 
   console.log(`Actual chain ID: ${actualChainId}`);
   console.log(`Latest block: ${blockNumber}`);
-  const actualGenesisHash = await readGenesisHash(rpcUrl, expectedGenesisHash);
-  console.log(`Genesis hash matches configured pin: ${actualGenesisHash}`);
+  const actualSubstrateGenesisHash = await verifySubstrateGenesisHash(substrateRpcUrl, expectedSubstrateGenesisHash);
+  console.log(`Substrate genesis hash matches configured pin: ${actualSubstrateGenesisHash}`);
   if (actualChainId !== expectedChainId) {
     throw new Error(`Wrong chain ID; expected ${expectedChainId}, received ${actualChainId}. Refusing deployment.`);
   }
 
-  console.log("RPC preflight passed: chain ID and configured genesis-hash pin matched. One RPC cannot cryptographically authenticate itself; this check also does not prove wallet funding or deployment success.");
+  console.log("RPC preflight passed: EVM chain ID and Substrate genesis pin matched. This does not cryptographically authenticate the RPC operator or prove wallet funding or deployment success.");
 }
 
 if (require.main === module) {
@@ -115,4 +106,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { requiredNetworkConfig, safeRpcOrigin, rpcResult, rpc, readGenesisHash };
+module.exports = { requiredNetworkConfig, safeRpcOrigin, rpcResult, rpc };
