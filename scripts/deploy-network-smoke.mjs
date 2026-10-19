@@ -60,6 +60,15 @@ function rpcResponse(request) {
     case "eth_blockNumber":
       result = "0x1";
       break;
+    case "eth_estimateGas":
+      result = "0x5d26ed11ff8019";
+      break;
+    case "eth_gasPrice":
+      result = "0x9beb";
+      break;
+    case "eth_getBalance":
+      result = `0x${(500n * 10n ** 18n).toString(16)}`;
+      break;
     case "eth_getBlockByNumber":
       result = request.params?.[0] === "0x0" ? genesisBlock : block;
       break;
@@ -211,6 +220,47 @@ try {
     "A credentialed RPC URL must be rejected before any network request."
   );
   console.log("PASS: Hardhat rejects RPC URLs containing embedded credentials before network requests.");
+
+  const estimatorEnv = {
+    ...childEnv,
+    PORTALDOT_GENESIS_HASH: "",
+    AUTHORITY_SIGNER_ADDRESS: "0x2222222222222222222222222222222222222222",
+    DEPLOYMENT_ESTIMATE_FROM: "0x3333333333333333333333333333333333333333"
+  };
+  const beforeEstimate = methodsSeen.length;
+  const estimator = spawn(
+    process.execPath,
+    [resolve("scripts/estimate-deployment.mjs")],
+    { cwd: process.cwd(), env: estimatorEnv, stdio: ["ignore", "pipe", "pipe"] }
+  );
+  let estimateStdout = "";
+  let estimateStderr = "";
+  estimator.stdout.setEncoding("utf8").on("data", (chunk) => { estimateStdout += chunk; });
+  estimator.stderr.setEncoding("utf8").on("data", (chunk) => { estimateStderr += chunk; });
+  const estimateResult = await new Promise((resolveResult) => {
+    const timer = setTimeout(() => {
+      estimator.kill("SIGKILL");
+      resolveResult({ status: null, error: "estimator timed out" });
+    }, 60000);
+    estimator.once("error", (error) => {
+      clearTimeout(timer);
+      resolveResult({ status: null, error: error.message });
+    });
+    estimator.once("close", (status) => {
+      clearTimeout(timer);
+      resolveResult({ status, error: null });
+    });
+  });
+  assert.equal(estimateResult.error, null, `Cost estimator failed to launch: ${estimateResult.error}`);
+  assert.equal(estimateResult.status, 2, `Expected insufficient mocked balance to return exit code 2. Output:\\n${estimateStdout}\\n${estimateStderr}`);
+  assert(estimateStdout.includes('"budgetStatus": "insufficient_for_20_percent_margin"'), "Estimator did not compare live balance to the estimate plus its safety margin.");
+  assert(estimateStdout.includes('"deployerBalancePot": "500.000000"'), "Estimator did not express EVM balance using 18-decimal POT units.");
+  assert(estimateStdout.includes('"estimatedCostPot":'), "Estimator did not report a deployment cost in POT.");
+  assert(methodsSeen.slice(beforeEstimate).includes("eth_estimateGas"), "Estimator did not request an estimate from the mock RPC.");
+  assert(methodsSeen.slice(beforeEstimate).includes("eth_gasPrice"), "Estimator did not read gas price from the mock RPC.");
+  assert(methodsSeen.slice(beforeEstimate).includes("eth_getBalance"), "Estimator did not read the deployer balance from the mock RPC.");
+  assert(!methodsSeen.slice(beforeEstimate).some((method) => transactionMethods.has(method)), "Estimator attempted a transaction RPC method.");
+  console.log("PASS: deployment estimator queries only read-only RPC methods and flags a 500 POT balance below the mocked estimated cost plus 20% margin.");
 } finally {
   server.closeAllConnections?.();
   await new Promise((resolveClose) => server.close(() => resolveClose()));
