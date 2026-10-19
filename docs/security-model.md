@@ -34,7 +34,7 @@ The executor:
 - verifies the deployed guard runtime-code hash and on-chain authority signer using read-only RPC calls;
 - checks current guard funds and runs a read-only simulation and gas estimation;
 - requires a relayer fee budget at least equal to the estimated fee plus 20%;
-- repeats critical chain/contract/balance/deadline checks just before broadcast;
+- immediately before broadcast, refreshes the block timestamp, rechecks chain/contract/guard balance, re-simulates the exact transfer to catch a consumed nonce, re-estimates gas, fetches a fresh gas price, and rechecks the relayer balance against the refreshed fee estimate plus 20%;
 - does not submit transactions unless the user explicitly passes --broadcast.
 
 These are guardrails, not proof that a single RPC endpoint is trustworthy, and gas costs can change between the preflight and transaction execution.
