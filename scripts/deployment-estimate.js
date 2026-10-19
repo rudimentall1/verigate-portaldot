@@ -98,6 +98,13 @@ function buildDeploymentReadiness({ authoritySignerIsPlaceholder, balanceSuffici
   };
 }
 
+function deploymentEstimateExitCode({ balanceSufficient, authoritySignerIsPlaceholder, readiness }) {
+  if (balanceSufficient !== true) return 2;
+  if (authoritySignerIsPlaceholder === true) return 3;
+  if (readiness !== "READY_FOR_DEPLOYMENT") return 4;
+  return 0;
+}
+
 function substrateRawToEvmWei(substrateRaw) {
   const text = typeof substrateRaw === "string" ? substrateRaw : String(substrateRaw);
   if (!/^(0|[1-9][0-9]*)$/.test(text)) throw new Error("Substrate raw balance must be a canonical non-negative decimal integer string.");
