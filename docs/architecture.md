@@ -24,7 +24,7 @@ flowchart TD
     O --> P["Check receipt and TransferExecuted event"]
 ```
 
-The executor does not send a transaction by default. The explicit --broadcast path submits the signed transfer only after signature, network, deployed code hash, authority signer, expiry, contract balance, simulation and relayer fee budget checks pass. Automated CI exercises both dry-run and the broadcast path only against a temporary loopback Hardhat EVM, then confirms that the recipient balance delta equals the signed amount. This is local integration evidence, not a public PortalDot transaction or deployment.
+The executor does not send a transaction by default. The explicit --broadcast path submits the signed transfer only after signature, network, deployed code hash, authority signer, expiry, contract balance, simulation and relayer fee budget checks pass. Automated CI exercises both dry-run and the broadcast path only against a temporary loopback Hardhat EVM, then confirms that recipient balance delta equals the signed amount. This is local integration evidence, not a public PortalDot transaction or deployment.
 
 ## What is checked off-chain
 
@@ -36,6 +36,7 @@ The executor does not send a transaction by default. The explicit --broadcast pa
 - The bridge authorization must match the expected chain ID and have valid nonce, authorization ID, issue time and expiry.
 - Before signing, the bridge verifies chain ID, deployed bytecode, the Keccak runtime-code hash pinned in PORTALDOT_GUARD_CODE_HASH, and on-chain authoritySigner().
 - The executor revalidates EIP-712 domain, recovered authority signer, contract, canonical transfer values and deadline immediately before any simulation or broadcast.
+- A separate read-only Substrate probe decoded the live V3 Revive metadata at reported runtime specVersion 3002. It found Revive.OriginalAccount as H160 -> AccountId32, confirmed Revive.AddressSuffix is absent, and read AutoMap=true and native/EVM unit and deposit constants. The specific registered-wallet H160 mapping remains a separate read-only single-key lookup, not inferred from offline derivation.
 
 ## What the contract enforces
 
@@ -51,8 +52,10 @@ The contract does not verify Verigate's Ed25519 signatures. The bridge verifies 
 
 ## Deployment blocker
 
-The repository records https://test-evm-rpc-v3.portaldot.dev and chain ID 420420777 as reported V3 EVM testnet settings from a community field guide. A chain ID or single RPC response is not network authentication. Verify the endpoint and deployed runtime code through independently trusted sources before a public transaction. No live PortalDot contract deployment is claimed.
+The project has read-only evidence that the advertised Substrate endpoint reports chain name PortaldotV3 Test and runtime specName portaldot-v3 / specVersion 3002, with Revive.ChainId=420420777. The advertised EVM RPC has also responded with chain ID 420420777. These observations establish consistency of reported parameters, but one endpoint cannot cryptographically authenticate itself. Independently confirm the endpoint/runtime before any public transaction, and locally query Revive.OriginalAccount for the exact H160 to be used. No live PortalDot contract deployment is claimed.
 
 ## Validation evidence
 
-The test workflow and PortalDot integration workflow cover the bridge, native-token guard, RPC preflight, read-only deployment estimator and new guarded executor. In the isolated harness, a disposable Verigate API issues ALLOW and BLOCK, the bridge signs only ALLOW, the executor first simulates without changing state, and the same signed authorization is then executed on the temporary loopback EVM. The test checks the guard event and exact recipient balance delta. No public PortalDot transaction is used by that integration flow.
+The [149-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39222765884) and [PortalDot integration run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39222765902) passed on revision f403afc. The isolated harness uses disposable Verigate state and a loopback-only Hardhat EVM: it issues ALLOW and BLOCK, signs only ALLOW, checks executor dry-run leaves state unchanged, then executes that exact signed transfer locally and checks the event and exact recipient balance delta. No public PortalDot transaction is used by that integration flow.
+
+The sanitized runtime observation is committed in evidence/portaldot-v3-runtime-2026-10-19.json. It records a synthetic-key query only; it contains no user wallet pair.
