@@ -27,16 +27,41 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Generate advisory report (report-only)
+      - name: Generate actionable advisory summary (report-only)
         shell: bash
         run: |
           set +e
           npm audit --json > "$RUNNER_TEMP/npm-audit.json"
           audit_status=$?
-          echo "npm audit exit code: $audit_status"
-          node -e 'const fs=require("node:fs"); const p=process.argv[1]; try { const a=JSON.parse(fs.readFileSync(p,"utf8")); console.log(JSON.stringify({metadata:a.metadata?.vulnerabilities ?? null, advisories:Object.keys(a.vulnerabilities ?? {})}, null, 2)); } catch (e) { console.error("Could not parse npm audit JSON:", e.message); process.exitCode=1; }' "$RUNNER_TEMP/npm-audit.json"
+          echo "npm audit exit code: $audit_status (non-zero means advisories were found or audit failed)"
+          node -e '
+            const fs = require("node:fs");
+            const p = process.argv[1];
+            try {
+              const a = JSON.parse(fs.readFileSync(p, "utf8"));
+              console.log("Severity totals:");
+              console.log(JSON.stringify(a.metadata?.vulnerabilities ?? null, null, 2));
+              const rows = Object.entries(a.vulnerabilities ?? {}).map(([name, v]) => ({
+                package: name,
+                severity: v.severity,
+                direct: v.isDirect,
+                range: v.range,
+                fixAvailable: v.fixAvailable ?? false,
+                via: (v.via ?? []).map(x => typeof x === "string" ? x : x.title)
+              }));
+              rows.sort((x, y) => {
+                const rank = { critical: 0, high: 1, moderate: 2, low: 3, info: 4 };
+                return (rank[x.severity] ?? 5) - (rank[y.severity] ?? 5) || x.package.localeCompare(y.package);
+              });
+              console.log("Affected package summary:");
+              console.log(JSON.stringify(rows, null, 2));
+            } catch (e) {
+              console.error("Could not parse npm audit JSON:", e.message);
+              process.exitCode = 1;
+            }
+          ' "$RUNNER_TEMP/npm-audit.json"
           exit 0
-      - name: Upload npm audit report
+      - name: Upload full npm audit report
         if: always()
         uses: actions/upload-artifact@v4
         with:
