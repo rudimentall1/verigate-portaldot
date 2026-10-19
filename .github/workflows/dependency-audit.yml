@@ -25,6 +25,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Record audited revision
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Revision: $GITHUB_SHA"
+          echo "Ref: $GITHUB_REF_NAME"
+          echo "Node.js: $(node --version)"
+          echo "npm: $(npm --version)"
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Generate actionable advisory summary (report-only)
