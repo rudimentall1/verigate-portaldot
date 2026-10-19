@@ -26,3 +26,20 @@ At the timestamp above, the endpoint responded to read-only JSON-RPC requests an
 - It is not a smart-contract security audit.
 
 Before deploying or using test funds, independently confirm the endpoint and chain configuration with PortalDot's current official event/dev documentation or organizer channel. Then verify any deployed contract address, transaction, runtime bytecode hash, and bridge authority signer through a separately trusted source.
+
+## Follow-up read-only smoke check
+
+- Checked at (UTC): 2026-10-19T04:44:29.032Z
+- Workflow: [PortalDot RPC health run 39200969354](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39200969354)
+- Tested revision: `77cb6a8fd23905a95fc3c69094a918414787754b`
+- RPC origin: `https://test-evm-rpc-v3.portaldot.dev`
+- Expected and observed EVM chain ID: `420420777`
+- Observed block number: `98309`
+- Combined request latency: `689 ms`
+- Result: `status=ok`
+
+This second observation is consistent with the endpoint advancing from block `98129` at 04:26:05 UTC to `98309` at 04:44:29 UTC. It is still only two snapshots, not a continuous liveness or finality check.
+
+## Independent configuration confirmation remains outstanding
+
+The [published PortalDot developer Chain Info page](https://portaldot-dev.readthedocs.io/en/latest/chain-info.html) documents the Substrate mainnet websocket endpoint, SS58 format, and POT decimals; it does not document this EVM endpoint or chain ID. Until PortalDot confirms the EVM endpoint, chain ID, native gas token, and test-token denomination through a current official source or organizer channel, treat this endpoint as operationally responsive but not independently authenticated. Do not deploy or send funds based only on these RPC checks.
