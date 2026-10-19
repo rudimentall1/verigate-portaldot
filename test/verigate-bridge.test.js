@@ -778,22 +778,20 @@ describe("On-chain PortalDot guard verification before signing", function () {
     expect(error.message).to.match(/expected 420420777; refusing to sign/);
   });
 
-  it("requires a pinned genesis hash before making RPC requests", async function () {
-    let calls = 0;
-    const error = await capturedError(verifyGuardDeployment({
+  it("allows an omitted optional genesis pin while still checking chain, code and signer", async function () {
+    const result = await verifyGuardDeployment({
       rpcUrl,
       expectedChainId: "420420777",
       guardAddress,
       authoritySigner: expectedAuthority,
       guardCodeHash: expectedCodeHash,
       genesisHash: "",
-      providerFactory: async () => {
-        calls += 1;
-        return mockProvider();
-      }
-    }));
-    expect(error.message).to.match(/PORTALDOT_GENESIS_HASH must be/);
-    expect(calls).to.equal(0);
+      providerFactory: async () => mockProvider(),
+      contractFactory: () => ({ authoritySigner: async () => expectedAuthority })
+    });
+    expect(result.genesisHash).to.equal(null);
+    expect(result.chainId).to.equal(420420777n);
+    expect(result.runtimeCodeHash).to.equal(expectedCodeHash);
   });
 
   it("rejects a mismatched genesis hash before reading contract bytecode", async function () {
