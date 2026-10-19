@@ -63,10 +63,11 @@ jobs:
             printf '%s\n' "$result" > "$RUNNER_TEMP/substrate-runtime-evidence/$name-exit-code.txt"
           }
           run_capture dot-chain-list dot chain list
-          run_capture revive-pallet-metadata dot inspect portaldot-v3.Revive
-          run_capture revive-storage-index dot portaldot-v3.query.Revive
-          run_capture OriginalAccount-storage-definition dot inspect portaldot-v3.Revive.OriginalAccount
-          run_capture AddressSuffix-storage-definition dot inspect portaldot-v3.Revive.AddressSuffix
+          run_capture revive-pallet-metadata dot inspect Revive --chain portaldot-v3
+          run_capture revive-storage-index dot query.Revive --chain portaldot-v3
+          run_capture OriginalAccount-query-definition dot query.Revive.OriginalAccount --chain portaldot-v3
+          run_capture OriginalAccount-storage-definition dot inspect Revive.OriginalAccount --chain portaldot-v3
+          run_capture AddressSuffix-storage-definition dot inspect Revive.AddressSuffix --chain portaldot-v3
       - name: Upload runtime metadata evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
