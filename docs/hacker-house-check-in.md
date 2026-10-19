@@ -6,31 +6,31 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 
 ## Current progress
 
-- **Public repository:** https://github.com/rudimentall1/verigate-portaldot
-- **Core contract:** PortalDotAgentGuard accepts only EIP-712-authorized native-token transfers and has no generic arbitrary-call interface.
-- **Bridge:** verifies both Ed25519 artifacts against a locally pinned issuer key, checks the action and exact base-unit amount, and creates a short-lived EIP-712 authorization only for a genuine Verigate ALLOW.
-- **Guarded executor:** npm run execute:authorization -- ./signed-transfer.json validates and simulates the exact signed transfer without broadcasting. The explicit --broadcast path checks the guard code hash, configured authority, signature, deadline, guard funds, gas estimate and relayer budget before submitting the exact authorized payment.
-- **Full local end-to-end exercise:** the CI harness submits ALLOW and BLOCK through a disposable Verigate API, verifies the signed artifacts, creates the EIP-712 authorization, proves dry-run did not mutate guard state, then executes ALLOW against the actual guard contract on a temporary loopback Hardhat EVM. It confirms the transfer event and asserts the recipient balance delta equals the authorized amount. BLOCK is refused. These are local transactions, not public PortalDot evidence.
-- **Network guardrails:** read-only preflight and RPC health checks, optional genesis-hash pin, runtime bytecode hash verification, exact integer unit conversion, deployment estimate with 20% margin, and dependency security audit.
-- **Architecture and trust boundaries:** [docs/architecture.md](architecture.md).
-- **Demo plan:** [docs/demo-script.md](demo-script.md), explicitly distinguishing local integration from a live deployment.
-- **Submission draft:** [docs/check-in-submission.md](check-in-submission.md).
+- Public repository: https://github.com/rudimentall1/verigate-portaldot
+- Core contract: PortalDotAgentGuard accepts only EIP-712-authorized native-token transfers and has no generic arbitrary-call interface.
+- Bridge: verifies both Ed25519 artifacts against a locally pinned issuer key, checks the action and exact base-unit amount, and creates a short-lived EIP-712 authorization only for a genuine Verigate ALLOW.
+- Guarded executor: simulation is the default. Explicit --broadcast is required to submit the exact transfer, after validating the EIP-712 signer/domain, live guard code hash, authority signer, deadline, guard funds and relayer fee budget.
+- Full local end-to-end exercise: the CI harness submits ALLOW and BLOCK through a disposable Verigate API, verifies signatures, signs only ALLOW, proves the dry run leaves guard funds unchanged, then executes ALLOW against the actual guard contract on a temporary loopback Hardhat EVM. It confirms the transfer event and recipient balance delta exactly equals the authorized amount. BLOCK is refused.
+- Passing code checks: [132 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217749830); [PortalDot integration CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217749634); [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217746423); [dependency audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217749609). These ran on revision 3ce638c before later documentation-only commits; recheck the newest branch head before submitting.
+- Architecture and trust boundaries: [docs/architecture.md](architecture.md).
+- Demo plan: [docs/demo-script.md](demo-script.md).
+- DoraHacks text draft: [docs/check-in-submission.md](check-in-submission.md).
 
 ## Remaining before check-in
 
-1. Complete a successful branch-head test run after the executor change and keep its passing Actions evidence linked here.
-2. Configure and verify a dedicated non-zero authority signer and the intended guard's runtime-code fingerprint.
-3. Re-run the read-only deployment estimate with the real authority signer and selected deployer address. A prior preliminary quote used a placeholder authority signer and is not deployment-ready.
-4. Deploy only after network configuration, estimated storage/gas cost and available budget have been checked. Record contract address, transaction hash, block number and timestamp only after confirmation.
-5. Record the demo video, then enter the progress summary and public repository on DoraHacks.
+1. Recheck successful CI on the current branch head and keep the passing run linked in the submission.
+2. Confirm the actual deployment authority signer and independently verify the intended contract fingerprint.
+3. Re-run read-only deployment estimation with the real signer and chosen deployer address. The earlier estimate used a placeholder signer.
+4. Deploy only after current budget and network configuration are verified; preserve transaction and receipt evidence after confirmation.
+5. Record the demo video and submit the progress summary on DoraHacks.
 
 ## Honest current limitations
 
 - No live PortalDot contract deployment is claimed.
-- Public-RPC health checks are read-only. The full ALLOW transfer test and local transaction receipts use only loopback Hardhat.
-- The public executor can submit a transfer when --broadcast is explicitly supplied and all checks pass; no public transaction is sent by CI.
-- Network details and amount units are documented with their available source provenance in docs/portaldot-v3-network.md. An HTTPS URL and expected chain ID do not independently authenticate a potentially malicious RPC.
-- The CLI is an initial integration, not a production key service or independent smart-contract audit.
+- Public-RPC health checks are read-only. Local transaction receipts come only from the loopback Hardhat integration.
+- No CI job sends a transaction to public PortalDot.
+- An HTTPS URL and reported chain ID do not independently authenticate a potentially malicious RPC.
+- This is an initial integration, not production key management or an independent smart-contract audit.
 
 ## Submission checklist
 
@@ -38,10 +38,9 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 - [x] README with run instructions and explicit limitations
 - [x] Architecture diagram and trust-boundary notes
 - [x] Development commits during the build period
-- [x] Contract tests, dependency audit and isolated Verigate integration harness
-- [x] Executor defaults to simulation and the local harness tests an exact signed ALLOW payment
-- [ ] Final branch-head CI evidence linked here
+- [x] Contract tests, compilation, dependency audit and isolated Verigate integration
+- [x] Executor defaults to simulation and local ALLOW execution is verified against the exact authorized amount
+- [x] Passing branch test/compile and integration evidence recorded
 - [ ] Verified testnet deployment evidence, if supported and available
 - [ ] Initial demo link or video no longer than 3 minutes
 - [ ] Check-in submission entered on DoraHacks
-
