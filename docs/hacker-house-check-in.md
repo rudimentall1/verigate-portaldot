@@ -9,7 +9,7 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 - Public repository: https://github.com/rudimentall1/verigate-portaldot
 - Core contract: `PortalDotAgentGuard` accepts only EIP-712-authorized native-token transfers and has no generic arbitrary-call method.
 - Bridge: checks the signed Verigate decision and execution authorization, binds the action to the exact recipient and base-unit amount, and creates an EIP-712 signature for an ALLOW decision only.
-- Verification: code revision `33d4ada6e56ae26cca36f5888470971846e59c48` contains the latest optional-genesis-pin tests; the 108-test baseline on `ccf96f3` passed earlier CI. CI for the recent optional-pin changes is being rerun. Preflight/direct deployment use the published endpoint and chain ID; they optionally check a configured genesis hash. Bridge signing still checks chain ID, runtime-code hash, and `authoritySigner()`.
+- Verification: revision `a38db0c2108e0d2475d516fb517b3094b41326f2` passed [113 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39203322858), including exact deployment-cost calculations and EVM/Substrate unit conversion. The optional-genesis-pin path is tested as well. Preflight and direct deployment use the published endpoint and chain ID, optionally compare a configured genesis hash, and refuse mismatches. Bridge signing checks chain ID, guard runtime-code hash, and `authoritySigner()`.
 - Local integration exercise: CI starts a disposable Verigate API and loopback Hardhat EVM, deploys the actual guard source to that simulator, confirms code hash and signer identity, signs EIP-712 only for ALLOW, and refuses BLOCK. No public PortalDot RPC or transaction is used.
 - Architecture and security boundary: [docs/architecture.md](architecture.md).
 - Video plan: [three-minute demo script](demo-script.md); clearly labels the local integration as a dry run, not a PortalDot deployment.
@@ -36,7 +36,7 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 - [x] Architecture diagram and trust-boundary notes
 - [x] Development commits during the build period
 - [x] Local contract and bridge tests plus CI evidence
-- [ ] Confirmed PortalDot testnet details
+- [x] Published EVM RPC, chain ID, Substrate endpoint and token-unit notes recorded with cited provenance
 - [ ] Verified testnet deployment evidence, if supported and available
 - [ ] Initial demo link or video no longer than 3 minutes
 - [ ] Check-in submission entered on DoraHacks
