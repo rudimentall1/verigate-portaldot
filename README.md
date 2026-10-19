@@ -129,7 +129,7 @@ npm run bridge:sign -- ./authorization-response.json > ./signed-transfer.json
 npm run execute:authorization -- ./signed-transfer.json
 ```
 
-Dry-run mode does not broadcast a transaction. It still needs the verified network URL and chain ID, `PORTALDOT_GUARD_ADDRESS`, `PORTALDOT_GUARD_CODE_HASH`, `AUTHORITY_SIGNER_ADDRESS`, and `DEPLOYMENT_ESTIMATE_FROM` (public relayer address). If a relayer private key is configured, its derived address must match `DEPLOYMENT_ESTIMATE_FROM`.
+Dry-run mode does not broadcast a transaction. It still needs the verified network URL and chain ID, `PORTALDOT_GUARD_ADDRESS`, `PORTALDOT_GUARD_CODE_HASH`, `AUTHORITY_SIGNER_ADDRESS`, and either `DEPLOYMENT_ESTIMATE_FROM` (public relayer address) or a locally configured `DEPLOYER_PRIVATE_KEY` from which to derive the address. If both are set, they must match.
 
 **The following command is the only executor path that submits a payment:**
 
