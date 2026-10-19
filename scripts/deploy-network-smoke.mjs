@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -91,15 +91,30 @@ try {
   delete env.DEPLOYER_PRIVATE_KEY;
   delete env.AUTHORITY_SIGNER_ADDRESS;
 
-  const result = spawnSync(
+  const child = spawn(
     process.execPath,
     [hardhatBin, "--config", "./hardhat.config.js", "run", "scripts/deploy.js", "--network", "portaldot"],
-    { cwd: process.cwd(), env, encoding: "utf8", timeout: 60_000 }
+    { cwd: process.cwd(), env, stdio: ["ignore", "pipe", "pipe"] }
   );
-  const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
-  assert.equal(result.error, undefined, `Could not launch deployment guard: ${result.error?.message}`);
+  let stdout = "";
+  let stderr = "";
+  child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; });
+  child.stderr.setEncoding("utf8").on("data", (chunk) => { stderr += chunk; });
+  const result = await new Promise((resolveResult, rejectResult) => {
+    const timeout = setTimeout(() => child.kill("SIGKILL"), 60_000);
+    child.once("error", (error) => {
+      clearTimeout(timeout);
+      rejectResult(error);
+    });
+    child.once("close", (status, signal) => {
+      clearTimeout(timeout);
+      resolveResult({ status, signal });
+    });
+  });
+  const output = `${stdout}\\n${stderr}`;
+  assert.equal(result.signal, null, `Deployment child was terminated by ${result.signal}.`);
   assert.notEqual(result.status, 0, "Deployment must stop when DEPLOYER_PRIVATE_KEY is absent.");
-  assert(output.includes("DEPLOYER_PRIVATE_KEY is missing"), `Expected missing-key guard after chain validation. Output:\n${output}`);
+  assert(output.includes("DEPLOYER_PRIVATE_KEY is missing"), `Expected missing-key guard after chain validation. Output:\\n${output}`);
   assert(methodsSeen.includes("eth_chainId"), `Expected mock RPC chain validation. Methods: ${methodsSeen.join(", ")}`);
   assert(!methodsSeen.some((method) => forbiddenMethods.has(method)), `Forbidden transaction RPC observed: ${methodsSeen.join(", ")}`);
 
