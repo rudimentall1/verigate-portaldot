@@ -10,6 +10,9 @@ function requiredNetworkConfig() {
   }
 
   const expectedGenesisHash = configuredGenesisHash(process.env.PORTALDOT_GENESIS_HASH);
+  if (!expectedGenesisHash) {
+    throw new Error("PORTALDOT_GENESIS_HASH must be independently confirmed and pinned before preflight, estimation, or deployment.");
+  }
 
   let parsedUrl;
   try {
@@ -96,18 +99,13 @@ async function main() {
 
   console.log(`Actual chain ID: ${actualChainId}`);
   console.log(`Latest block: ${blockNumber}`);
-  let actualGenesisHash = null;
-  if (expectedGenesisHash) {
-    actualGenesisHash = await readGenesisHash(rpcUrl, expectedGenesisHash);
-    console.log(`Genesis hash matches configured pin: ${actualGenesisHash}`);
-  } else {
-    console.log("Optional PORTALDOT_GENESIS_HASH is unset; checking the configured HTTPS endpoint and chain ID.");
-  }
+  const actualGenesisHash = await readGenesisHash(rpcUrl, expectedGenesisHash);
+  console.log(`Genesis hash matches configured pin: ${actualGenesisHash}`);
   if (actualChainId !== expectedChainId) {
     throw new Error(`Wrong chain ID; expected ${expectedChainId}, received ${actualChainId}. Refusing deployment.`);
   }
 
-  console.log("RPC preflight passed. Connectivity and chain ID matched" + (actualGenesisHash ? ", as did the configured genesis-hash pin." : ".") + " One RPC cannot cryptographically authenticate itself; this check also does not prove wallet funding or deployment success.");
+  console.log("RPC preflight passed: chain ID and configured genesis-hash pin matched. One RPC cannot cryptographically authenticate itself; this check also does not prove wallet funding or deployment success.");
 }
 
 if (require.main === module) {
