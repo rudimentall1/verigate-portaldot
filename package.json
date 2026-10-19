@@ -16,7 +16,7 @@
     "monitor:rpc": "node scripts/monitor-rpc.js"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
     "dotenv": "^16.4.7",
     "ethers": "^6.13.4",
     "hardhat": "^2.22.17",
