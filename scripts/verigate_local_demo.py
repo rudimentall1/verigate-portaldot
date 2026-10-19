@@ -394,7 +394,8 @@ def main() -> int:
                 for name in (
                     "PORTALDOT_RPC_URL",
                     "PORTALDOT_CHAIN_ID",
-                    "PORTALDOT_GENESIS_HASH",
+                    "PORTALDOT_SUBSTRATE_RPC_URL",
+                    "PORTALDOT_SUBSTRATE_GENESIS_HASH",
                     "PORTALDOT_GUARD_ADDRESS",
                     "PORTALDOT_GUARD_CODE_HASH",
                     "DEPLOYER_PRIVATE_KEY",
@@ -478,7 +479,8 @@ def main() -> int:
                 deploy_env.update({
                     "PORTALDOT_RPC_URL": evm_rpc_url,
                     "PORTALDOT_CHAIN_ID": str(CHAIN_ID),
-                    "PORTALDOT_GENESIS_HASH": local_genesis_hash,
+                    "PORTALDOT_SUBSTRATE_RPC_URL": "wss://test-node-v3.portaldot.dev",
+                    "PORTALDOT_SUBSTRATE_GENESIS_HASH": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
                     "PORTALDOT_SIMULATED_CHAIN_ID": str(CHAIN_ID),
                     "DEPLOYER_PRIVATE_KEY": test_wallets["deployerPrivateKey"],
                     "BRIDGE_SIGNER_PRIVATE_KEY": "",
@@ -539,7 +541,8 @@ def main() -> int:
                     "PORTALDOT_GUARD_CODE_HASH": guard_code_hash,
                     "PORTALDOT_RPC_URL": evm_rpc_url,
                     "PORTALDOT_CHAIN_ID": str(CHAIN_ID),
-                    "PORTALDOT_GENESIS_HASH": local_genesis_hash,
+                    "PORTALDOT_SUBSTRATE_RPC_URL": "wss://test-node-v3.portaldot.dev",
+                    "PORTALDOT_SUBSTRATE_GENESIS_HASH": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
                     "PORTALDOT_SIMULATED_CHAIN_ID": str(CHAIN_ID),
                     "DEPLOYER_PRIVATE_KEY": "",
                 })
