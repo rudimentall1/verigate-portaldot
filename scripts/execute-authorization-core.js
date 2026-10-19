@@ -2,6 +2,8 @@ const { ethers } = require("ethers");
 
 const MAX_AUTHORIZATION_TTL_SECONDS = 300n;
 const UINT256_MAX = (1n << 256n) - 1n;
+const SECP256K1_ORDER = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+const SECP256K1_HALF_ORDER = SECP256K1_ORDER / 2n;
 const TRANSFER_TYPES = {
   TransferAuthorization: [
     { name: "recipient", type: "address" },
@@ -111,6 +113,20 @@ function validateSignedAuthorization(artifact, options = {}) {
 
   if (typeof artifact.signature !== "string" || !/^0x[a-fA-F0-9]{130}$/.test(artifact.signature)) {
     fail("EIP-712 signature must be exactly 65 bytes.");
+  }
+
+  const signatureBytes = ethers.getBytes(artifact.signature);
+  const signatureR = BigInt(ethers.hexlify(signatureBytes.slice(0, 32)));
+  const signatureS = BigInt(ethers.hexlify(signatureBytes.slice(32, 64)));
+  const recovery = signatureBytes[64];
+  if (signatureR <= 0n || signatureR >= SECP256K1_ORDER) {
+    fail("EIP-712 signature has an invalid secp256k1 r value.");
+  }
+  if (signatureS <= 0n || signatureS > SECP256K1_HALF_ORDER) {
+    fail("EIP-712 signature must use canonical low-s form accepted by the guard contract.");
+  }
+  if (![0, 1, 27, 28].includes(recovery)) {
+    fail("EIP-712 signature has an invalid recovery byte.");
   }
 
   const typedDomain = {
