@@ -97,7 +97,7 @@ function openWebSocket(url, WebSocketImpl, timeoutMs) {
   });
 }
 
-function createRpcClient(socket, timeoutMs = RPC_TIMEOUT_MS) {
+function createRpcClient(socket, WebSocketImpl, timeoutMs = RPC_TIMEOUT_MS) {
   let nextId = 0;
   const pending = new Map();
   let closed = false;
@@ -182,7 +182,7 @@ export async function inspectSubstrateRuntime(options = {}) {
   }
   const timeoutMs = options.timeoutMs ?? RPC_TIMEOUT_MS;
   const socket = await openWebSocket(url, WebSocketImpl, timeoutMs);
-  const rpc = createRpcClient(socket, timeoutMs);
+  const rpc = createRpcClient(socket, WebSocketImpl, timeoutMs);
 
   try {
     const [chainName, nodeName, nodeVersion, finalizedHead, genesisHash] = await Promise.all([
