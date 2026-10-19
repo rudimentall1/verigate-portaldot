@@ -27,7 +27,7 @@ These observations come from one RPC endpoint and are not independent authentica
 
 ## Runtime evidence snapshot
 
-The sanitized read-only snapshot is committed in [evidence/portaldot-v3-runtime-2026-10-19.json](../evidence/portaldot-v3-runtime-2026-10-19.json), including the reported runtime version, Revive.OriginalAccount key/value types and selected runtime constants. It contains only a query for a fixed synthetic H160, not a user wallet pair.
+The sanitized read-only snapshot is committed in [evidence/portaldot-v3-runtime-2026-10-19.json](../evidence/portaldot-v3-runtime-2026-10-19.json), including the reported runtime version, Revive.OriginalAccount key/value types and selected runtime constants. The matching [read-only workflow run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225053317) and [artifact](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225053317/artifacts/12172714887) include a structured synthetic-key result pinned to finalized block 100714. It contains no user wallet pair.
 
 ## Keep the account types separate
 
