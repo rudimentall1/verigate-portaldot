@@ -62,9 +62,6 @@ async function rpcResult(rpcUrl, method, params = []) {
       : JSON.stringify(data.error);
     throw new Error(`${method}: JSON-RPC error: ${message}`);
   }
-  if (!Object.prototype.hasOwnProperty.call(data, "result")) {
-    throw new Error(`${method}: JSON-RPC response is missing result`);
-  }
   return data.result;
 }
 
