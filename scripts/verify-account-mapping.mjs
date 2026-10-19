@@ -131,7 +131,7 @@ function runDot(dotArgs, env, label) {
   return String(result.stdout ?? "").trim();
 }
 
-export function verifyOriginalAccountMapping({
+export async function verifyOriginalAccountMapping({
   h160,
   ss58Address,
   rpcUrl = DEFAULT_SUBSTRATE_RPC_URL,
