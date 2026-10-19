@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { parseExpectedGenesisHash, assertGenesisHashMatches } = require("./network-identity.js");
+const { configuredGenesisHash, assertGenesisHashMatches } = require("./network-identity.js");
 
 function requiredNetworkConfig() {
   const rpcUrl = (process.env.PORTALDOT_RPC_URL || "").trim();
@@ -9,7 +9,7 @@ function requiredNetworkConfig() {
     throw new Error("PORTALDOT_CHAIN_ID must be explicitly set to the confirmed positive decimal chain ID.");
   }
 
-  const expectedGenesisHash = parseExpectedGenesisHash(process.env.PORTALDOT_GENESIS_HASH);
+  const expectedGenesisHash = configuredGenesisHash(process.env.PORTALDOT_GENESIS_HASH);
 
   let parsedUrl;
   try {
@@ -87,22 +87,27 @@ async function main() {
   console.log(`Expected chain ID: ${expectedChainId}`);
   console.log(`Expected genesis hash: ${expectedGenesisHash}`);
 
-  const [chainHex, blockHex, actualGenesisHash] = await Promise.all([
+  const [chainHex, blockHex] = await Promise.all([
     rpc(rpcUrl, "eth_chainId"),
-    rpc(rpcUrl, "eth_blockNumber"),
-    readGenesisHash(rpcUrl, expectedGenesisHash)
+    rpc(rpcUrl, "eth_blockNumber")
   ]);
   const actualChainId = BigInt(chainHex);
   const blockNumber = BigInt(blockHex);
 
   console.log(`Actual chain ID: ${actualChainId}`);
   console.log(`Latest block: ${blockNumber}`);
-  console.log(`Verified genesis hash against configured pin: ${actualGenesisHash}`);
+  let actualGenesisHash = null;
+  if (expectedGenesisHash) {
+    actualGenesisHash = await readGenesisHash(rpcUrl, expectedGenesisHash);
+    console.log(`Genesis hash matches configured pin: ${actualGenesisHash}`);
+  } else {
+    console.log("Optional PORTALDOT_GENESIS_HASH is unset; checking the configured HTTPS endpoint and chain ID.");
+  }
   if (actualChainId !== expectedChainId) {
     throw new Error(`Wrong chain ID; expected ${expectedChainId}, received ${actualChainId}. Refusing deployment.`);
   }
 
-  console.log("RPC preflight passed. It checked connectivity, chain ID, and the configured genesis-hash pin. A single RPC can still lie about returned data; establish the pin through an independent trusted PortalDot source. This does not prove wallet funding or deployment success.");
+  console.log("RPC preflight passed. Connectivity and chain ID matched" + (actualGenesisHash ? ", as did the configured genesis-hash pin." : ".") + " One RPC cannot cryptographically authenticate itself; this check also does not prove wallet funding or deployment success.");
 }
 
 if (require.main === module) {
