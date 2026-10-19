@@ -157,6 +157,26 @@ jobs:
           echo "$audit_clean_status" > "$RUNNER_TEMP/hardhat3-preview/audit-clean.exit-code"
           cat "$RUNNER_TEMP/hardhat3-preview/audit-clean.log"
           if [ "$test_status" -ne 0 ] || [ "$compile_status" -ne 0 ]; then exit 1; fi
+      - name: Verify deployment fails closed without secrets or RPC
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          env -u PORTALDOT_RPC_URL -u PORTALDOT_CHAIN_ID -u DEPLOYER_PRIVATE_KEY -u AUTHORITY_SIGNER_ADDRESS \
+            npx hardhat run scripts/deploy.mjs > "$RUNNER_TEMP/hardhat3-preview/deployment-guard.log" 2>&1
+          command_status=$?
+          set -e
+          echo "$command_status" > "$RUNNER_TEMP/hardhat3-preview/deployment-command.exit-code"
+          cat "$RUNNER_TEMP/hardhat3-preview/deployment-guard.log"
+          if [ "$command_status" -eq 0 ]; then
+            echo "Unsafe result: deployment script succeeded with no explicit RPC or deployment credentials."
+            exit 1
+          fi
+          if ! grep -Fq "PORTALDOT_RPC_URL must be explicitly configured" "$RUNNER_TEMP/hardhat3-preview/deployment-guard.log"; then
+            echo "Deployment failed, but not at the expected fail-closed RPC guard."
+            exit 1
+          fi
+          echo "0" > "$RUNNER_TEMP/hardhat3-preview/deployment-guard.exit-code"
       - name: Prepare source patch for isolated promotion
         if: success()
         shell: bash
@@ -178,7 +198,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          for file in lockfile-generation npm-ci npm-test compile audit-clean; do
+          for file in lockfile-generation npm-ci npm-test compile audit-clean deployment-guard; do
             path="$RUNNER_TEMP/hardhat3-preview/$file.exit-code"
             if [ ! -f "$path" ] || [ "$(cat "$path")" != "0" ]; then
               echo "Candidate stage failed: $file"
