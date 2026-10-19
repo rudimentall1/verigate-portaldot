@@ -11,14 +11,14 @@ The public event listing gives the check-in deadline as 24 October 2026, 20:00 U
 - Bridge: verifies both Ed25519 artifacts against a locally pinned issuer key, checks the action and exact base-unit amount, and creates a short-lived EIP-712 authorization only for a genuine Verigate ALLOW.
 - Guarded executor: simulation is the default. Explicit --broadcast is required to submit the exact transfer, after validating the EIP-712 signer/domain, live guard code hash, authority signer, deadline, guard funds and relayer fee budget.
 - Full local end-to-end exercise: the CI harness submits ALLOW and BLOCK through a disposable Verigate API, verifies signatures, signs only ALLOW, proves the dry run leaves guard funds unchanged, then executes ALLOW against the actual guard contract on a temporary loopback Hardhat EVM. It confirms the transfer event and recipient balance delta exactly equals the authorized amount. BLOCK is refused.
-- Passing code checks: [132 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217749830); [PortalDot integration CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217749634); [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217746423); [dependency audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217749609). These ran on revision 3ce638c before later documentation-only commits; recheck the newest branch head before submitting.
+- Passing code checks: [132 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217983068); [PortalDot integration CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217983010); [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217976410); [dependency audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39217983020). All checks passed on branch revision f1aa033, including the refreshed local executor demonstration. Re-run CI after later code changes before submission.
 - Architecture and trust boundaries: [docs/architecture.md](architecture.md).
 - Demo plan: [docs/demo-script.md](demo-script.md).
 - DoraHacks text draft: [docs/check-in-submission.md](check-in-submission.md).
 
 ## Remaining before check-in
 
-1. Recheck successful CI on the current branch head and keep the passing run linked in the submission.
+1. Re-run all checks after any further code changes and preserve the current passing evidence.
 2. Confirm the actual deployment authority signer and independently verify the intended contract fingerprint.
 3. Re-run read-only deployment estimation with the real signer and chosen deployer address. The earlier estimate used a placeholder signer.
 4. Deploy only after current budget and network configuration are verified; preserve transaction and receipt evidence after confirmation.
