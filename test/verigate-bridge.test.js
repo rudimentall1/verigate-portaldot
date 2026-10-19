@@ -599,6 +599,98 @@ describe("Verigate bridge binding", function () {
     }
   });
 
+
+  it("executes an end-to-end Verigate ALLOW through bridge EIP-712 signing into the guard on a local chain", async function () {
+    const envKeys = [
+      "PORTALDOT_CHAIN_ID",
+      "VERIGATE_BASE_URL",
+      "VERIGATE_API_KEY",
+      "VERIGATE_PUBLIC_KEY_FILE",
+      "BRIDGE_SIGNER_PRIVATE_KEY",
+      "AUTHORITY_SIGNER_ADDRESS",
+      "PORTALDOT_GUARD_ADDRESS"
+    ];
+    const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+    const originalFetch = global.fetch;
+    let verifierCalls = 0;
+
+    try {
+      const [deployer, relayer] = await ethers.getSigners();
+      const chainId = (await ethers.provider.getNetwork()).chainId;
+      const now = Math.floor(Date.now() / 1000);
+      const item = response(now);
+      const intent = item.decision_receipt.payload.intent;
+      const action = item.execution_authorization.payload.action;
+
+      // Re-sign the fixtures for the actual local EVM chain so the EIP-712
+      // domain checked by the contract and the bridge uses the same chain ID.
+      intent.metadata.portaldot_v3.chain_id = Number(chainId);
+      action.metadata.portaldot_v3.chain_id = Number(chainId);
+      item.decision_receipt.signature = signPayload(item.decision_receipt.payload);
+
+      const executionPayload = item.execution_authorization.payload;
+      executionPayload.authorization_id = crypto
+        .createHash("sha256")
+        .update(item.decision_receipt.signature + String(executionPayload.nonce), "utf8")
+        .digest("hex");
+      executionPayload.action_sha256 = actionDigest(action);
+      item.execution_authorization.signature = signPayload(executionPayload);
+
+      const bridgeWallet = ethers.Wallet.createRandom();
+      const factory = await ethers.getContractFactory("PortalDotAgentGuard");
+      const guard = await factory.deploy(bridgeWallet.address);
+      await guard.waitForDeployment();
+      const guardAddress = await guard.getAddress();
+      await deployer.sendTransaction({ to: guardAddress, value: ethers.parseEther("1") });
+
+      process.env.PORTALDOT_CHAIN_ID = chainId.toString();
+      process.env.VERIGATE_BASE_URL = "https://verigate.example";
+      process.env.VERIGATE_API_KEY = "disposable-test-api-key";
+      process.env.BRIDGE_SIGNER_PRIVATE_KEY = bridgeWallet.privateKey;
+      process.env.AUTHORITY_SIGNER_ADDRESS = bridgeWallet.address;
+      process.env.PORTALDOT_GUARD_ADDRESS = guardAddress;
+      // The suite's before hook writes this temporary issuer public key.
+      process.env.VERIGATE_PUBLIC_KEY_FILE = publicKeyFile;
+      global.fetch = async (url, options) => {
+        verifierCalls += 1;
+        expect(String(url)).to.equal("https://verigate.example/v1/verify");
+        expect(options.method).to.equal("POST");
+        expect(options.redirect).to.equal("error");
+        return { ok: true, status: 200, json: async () => ({ valid: true }) };
+      };
+
+      const signed = await signAuthorization(item);
+      expect(signed.domain.chainId).to.equal(chainId);
+      expect(signed.domain.verifyingContract).to.equal(guardAddress);
+      expect(signed.authoritySigner).to.equal(bridgeWallet.address);
+      expect(verifierCalls).to.equal(2);
+
+      const transfer = signed.transfer;
+      const nonce = BigInt(transfer.nonce);
+      const amount = BigInt(transfer.amount);
+      const recipientBefore = await ethers.provider.getBalance(transfer.recipient);
+
+      await expect(guard.connect(relayer).executeTransfer(
+        transfer.recipient,
+        amount,
+        nonce,
+        BigInt(transfer.deadline),
+        transfer.actionId,
+        signed.signature
+      )).to.emit(guard, "TransferExecuted")
+        .withArgs(transfer.actionId, transfer.recipient, amount, nonce);
+
+      expect(await ethers.provider.getBalance(transfer.recipient)).to.equal(recipientBefore + amount);
+      expect(await guard.usedNonces(nonce)).to.equal(true);
+    } finally {
+      global.fetch = originalFetch;
+      for (const key of envKeys) {
+        if (originalEnv[key] === undefined) delete process.env[key];
+        else process.env[key] = originalEnv[key];
+      }
+    }
+  });
+
 });
 
 
