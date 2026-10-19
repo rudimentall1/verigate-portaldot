@@ -23,6 +23,11 @@ function assertGenesisHashMatches(expectedValue, actualValue) {
   return actual;
 }
 
+function configuredGenesisHash(value = process.env.PORTALDOT_GENESIS_HASH) {
+  if (value === undefined || value === null || (typeof value === "string" && value.trim() === "")) return null;
+  return parseExpectedGenesisHash(value);
+}
+
 async function verifyGenesisHash(provider, expectedValue = process.env.PORTALDOT_GENESIS_HASH) {
   const expected = parseExpectedGenesisHash(expectedValue);
   let block;
@@ -37,4 +42,16 @@ async function verifyGenesisHash(provider, expectedValue = process.env.PORTALDOT
   return assertGenesisHashMatches(expected, block.hash);
 }
 
-module.exports = { parseExpectedGenesisHash, assertGenesisHashMatches, verifyGenesisHash };
+async function verifyGenesisHashIfConfigured(provider, value = process.env.PORTALDOT_GENESIS_HASH) {
+  const expected = configuredGenesisHash(value);
+  if (!expected) return null;
+  return verifyGenesisHash(provider, expected);
+}
+
+module.exports = {
+  parseExpectedGenesisHash,
+  configuredGenesisHash,
+  assertGenesisHashMatches,
+  verifyGenesisHash,
+  verifyGenesisHashIfConfigured
+};
