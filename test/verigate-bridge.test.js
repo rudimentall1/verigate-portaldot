@@ -8,6 +8,7 @@ const path = require("node:path");
 const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
 const { validateAuthorizationBinding, verifyLocally, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate, verifyGuardDeployment } = require("../adapter/verigate-bridge");
+const TEST_GENESIS_HASH = "0x" + "ab".repeat(32);
 
 describe("Verigate bridge binding", function () {
   let recipient;
@@ -49,6 +50,7 @@ describe("Verigate bridge binding", function () {
   beforeEach(async function () {
     // Explicit fixture configuration; production code must not assume a chain ID.
     process.env.PORTALDOT_CHAIN_ID = "420420777";
+    process.env.PORTALDOT_GENESIS_HASH = TEST_GENESIS_HASH;
     [, recipient, other] = await ethers.getSigners();
   });
 
@@ -640,6 +642,7 @@ describe("Verigate bridge binding", function () {
   it("executes an end-to-end Verigate ALLOW through bridge EIP-712 signing into the guard on a local chain", async function () {
     const envKeys = [
       "PORTALDOT_CHAIN_ID",
+      "PORTALDOT_GENESIS_HASH",
       "PORTALDOT_RPC_URL",
       "VERIGATE_BASE_URL",
       "VERIGATE_API_KEY",
@@ -684,6 +687,7 @@ describe("Verigate bridge binding", function () {
       await deployer.sendTransaction({ to: guardAddress, value: ethers.parseEther("1") });
 
       process.env.PORTALDOT_CHAIN_ID = chainId.toString();
+      process.env.PORTALDOT_GENESIS_HASH = (await ethers.provider.getBlock(0)).hash;
       process.env.PORTALDOT_RPC_URL = "http://127.0.0.1:8545";
       process.env.VERIGATE_BASE_URL = "https://verigate.example";
       process.env.VERIGATE_API_KEY = "disposable-test-api-key";
@@ -742,10 +746,12 @@ describe("On-chain PortalDot guard verification before signing", function () {
   const expectedAuthority = "0x2222222222222222222222222222222222222222";
   const otherAuthority = "0x3333333333333333333333333333333333333333";
   const expectedCodeHash = ethers.keccak256("0x6000");
+  const expectedGenesisHash = TEST_GENESIS_HASH;
 
-  function mockProvider({ chainId = 420420777n, code = "0x6000" } = {}) {
+  function mockProvider({ chainId = 420420777n, code = "0x6000", genesisHash = expectedGenesisHash } = {}) {
     return {
       getNetwork: async () => ({ chainId }),
+      getBlock: async (blockNumber) => ({ number: blockNumber, hash: genesisHash }),
       getCode: async () => code
     };
   }
@@ -770,6 +776,38 @@ describe("On-chain PortalDot guard verification before signing", function () {
       contractFactory: () => ({ authoritySigner: async () => expectedAuthority })
     }));
     expect(error.message).to.match(/expected 420420777; refusing to sign/);
+  });
+
+  it("requires a pinned genesis hash before making RPC requests", async function () {
+    let calls = 0;
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      genesisHash: "",
+      providerFactory: async () => {
+        calls += 1;
+        return mockProvider();
+      }
+    }));
+    expect(error.message).to.match(/PORTALDOT_GENESIS_HASH must be/);
+    expect(calls).to.equal(0);
+  });
+
+  it("rejects a mismatched genesis hash before reading contract bytecode", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      genesisHash: "0x" + "cd".repeat(32),
+      providerFactory: async () => mockProvider(),
+      contractFactory: () => { throw new Error("Contract reads must not follow a genesis mismatch"); }
+    }));
+    expect(error.message).to.match(/does not match PORTALDOT_GENESIS_HASH/);
   });
 
   it("rejects an address with no deployed contract bytecode", async function () {
@@ -854,6 +892,7 @@ describe("On-chain PortalDot guard verification before signing", function () {
       guardCodeHash: expectedCodeHash,
       providerFactory: async () => ({
         getNetwork: async () => ({ chainId: 420420777n }),
+        getBlock: async () => ({ hash: expectedGenesisHash }),
         getCode: async () => { throw new Error("RPC getCode unavailable"); }
       })
     }));
@@ -867,6 +906,7 @@ describe("On-chain PortalDot guard verification before signing", function () {
       guardCodeHash: expectedCodeHash,
       providerFactory: async () => ({
         getNetwork: async () => ({ chainId: 420420777n }),
+        getBlock: async () => ({ hash: expectedGenesisHash }),
         getCode: async () => "0x6000"
       }),
       contractFactory: () => ({
