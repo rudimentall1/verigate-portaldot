@@ -40,9 +40,11 @@ Before deploying or using test funds, independently confirm the endpoint and cha
 
 This second observation is consistent with the endpoint advancing from block `98129` at 04:26:05 UTC to `98309` at 04:44:29 UTC. It is still only two snapshots, not a continuous liveness or finality check.
 
-## Independent configuration confirmation remains outstanding
+## Network-configuration cross-check
 
-The [published PortalDot developer Chain Info page](https://portaldot-dev.readthedocs.io/en/latest/chain-info.html) documents the Substrate mainnet websocket endpoint, SS58 format, and POT decimals; it does not document this EVM endpoint or chain ID. Until PortalDot confirms the EVM endpoint, chain ID, native gas token, and test-token denomination through a current official source or organizer channel, treat this endpoint as operationally responsive but not independently authenticated. Do not deploy or send funds based only on these RPC checks.
+The [PortalDot V3 network guide](portaldot-v3-network.md) records the EVM RPC, chain ID, Substrate endpoint, native precision, address mapping and cost notes. It links to a live-testnet field guide which attributes the EVM parameters to Portaldot Discord `#dev-announcement` on 16 October 2026. The public [PortalDot developer Chain Info page](https://portaldot-dev.readthedocs.io/en/latest/chain-info.html) describes Substrate mainnet separately; it is not the source for these V3 EVM testnet settings.
+
+The RPC health check establishes read-only endpoint responsiveness at a given time. It does not prove that a contract is deployed, that the deployer balance covers PortalDot's code storage deposit, or that one RPC cannot lie. The genesis hash is an optional extra guard when obtained from a separate trusted source, not a required setting from the cited announcement. Before sending a deployment transaction, estimate the cost using this repository's actual bytecode and verify the deployer's EVM-reported balance.
 
 ## Public-source cross-check (19 October 2026)
 
