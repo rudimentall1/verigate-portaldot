@@ -27,6 +27,7 @@ describe("Read-only Revive OriginalAccount verifier", function () {
   it("parses plain JSON storage values without coercing them into mappings", function () {
     expect(parseDotJsonValue(JSON.stringify(accountOne))).to.equal(accountOne);
     expect(parseDotJsonValue("null")).to.equal(null);
+    expect(parseDotJsonValue("undefined")).to.equal(null);
     expect(parseDotJsonValue(JSON.stringify({ value: accountOne }))).to.equal(accountOne);
     expect(() => parseDotJsonValue("")).to.throw(/is empty/);
     expect(() => parseDotJsonValue("not-json")).to.throw(/not valid JSON/);
