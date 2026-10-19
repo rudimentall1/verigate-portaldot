@@ -107,7 +107,7 @@ async function main() {
     authoritySigner,
     transactionHash: receipt.hash,
     blockNumber: receipt.blockNumber,
-    note: "A configured genesis hash adds an optional wrong-network check; without it, this script uses the configured HTTPS endpoint and chain ID. Independently verify transaction and bytecode before claiming live deployment evidence. Local Hardhat output is not live testnet evidence."
+    note: "Deployment requires an independently confirmed genesis-hash pin and refuses to proceed without it. Independently verify transaction and bytecode before claiming live deployment evidence. Local Hardhat output is not live testnet evidence."
   }, null, 2));
 }
 
