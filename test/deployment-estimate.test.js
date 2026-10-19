@@ -6,6 +6,7 @@ const {
   formatUnitsExact,
   calculateDeploymentCost,
   resolveEstimateAuthoritySigner,
+  resolveEstimateFromAddresses,
   substrateRawToEvmWei,
   evmWeiToSubstrateRaw,
   EVM_UNITS_PER_SUBSTRATE_UNIT
@@ -32,6 +33,15 @@ describe("PortalDot deployment estimator arithmetic", function () {
     expect(evmWeiToSubstrateRaw("1000000000000000000")).to.equal(100000000000000n);
     expect(() => substrateRawToEvmWei("01")).to.throw(/canonical non-negative decimal integer/);
     expect(() => evmWeiToSubstrateRaw(12345n)).to.throw(/not aligned/);
+  });
+
+  it("rejects a quote address that differs from the locally configured deployer key", function () {
+    expect(resolveEstimateFromAddresses("0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB", "")).to.equal("0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB");
+    expect(resolveEstimateFromAddresses("", "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB")).to.equal("0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB");
+    expect(resolveEstimateFromAddresses("0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB", "0x4C07b4F328fA738290Db96bCE2F9CBc4D020d2cb")).to.equal("0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB");
+    expect(() => resolveEstimateFromAddresses("0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB", "0x1111111111111111111111111111111111111111")).to.throw(/does not match/);
+    expect(() => resolveEstimateFromAddresses("", "")).to.throw(/Set DEPLOYMENT_ESTIMATE_FROM/);
+    expect(() => resolveEstimateFromAddresses("not-an-address", "")).to.throw(/must be a valid EVM address/);
   });
 
   it("allows a clearly labelled placeholder only for preliminary cost estimation", function () {
