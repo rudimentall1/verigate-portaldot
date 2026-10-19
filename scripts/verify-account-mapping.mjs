@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { inspectSubstrateRuntime } from "./substrate-runtime-preflight.mjs";
 
 const require = createRequire(import.meta.url);
 const { decodeSs58AccountId } = require("./portaldot-address.js");
@@ -144,6 +145,13 @@ export function verifyOriginalAccountMapping({ h160, ss58Address, rpcUrl = DEFAU
     fail("Substrate RPC must use WSS; plain WS is allowed only on loopback.");
   }
 
+  // Fingerprint the reported runtime/block before querying storage. This adds
+  // useful context to the local result but does not authenticate the endpoint.
+  const runtimeSnapshot = await inspectSubstrateRuntime({ rpcUrl: url.toString() });
+  if (runtimeSnapshot.runtimeVersion.specName !== "portaldot-v3") {
+    fail(`Refusing mapping query: runtime specName is ${String(runtimeSnapshot.runtimeVersion.specName)}, expected portaldot-v3.`);
+  }
+
   const dotHome = mkdtempSync(join(tmpdir(), "portaldot-mapping-readonly-"));
   const env = {
     ...process.env,
@@ -187,6 +195,17 @@ export function verifyOriginalAccountMapping({ h160, ss58Address, rpcUrl = DEFAU
       checkedAt: new Date().toISOString(),
       rpcOrigin: url.origin,
       reportedChainId: actualChainId.toString(),
+      runtimeSnapshot: {
+        chainName: runtimeSnapshot.chainName,
+        nodeName: runtimeSnapshot.nodeName,
+        nodeVersion: runtimeSnapshot.nodeVersion,
+        runtimeVersion: runtimeSnapshot.runtimeVersion,
+        finalizedBlockNumber: runtimeSnapshot.finalizedBlockNumber,
+        finalizedHead: runtimeSnapshot.finalizedHead,
+        genesisHashReportedByEndpoint: runtimeSnapshot.genesisHash,
+        metadataBytes: runtimeSnapshot.metadata.metadataBytes,
+        metadataSha256Observed: runtimeSnapshot.metadata.metadataSha256
+      },
       queryScope: "one H160 key only",
       usedTemporaryCliHome: true
     };
