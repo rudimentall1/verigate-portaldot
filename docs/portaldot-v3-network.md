@@ -23,6 +23,17 @@ The [Allowance testnet field guide](https://github.com/Oziman13/allowance/blob/m
 - EVM native `value` uses 18-decimal units. The chain field guide describes a `10^4` conversion between Substrate raw balances and EVM value units. The bridge therefore accepts exact integer strings in EVM base units; human-readable amounts must be converted explicitly before signing.
 - The field guide's offline address converter maps an H160 by appending twelve `0xEE` bytes to form AccountId32 and then encoding SS58 with prefix 42. See [`fallback_address.py`](https://github.com/Oziman13/allowance/blob/main/script/fallback_address.py). Where the runtime account-mapping API is available, prefer querying the runtime over reimplementing address mapping in app code.
 
+### Project-specific cost estimate
+
+This repository provides a read-only estimator:
+
+```bash
+# In .env set AUTHORITY_SIGNER_ADDRESS and DEPLOYMENT_ESTIMATE_FROM (public EVM address)
+npm run estimate:deployment
+```
+
+It compiles the current contract, generates the exact constructor init code, then calls `eth_estimateGas`, `eth_gasPrice`, and `eth_getBalance`. It includes a 20% safety margin when comparing the estimate with the deployer's EVM-reported balance. It never signs or broadcasts. Rerun immediately before any authorized deployment.
+
 ### Deployment cost
 
 PortalDot V3 uses `pallet-revive`; deployed code incurs a storage deposit in addition to transaction fees. The same field guide reports around 0.08 POT per byte of contract code plus a base cost around 18 POT, with an optimized 9.8 KB sample estimated near 791 POT. Those figures belong to that sample, not to `PortalDotAgentGuard`. Before deployment, estimate cost for our own optimized creation bytecode via `eth_estimateGas` and multiply by the current gas price, then compare with the deployer's EVM-reported balance. Do not assume that 500 POT is enough just because ordinary transfer fees are low.
