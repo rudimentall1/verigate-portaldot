@@ -6,6 +6,7 @@ const {
   formatUnitsExact,
   calculateDeploymentCost,
   buildDeploymentReadiness,
+  deploymentEstimateExitCode,
   resolveEstimateAuthoritySigner,
   resolveEstimateFromAddresses,
   substrateRawToEvmWei,
