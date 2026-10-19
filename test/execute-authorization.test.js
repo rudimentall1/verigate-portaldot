@@ -183,6 +183,16 @@ describe("Authorized transfer executor input validation", function () {
     expect(() => validate(artifact)).to.throw(/canonical low-s form/);
   });
 
+  it("requires the canonical 27/28 recovery-byte encoding", async function () {
+    for (const recoveryByte of [0, 1, 29, 30]) {
+      const artifact = await makeArtifact();
+      const signatureBytes = ethers.getBytes(artifact.signature);
+      signatureBytes[64] = recoveryByte;
+      artifact.signature = ethers.hexlify(signatureBytes);
+      expect(() => validate(artifact)).to.throw(/canonical recovery byte 27 or 28/);
+    }
+  });
+
   it("requires the signed contract and reported authority to match configuration", async function () {
     const wrongContract = await makeArtifact({
       contract: "0x3000000000000000000000000000000000000003"
