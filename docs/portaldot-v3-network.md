@@ -33,7 +33,7 @@ On 19 October 2026, the read-only Substrate endpoint returned chain name `Portal
 
 With a 14-decimal native denomination, the three observed deposit constants correspond to 0.06 POT per byte, 0.15 POT per storage item, and 0.0015 POT per child-trie item. These constants are evidence from one endpoint's reported runtime metadata; they are not, alone, a complete deployment-cost calculation or cryptographic network authentication.
 
-The raw metadata was 561,916 bytes and its returned SHA-256 varied between inspection runs despite the same reported `specVersion=3002`; consequently, the project does not pin that raw metadata digest or the endpoint-reported genesis hash as a trusted identity anchor. Record the runtime version and finalized block from the time of each inspection instead. A sanitized snapshot from the read-only probe is versioned in [evidence/portaldot-v3-runtime-2026-10-19.json](../evidence/portaldot-v3-runtime-2026-10-19.json); it contains only the fixed synthetic H160 query, not a user account pair.
+The raw metadata was 561,916 bytes and its returned SHA-256 varied between inspection runs despite the same reported `specVersion=3002`; consequently, the project does not pin that raw metadata digest as a trusted identity anchor. A sanitized snapshot from the read-only probe is versioned in [evidence/portaldot-v3-runtime-2026-10-19.json](../evidence/portaldot-v3-runtime-2026-10-19.json); it contains only the fixed synthetic H160 query, not a user account pair.
 
 ## Provenance
 
@@ -66,7 +66,7 @@ It compiles the current contract, builds constructor init code, and calls `eth_e
 
 ## Mandatory Substrate genesis pin
 
-`PORTALDOT_SUBSTRATE_RPC_URL` identifies the Substrate WebSocket endpoint, and `PORTALDOT_SUBSTRATE_GENESIS_HASH` must contain a 32-byte genesis hash independently confirmed through a trusted PortalDot source before preflight, estimation, deployment or bridge signing. The endpoint reported `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd` during inspection, but that response alone has not been independently authenticated. Do not treat that observed value as a trusted pin without confirmation. This Substrate hash is not an EVM block hash; the EVM chain ID is checked separately. An untrusted RPC can lie about its own genesis hash, chain ID, balance and storage responses.
+On 19 October 2026, the PortalDot team replied in the Hacker House Discord thread: “Hello, this information is all correct” in response to the project's request to confirm the V3 testnet endpoints, EVM chain ID, and Substrate genesis hash. The confirmed values are recorded in `.env.example`: `PORTALDOT_SUBSTRATE_RPC_URL=wss://test-node-v3.portaldot.dev`, `PORTALDOT_SUBSTRATE_GENESIS_HASH=0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd`, `PORTALDOT_RPC_URL=https://test-evm-rpc-v3.portaldot.dev`, and `PORTALDOT_CHAIN_ID=420420777`. The team confirmation supports pinning these parameters for the project. The Substrate genesis hash is not an EVM block hash; the EVM chain ID is checked separately. A malicious or compromised endpoint can still lie about balances and storage responses, so this pin is a network-configuration guard, not complete cryptographic authentication of every RPC response.
 
 ## Evidence limitations
 
