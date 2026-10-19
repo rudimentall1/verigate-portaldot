@@ -65,7 +65,7 @@ Until then, this repo's status is: public RPC responsive and CI checks green, bu
 
 ## Additional software guardrail added on the preview branch
 
-The preflight and deployment path now require `PORTALDOT_GENESIS_HASH`: an independently confirmed 32-byte block-0 hash. Preflight reads `eth_getBlockByNumber("0x0", false)` and refuses to continue if that response is missing, malformed, or does not match the pin. Direct Hardhat deployment checks the same pin, and the bridge refuses to sign if the configured RPC's genesis response does not match.
+The preflight, estimator, deployment and bridge signing require `PORTALDOT_SUBSTRATE_RPC_URL` and an independently confirmed `PORTALDOT_SUBSTRATE_GENESIS_HASH`. They request Substrate `chain_getBlockHash(0)` over WebSocket and compare it with the pin; they do not use EVM block 0 as a substitute. EVM `eth_chainId` remains a separate check. The RPC health workflow's observed hash is evidence of what that endpoint returned, not independent authentication.
 
 This is a fail-closed configuration guard against missing pins and ordinary wrong-network misconfiguration, **not cryptographic proof that a remote RPC is honest**: a malicious RPC can lie about multiple JSON-RPC responses. Do not fill in the pin by blindly copying the same untrusted endpoint's answer. Obtain a trusted value from PortalDot or a separately trusted explorer/checkpoint, then independently compare it. Until that value is confirmed and configured, deployment and bridge signing are expected to stop.
 
