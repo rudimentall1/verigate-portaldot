@@ -4,13 +4,16 @@
   "private": false,
   "description": "PortalDot V3 integration demo for Verigate agent execution authorization",
   "license": "MIT",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "compile": "hardhat --config ./hardhat.config.js compile",
     "test": "hardhat --config ./hardhat.config.js test",
     "preflight": "node scripts/preflight.js",
     "deploy:portaldot": "npm run preflight && hardhat --config ./hardhat.config.js run scripts/deploy.js --network portaldot",
-    "bridge:sign": "node adapter/verigate-bridge.js"
+    "bridge:sign": "node adapter/verigate-bridge.js",
+    "monitor:rpc": "node scripts/monitor-rpc.js"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
