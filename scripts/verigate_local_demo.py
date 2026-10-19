@@ -714,7 +714,8 @@ def main() -> int:
                 summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
                 print(json.dumps(summary, indent=2))
                 print("\nPASS: real Verigate HTTP routes issued ALLOW and BLOCK; signed artifacts verified; bridge signed ALLOW and refused BLOCK.")
-                print("No transaction was sent to public PortalDot. Deployment/funding stayed on the temporary local EVM; the bridge signature was not executed.")
+                print("PASS: executor dry-run changed no state, then the signed ALLOW transfer executed and delivered the exact authorized amount on the temporary loopback EVM.")
+                print("No transaction was sent to public PortalDot. All deployment, funding and transfer transactions stayed on the isolated local EVM.")
                 return 0
             finally:
                 process.terminate()
