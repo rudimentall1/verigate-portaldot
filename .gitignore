@@ -3,6 +3,7 @@ artifacts/
 cache/
 coverage/
 typechain-types/
+types/ethers-contracts/
 .env
 .env.*
 !.env.example
