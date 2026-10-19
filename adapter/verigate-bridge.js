@@ -421,7 +421,7 @@ async function verifyWithVerigate(baseUrl, attestation, apiKey) {
   });
   if (!response.ok) fail(`Verigate signature verification endpoint returned HTTP ${response.status}.`);
   const result = await response.json();
-  if (result.valid !== true) fail(`Verigate signature was not validated: ${result.reason || "unknown reason"}`);
+  if (!result || result.valid !== true) fail(`Verigate signature was not validated: ${result?.reason || "unknown reason"}`);
 }
 
 const GUARD_READ_ABI = ["function authoritySigner() view returns (address)"];
