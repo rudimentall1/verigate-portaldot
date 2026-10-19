@@ -1,13 +1,15 @@
 require("dotenv").config();
+const { parseExpectedGenesisHash, assertGenesisHashMatches } = require("./network-identity.js");
 
 function requiredNetworkConfig() {
   const rpcUrl = (process.env.PORTALDOT_RPC_URL || "").trim();
   const chainIdText = (process.env.PORTALDOT_CHAIN_ID || "").trim();
-
   if (!rpcUrl) throw new Error("PORTALDOT_RPC_URL is required. Set only an independently confirmed PortalDot EVM RPC endpoint.");
   if (!chainIdText || !/^[1-9][0-9]*$/.test(chainIdText)) {
     throw new Error("PORTALDOT_CHAIN_ID must be explicitly set to the confirmed positive decimal chain ID.");
   }
+
+  const expectedGenesisHash = parseExpectedGenesisHash(process.env.PORTALDOT_GENESIS_HASH);
 
   let parsedUrl;
   try {
@@ -26,19 +28,19 @@ function requiredNetworkConfig() {
     throw new Error("Remote RPC endpoints must use HTTPS. Plain HTTP is allowed only for local loopback development.");
   }
 
-  return { rpcUrl, expectedChainId: BigInt(chainIdText) };
+  return { rpcUrl, expectedChainId: BigInt(chainIdText), expectedGenesisHash };
 }
 
 function safeRpcOrigin(rpcUrl) {
   return new URL(rpcUrl).origin;
 }
 
-async function rpc(rpcUrl, method) {
+async function rpcResult(rpcUrl, method, params = []) {
   const response = await fetch(rpcUrl, {
     method: "POST",
     redirect: "error",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: [] }),
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
     signal: AbortSignal.timeout(8000)
   });
 
@@ -60,32 +62,50 @@ async function rpc(rpcUrl, method) {
       : JSON.stringify(data.error);
     throw new Error(`${method}: JSON-RPC error: ${message}`);
   }
-  if (typeof data.result !== "string" || !/^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/.test(data.result)) {
-    throw new Error(`${method}: result must be a canonical hexadecimal quantity`);
+  if (!Object.prototype.hasOwnProperty.call(data, "result")) {
+    throw new Error(`${method}: JSON-RPC response is missing result`);
   }
-
   return data.result;
 }
 
+async function rpc(rpcUrl, method) {
+  const result = await rpcResult(rpcUrl, method, []);
+  if (typeof result !== "string" || !/^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/.test(result)) {
+    throw new Error(`${method}: result must be a canonical hexadecimal quantity`);
+  }
+  return result;
+}
+
+async function readGenesisHash(rpcUrl, expectedGenesisHash) {
+  const block = await rpcResult(rpcUrl, "eth_getBlockByNumber", ["0x0", false]);
+  if (!block || typeof block !== "object" || Array.isArray(block)) {
+    throw new Error("eth_getBlockByNumber: RPC did not return a genesis block object.");
+  }
+  return assertGenesisHashMatches(expectedGenesisHash, block.hash);
+}
+
 async function main() {
-  const { rpcUrl, expectedChainId } = requiredNetworkConfig();
+  const { rpcUrl, expectedChainId, expectedGenesisHash } = requiredNetworkConfig();
   console.log(`Configured PortalDot EVM RPC origin: ${safeRpcOrigin(rpcUrl)}`);
   console.log(`Expected chain ID: ${expectedChainId}`);
+  console.log(`Expected genesis hash: ${expectedGenesisHash}`);
 
-  const [chainHex, blockHex] = await Promise.all([
+  const [chainHex, blockHex, actualGenesisHash] = await Promise.all([
     rpc(rpcUrl, "eth_chainId"),
-    rpc(rpcUrl, "eth_blockNumber")
+    rpc(rpcUrl, "eth_blockNumber"),
+    readGenesisHash(rpcUrl, expectedGenesisHash)
   ]);
   const actualChainId = BigInt(chainHex);
   const blockNumber = BigInt(blockHex);
 
   console.log(`Actual chain ID: ${actualChainId}`);
   console.log(`Latest block: ${blockNumber}`);
+  console.log(`Verified genesis hash against configured pin: ${actualGenesisHash}`);
   if (actualChainId !== expectedChainId) {
     throw new Error(`Wrong chain ID; expected ${expectedChainId}, received ${actualChainId}. Refusing deployment.`);
   }
 
-  console.log("RPC preflight passed. This checks connectivity only; it does not prove that a wallet is funded or a deployment will succeed.");
+  console.log("RPC preflight passed. It checked connectivity, chain ID, and the configured genesis-hash pin. A single RPC can still lie about returned data; establish the pin through an independent trusted PortalDot source. This does not prove wallet funding or deployment success.");
 }
 
 if (require.main === module) {
@@ -95,4 +115,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { requiredNetworkConfig, safeRpcOrigin, rpc };
+module.exports = { requiredNetworkConfig, safeRpcOrigin, rpcResult, rpc, readGenesisHash };
