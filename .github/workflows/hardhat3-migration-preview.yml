@@ -44,9 +44,10 @@ jobs:
           fs.writeFileSync('package-candidate.json', JSON.stringify(p, null, 2) + '\n');
           NODE
           cp package-candidate.json "$RUNNER_TEMP/hardhat3-preview/package-candidate.json"
-      - name: Generate candidate lockfile (no repository changes)
+      - name: Generate candidate lockfile from a clean dependency tree
         shell: bash
         run: |
+          rm -rf node_modules package-lock.json
           set +e
           npm install --package-lock-only --ignore-scripts --no-fund > "$RUNNER_TEMP/hardhat3-preview/lockfile-generation.log" 2>&1
           status=$?
