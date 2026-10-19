@@ -101,7 +101,7 @@ describe("Authorized transfer executor input validation", function () {
   it("rejects a different configured chain before trying to submit", async function () {
     const artifact = await makeArtifact();
     expect(() => validate(artifact, { expectedChainId: "420420418" }))
-      .to.throw(/domain chain ID does not match/);
+      .to.throw(/EIP-712 chain ID does not match the configured network/);
   });
 
   it("rejects a different guard address in the signed domain", async function () {
