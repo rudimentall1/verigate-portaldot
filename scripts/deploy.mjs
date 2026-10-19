@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { configuredGenesisHash, verifyGenesisHashIfConfigured } = require("./network-identity.js");
+const { parseHexQuantity, calculateDeploymentCost, formatUnitsExact } = require("./deployment-estimate.js");
 const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
 
@@ -43,6 +44,42 @@ async function main() {
   }
 
   const factory = await ethers.getContractFactory("PortalDotAgentGuard", deployer);
+
+  // Fail closed before broadcasting if the deployer cannot cover the RPC's current
+  // estimate plus a 20% margin. These are read-only RPC calls; no signing/broadcast
+  // has happened at this point.
+  const deploymentTx = await factory.getDeployTransaction(authoritySigner);
+  if (typeof deploymentTx.data !== "string" || !/^0x(?:[0-9a-fA-F]{2})+$/.test(deploymentTx.data)) {
+    throw new Error("Refusing deployment: compiled contract creation bytecode is missing or malformed.");
+  }
+  const estimatedGasHex = await ethers.provider.send("eth_estimateGas", [{
+    from: deployerAddress,
+    data: deploymentTx.data
+  }]);
+  const gasPriceHex = await ethers.provider.send("eth_gasPrice", []);
+  const balanceHex = await ethers.provider.send("eth_getBalance", [deployerAddress, "latest"]);
+  const budget = calculateDeploymentCost({
+    gasUnits: parseHexQuantity(estimatedGasHex, "eth_estimateGas result"),
+    gasPriceWei: parseHexQuantity(gasPriceHex, "eth_gasPrice result"),
+    balanceWei: parseHexQuantity(balanceHex, "eth_getBalance result"),
+    safetyMarginBps: 2000
+  });
+  console.log(JSON.stringify({
+    preDeploymentBudgetCheck: true,
+    deployer: deployerAddress,
+    estimatedCostPot: formatUnitsExact(budget.estimatedCostWei, 18, 6),
+    requiredWithSafetyMarginPot: formatUnitsExact(budget.costWithMarginWei, 18, 6),
+    deployerBalancePot: formatUnitsExact(budget.balanceWei, 18, 6),
+    budgetStatus: budget.isSufficient ? "sufficient_with_20_percent_margin" : "insufficient_for_20_percent_margin",
+    shortfallPot: formatUnitsExact(budget.shortfallWei, 18, 6)
+  }, null, 2));
+  if (!budget.isSufficient) {
+    throw new Error(
+      `Refusing deployment: balance ${formatUnitsExact(budget.balanceWei, 18, 6)} POT is below the estimated ` +
+      `deployment cost plus 20% safety margin (${formatUnitsExact(budget.costWithMarginWei, 18, 6)} POT).`
+    );
+  }
+
   const guard = await factory.deploy(authoritySigner);
   const tx = guard.deploymentTransaction();
   const receipt = await tx.wait();
