@@ -402,6 +402,7 @@ def main() -> int:
                     "VERIGATE_BASE_URL",
                     "VERIGATE_API_KEY",
                     "VERIGATE_PUBLIC_KEY_FILE",
+                    "VERIGATE_PUBLIC_KEY_SHA256",
                 ):
                     hardhat_env[name] = ""
                 hardhat_env["PORTALDOT_SIMULATED_CHAIN_ID"] = str(CHAIN_ID)
@@ -521,6 +522,11 @@ def main() -> int:
                 bridge_env.update({
                     "VERIGATE_BASE_URL": base_url,
                     "VERIGATE_PUBLIC_KEY_FILE": env["VERIGATE_PUBLIC_KEY"],
+                    "VERIGATE_PUBLIC_KEY_SHA256": hashlib.sha256(
+                        base64.b64decode(
+                            "".join(Path(env["VERIGATE_PUBLIC_KEY"]).read_text(encoding="ascii").splitlines()[1:-1])
+                        )
+                    ).hexdigest(),
                     "BRIDGE_SIGNER_PRIVATE_KEY": test_wallets["bridgePrivateKey"],
                     "AUTHORITY_SIGNER_ADDRESS": test_wallets["bridgeAddress"],
                     "PORTALDOT_GUARD_ADDRESS": guard_address,
