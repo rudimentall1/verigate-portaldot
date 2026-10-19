@@ -52,9 +52,20 @@ async function rpc(rpcUrl, method) {
   });
   if (!response.ok) throw new Error(`${method}: HTTP ${response.status}`);
   const data = await response.json();
-  if (data.error) throw new Error(`${method}: ${data.error.message || JSON.stringify(data.error)}`);
-  if (data.jsonrpc !== "2.0" || data.id !== 1 || typeof data.result !== "string") {
-    throw new Error(`${method}: malformed JSON-RPC response`);
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error(`${method}: invalid JSON-RPC response object`);
+  }
+  if (data.error !== undefined && data.error !== null) {
+    const message = data.error && typeof data.error.message === "string"
+      ? data.error.message
+      : JSON.stringify(data.error);
+    throw new Error(`${method}: JSON-RPC error: ${message}`);
+  }
+  if (data.jsonrpc !== "2.0" || data.id !== 1) {
+    throw new Error(`${method}: malformed JSON-RPC envelope`);
+  }
+  if (typeof data.result !== "string" || !/^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/.test(data.result)) {
+    throw new Error(`${method}: result must be a canonical hexadecimal quantity`);
   }
   return data.result;
 }
