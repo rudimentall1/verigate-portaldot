@@ -1,0 +1,27 @@
+name: PortalDot RPC health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  rpc-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Configure public testnet endpoint
+        run: |
+          echo "PORTALDOT_RPC_URL=https://test-evm-rpc-v3.portaldot.dev" >> "$GITHUB_ENV"
+          echo "PORTALDOT_CHAIN_ID=420420777" >> "$GITHUB_ENV"
+      - name: Read-only RPC health check
+        run: npm run monitor:rpc
