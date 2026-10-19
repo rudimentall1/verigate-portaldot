@@ -1,4 +1,5 @@
 const crypto = require("node:crypto");
+const { keccak256 } = require("ethers");
 
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const ACCOUNT_SUFFIX = Buffer.alloc(12, 0xee);
@@ -18,6 +19,25 @@ function base58Encode(bytes) {
   return "1".repeat(leadingZeroes) + encoded;
 }
 
+function base58Decode(value) {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error("Expected a non-empty SS58 address.");
+  }
+  let decodedValue = 0n;
+  for (const character of value) {
+    const digit = BASE58_ALPHABET.indexOf(character);
+    if (digit < 0) throw new Error("SS58 address contains a non-Base58 character.");
+    decodedValue = decodedValue * 58n + BigInt(digit);
+  }
+
+  let hex = decodedValue.toString(16);
+  if (hex.length % 2 !== 0) hex = "0" + hex;
+  const body = decodedValue === 0n ? Buffer.alloc(0) : Buffer.from(hex, "hex");
+  let leadingZeroes = 0;
+  while (leadingZeroes < value.length && value[leadingZeroes] === "1") leadingZeroes += 1;
+  return Buffer.concat([Buffer.alloc(leadingZeroes), body]);
+}
+
 function encodeSs58AccountId(accountId, prefix = SS58_PREFIX) {
   if (!Buffer.isBuffer(accountId) || accountId.length !== 32) {
     throw new Error("AccountId32 must be exactly 32 bytes.");
@@ -35,6 +55,34 @@ function encodeSs58AccountId(accountId, prefix = SS58_PREFIX) {
   return base58Encode(Buffer.concat([payload, checksum]));
 }
 
+function decodeSs58AccountId(ss58Address) {
+  const decoded = base58Decode(ss58Address);
+  // AccountId32 with a one-byte SS58 prefix is 1 prefix + 32 account bytes + 2 checksum bytes.
+  if (decoded.length !== 35) {
+    throw new Error("Only SS58 AccountId32 addresses with a one-byte network prefix are supported.");
+  }
+  const prefix = decoded[0];
+  if (prefix > 63) {
+    throw new Error("Only simple SS58 prefixes 0 through 63 are supported.");
+  }
+
+  const payload = decoded.subarray(0, 33);
+  const suppliedChecksum = decoded.subarray(33);
+  const expectedChecksum = crypto
+    .createHash("blake2b512")
+    .update(Buffer.concat([Buffer.from("SS58PRE", "ascii"), payload]))
+    .digest()
+    .subarray(0, 2);
+  if (!crypto.timingSafeEqual(suppliedChecksum, expectedChecksum)) {
+    throw new Error("SS58 checksum does not match; refusing to infer an AccountId32.");
+  }
+
+  return {
+    accountId: Buffer.from(decoded.subarray(1, 33)),
+    ss58Prefix: prefix
+  };
+}
+
 function evmToSubstrateAccount(evmAddress, ss58Prefix = SS58_PREFIX) {
   if (typeof evmAddress !== "string" || !/^0x[a-fA-F0-9]{40}$/.test(evmAddress)) {
     throw new Error("Expected an EVM address with 0x and exactly 40 hexadecimal characters.");
@@ -46,7 +94,62 @@ function evmToSubstrateAccount(evmAddress, ss58Prefix = SS58_PREFIX) {
     accountIdHex: "0x" + accountId.toString("hex"),
     ss58Prefix,
     substrateAddress: encodeSs58AccountId(accountId, ss58Prefix),
-    note: "Offline H160-to-AccountId32 derivation for PortalDot V3; use the runtime mapping API when available to confirm the live account."
+    derivation: "fallback AccountId32 = H160 || 0xEE * 12",
+    runtimeMappingConfirmed: false,
+    note: "Offline H160-to-AccountId32 fallback only; does not prove the deployed runtime maps this H160 to that account."
+  };
+}
+
+function substrateToEvmAddress(ss58Address) {
+  const decoded = decodeSs58AccountId(ss58Address);
+  const { accountId, ss58Prefix } = decoded;
+  const suffixIsEthOrigin = accountId.subarray(20).equals(ACCOUNT_SUFFIX);
+  let evmAddress;
+  let derivation;
+  if (suffixIsEthOrigin) {
+    evmAddress = "0x" + accountId.subarray(0, 20).toString("hex");
+    derivation = "eth-origin AccountId32 suffix: H160 || 0xEE * 12";
+  } else {
+    const digest = keccak256(accountId);
+    evmAddress = "0x" + digest.slice(-40).toLowerCase();
+    derivation = "current upstream pallet-revive AccountId32 -> last 20 bytes of keccak256(AccountId32)";
+  }
+  return {
+    substrateAddress: ss58Address,
+    ss58Prefix,
+    accountIdHex: "0x" + accountId.toString("hex"),
+    evmAddress,
+    derivation,
+    runtimeMappingConfirmed: false,
+    note: "Offline derivation using current upstream polkadot-cli/pallet-revive rules. PortalDot V3 runtime metadata and any stateful AddressSuffix mapping must be checked separately."
+  };
+}
+
+function inspectAccountMapping(ss58Address, candidateH160 = "") {
+  const derived = substrateToEvmAddress(ss58Address);
+  if (!candidateH160) {
+    return {
+      ...derived,
+      candidateH160: null,
+      candidateMatchesOfflineDerivation: null,
+      runtimeMappingConfirmed: false
+    };
+  }
+  if (typeof candidateH160 !== "string" || !/^0x[a-fA-F0-9]{40}$/.test(candidateH160)) {
+    throw new Error("Candidate H160 must have 0x and exactly 40 hexadecimal characters.");
+  }
+
+  const candidateFallback = evmToSubstrateAccount(candidateH160, derived.ss58Prefix);
+  return {
+    ...derived,
+    candidateH160: "0x" + candidateH160.slice(2).toLowerCase(),
+    candidateMatchesOfflineDerivation:
+      derived.evmAddress.toLowerCase() === candidateH160.toLowerCase(),
+    candidateFallbackAccountIdHex: candidateFallback.accountIdHex,
+    candidateFallbackMatchesAccountId32:
+      candidateFallback.accountIdHex.toLowerCase() === derived.accountIdHex.toLowerCase(),
+    runtimeMappingConfirmed: false,
+    note: "A match is only an offline derivation match, not an on-chain mapping proof. A mismatch can mean a different HD-derived EVM key, a stateful runtime mapping, or a different PortalDot runtime implementation."
   };
 }
 
@@ -68,4 +171,13 @@ if (require.main === module) {
   }
 }
 
-module.exports = { base58Encode, encodeSs58AccountId, evmToSubstrateAccount, SS58_PREFIX };
+module.exports = {
+  base58Encode,
+  base58Decode,
+  encodeSs58AccountId,
+  decodeSs58AccountId,
+  evmToSubstrateAccount,
+  substrateToEvmAddress,
+  inspectAccountMapping,
+  SS58_PREFIX
+};
