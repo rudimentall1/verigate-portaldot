@@ -16,20 +16,29 @@ describe("Verigate bridge binding", function () {
   let testKeyDir;
   let publicKeyFile;
   let originalPublicKeyFile;
+  let originalPublicKeySha256;
 
   before(function () {
     originalPublicKeyFile = process.env.VERIGATE_PUBLIC_KEY_FILE;
+    originalPublicKeySha256 = process.env.VERIGATE_PUBLIC_KEY_SHA256;
     const pair = crypto.generateKeyPairSync("ed25519");
     issuerPrivateKey = pair.privateKey;
     testKeyDir = fs.mkdtempSync(path.join(os.tmpdir(), "verigate-portaldot-tests-"));
     publicKeyFile = path.join(testKeyDir, "issuer.pub");
-    fs.writeFileSync(publicKeyFile, pair.publicKey.export({ type: "spki", format: "pem" }));
+    const publicKeyPem = pair.publicKey.export({ type: "spki", format: "pem" });
+    fs.writeFileSync(publicKeyFile, publicKeyPem);
     process.env.VERIGATE_PUBLIC_KEY_FILE = publicKeyFile;
+    process.env.VERIGATE_PUBLIC_KEY_SHA256 = crypto
+      .createHash("sha256")
+      .update(pair.publicKey.export({ type: "spki", format: "der" }))
+      .digest("hex");
   });
 
   after(function () {
     if (originalPublicKeyFile === undefined) delete process.env.VERIGATE_PUBLIC_KEY_FILE;
     else process.env.VERIGATE_PUBLIC_KEY_FILE = originalPublicKeyFile;
+    if (originalPublicKeySha256 === undefined) delete process.env.VERIGATE_PUBLIC_KEY_SHA256;
+    else process.env.VERIGATE_PUBLIC_KEY_SHA256 = originalPublicKeySha256;
     fs.rmSync(testKeyDir, { recursive: true, force: true });
   });
 
@@ -105,6 +114,19 @@ describe("Verigate bridge binding", function () {
     const item = response(Math.floor(Date.now() / 1000));
     expect(verifyLocally(item.decision_receipt)).to.equal(true);
     expect(verifyLocally(item.execution_authorization)).to.equal(true);
+  });
+
+  it("refuses local verification when the issuer key fingerprint is missing or mismatched", function () {
+    const item = response(Math.floor(Date.now() / 1000));
+    const configuredFingerprint = process.env.VERIGATE_PUBLIC_KEY_SHA256;
+    try {
+      delete process.env.VERIGATE_PUBLIC_KEY_SHA256;
+      expect(() => verifyLocally(item.decision_receipt)).to.throw(/VERIGATE_PUBLIC_KEY_SHA256 must be set/);
+      process.env.VERIGATE_PUBLIC_KEY_SHA256 = "0".repeat(64);
+      expect(() => verifyLocally(item.decision_receipt)).to.throw(/fingerprint does not match/);
+    } finally {
+      process.env.VERIGATE_PUBLIC_KEY_SHA256 = configuredFingerprint;
+    }
   });
 
   it("refuses a forged artifact locally even if the remote verifier might approve it", async function () {
@@ -622,6 +644,7 @@ describe("Verigate bridge binding", function () {
       "VERIGATE_BASE_URL",
       "VERIGATE_API_KEY",
       "VERIGATE_PUBLIC_KEY_FILE",
+      "VERIGATE_PUBLIC_KEY_SHA256",
       "BRIDGE_SIGNER_PRIVATE_KEY",
       "AUTHORITY_SIGNER_ADDRESS",
       "PORTALDOT_GUARD_ADDRESS",
