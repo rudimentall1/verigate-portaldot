@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
-const { parseExpectedGenesisHash, verifyGenesisHash } = require("./network-identity.js");
+const { configuredGenesisHash, verifyGenesisHashIfConfigured } = require("./network-identity.js");
 const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
 
@@ -20,8 +20,8 @@ async function main() {
   if (network.chainId !== expectedChainId) {
     throw new Error(`Refusing deployment: expected chain ID ${expectedChainId}, got ${network.chainId}`);
   }
-  const expectedGenesisHash = parseExpectedGenesisHash(process.env.PORTALDOT_GENESIS_HASH);
-  const actualGenesisHash = await verifyGenesisHash(ethers.provider, expectedGenesisHash);
+  const expectedGenesisHash = configuredGenesisHash(process.env.PORTALDOT_GENESIS_HASH);
+  const actualGenesisHash = await verifyGenesisHashIfConfigured(ethers.provider, expectedGenesisHash);
   if (!process.env.DEPLOYER_PRIVATE_KEY) {
     throw new Error("DEPLOYER_PRIVATE_KEY is missing. Put it in an untracked .env file; never commit it.");
   }
@@ -57,6 +57,7 @@ async function main() {
     rpcOrigin: new URL(rpcUrl).origin,
     chainId: network.chainId.toString(),
     genesisHash: actualGenesisHash,
+    genesisHashPinConfigured: Boolean(expectedGenesisHash),
     contract: "PortalDotAgentGuard",
     address: contractAddress,
     runtimeCodeHash: ethers.keccak256(runtimeCode),
@@ -64,7 +65,7 @@ async function main() {
     authoritySigner,
     transactionHash: receipt.hash,
     blockNumber: receipt.blockNumber,
-    note: "Independently verify the RPC, deployed bytecode, and transaction before claiming PortalDot deployment evidence. Local Hardhat output is not live testnet evidence."
+    note: "A configured genesis hash adds an optional wrong-network check; without it, this script uses the configured HTTPS endpoint and chain ID. Independently verify transaction and bytecode before claiming live deployment evidence. Local Hardhat output is not live testnet evidence."
   }, null, 2));
 }
 
