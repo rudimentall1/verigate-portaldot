@@ -326,9 +326,16 @@ function validateAuthorizationBinding(response, options = {}) {
   };
 }
 
-function verifyLocally(attestation, publicKeyPath = process.env.VERIGATE_PUBLIC_KEY_FILE) {
+function verifyLocally(
+  attestation,
+  publicKeyPath = process.env.VERIGATE_PUBLIC_KEY_FILE,
+  expectedKeySha256 = process.env.VERIGATE_PUBLIC_KEY_SHA256
+) {
   if (!publicKeyPath) {
     fail("VERIGATE_PUBLIC_KEY_FILE must point to a pinned Verigate issuer public key PEM.");
+  }
+  if (typeof expectedKeySha256 !== "string" || !/^[a-f0-9]{64}$/i.test(expectedKeySha256)) {
+    fail("VERIGATE_PUBLIC_KEY_SHA256 must be set to the independently verified SHA-256 fingerprint of the issuer public key.");
   }
   if (!attestation || attestation.algorithm !== "Ed25519" || !attestation.payload ||
       typeof attestation.payload !== "object" || Array.isArray(attestation.payload)) {
@@ -352,6 +359,15 @@ function verifyLocally(attestation, publicKeyPath = process.env.VERIGATE_PUBLIC_
   }
   if (publicKey.asymmetricKeyType !== "ed25519") {
     fail("VERIGATE_PUBLIC_KEY_FILE must contain an Ed25519 public key.");
+  }
+  // Hash normalized SubjectPublicKeyInfo DER, not PEM text, so harmless
+  // whitespace/line-ending changes cannot alter the fingerprint.
+  const actualKeySha256 = crypto
+    .createHash("sha256")
+    .update(publicKey.export({ type: "spki", format: "der" }))
+    .digest("hex");
+  if (actualKeySha256 !== expectedKeySha256.toLowerCase()) {
+    fail("Verigate issuer public-key fingerprint does not match VERIGATE_PUBLIC_KEY_SHA256; refusing to trust the issuer API response.");
   }
 
   let valid = false;
