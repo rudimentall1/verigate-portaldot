@@ -53,7 +53,7 @@ export function parseDotJsonValue(stdout, label = "Polkadot CLI result") {
     // Allow only formats valid for this storage's AccountId32 result.
     if (/^0x[a-fA-F0-9]{64}$/.test(payload)) return payload;
     if (/^[1-9A-HJ-NP-Za-km-z]{45,50}$/.test(payload)) return payload;
-    fail(`${label} did not contain valid JSON or an AccountId32 display value. Use polkadot-cli 0.7.0 with --output json; got: ${text.slice(0, 240)}`);
+    fail(`${label} did not contain valid JSON or an AccountId32 display value. Use polkadot-cli 1.25.0 with --output json; got: ${text.slice(0, 240)}`);
   }
   if (value && typeof value === "object" && !Array.isArray(value) && Object.hasOwn(value, "value")) {
     return value.value;
@@ -119,7 +119,7 @@ function runDot(dotArgs, env, label) {
     windowsHide: true
   });
   if (result.error?.code === "ENOENT") {
-    fail("Polkadot CLI 'dot' is not installed. Install it with: npm install --global polkadot-cli@0.7.0");
+    fail("Polkadot CLI 'dot' is not installed. Install it with: npm install --global polkadot-cli@1.25.0");
   }
   if (result.error) {
     fail(`${label} could not run: ${result.error.message}`);
