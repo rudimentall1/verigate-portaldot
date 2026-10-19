@@ -2,7 +2,7 @@
 
 A focused PortalDot V3 Hacker House project exploring how an AI agent's proposed payment can be gated by an explicit, signed execution authorization.
 
-**Status (19 October 2026):** the repository has a native-payment guard, an Ed25519-verifying bridge signer, preflight and RPC monitoring, Hardhat 3 local tests, and a real-API integration harness. The migrated branch pins the Verigate issuer key with `VERIGATE_PUBLIC_KEY_SHA256`, requires transfer amounts and base-unit mappings to be canonical positive decimal strings, rejects RPC URLs containing embedded credentials, disables redirects for read-only RPC calls, strictly validates JSON-RPC version, response ID and canonical hex quantities, and verifies the configured chain ID, deployed guard runtime-code hash, and on-chain `authoritySigner()` before signing. Latest tested code revision: `e55cc2c5261287b3e028e6cb76f9cf3a13e8be5f`. CI reports 117 passing tests, Solidity compilation success, a successful read-only deployment-cost estimator smoke test, isolated Verigate ALLOW/BLOCK integration, RPC health, and dependency security audit. Coverage includes EIP-712 cross-contract replay protection, exact POT-unit conversion, cost-margin arithmetic, and the H160-to-Substrate address mapping against a published test vector. `PORTALDOT_GENESIS_HASH` remains an optional extra guard, not a mandatory blocker for the published endpoint and chain ID. The [PortalDot V3 network configuration](docs/portaldot-v3-network.md) records the published EVM/Substrate endpoints, chain ID, native precision, account mapping and deployment-cost caveats. The [RPC evidence log](docs/rpc-health-evidence.md) records the observed endpoint behavior. The most recent npm audit reported zero advisories for the checked lockfile snapshot. The dependency-audit workflow now fails on moderate-or-higher advisories and reports low-severity items. This is a dependency check, not a full application or smart-contract audit. These checks reduce configuration errors but do not make a potentially compromised RPC endpoint trustworthy; independently verify the issuer-key fingerprint and deployed bytecode. No live PortalDot deployment is claimed.
+**Status (19 October 2026):** the repository includes a native-payment guard, an Ed25519-verifying bridge signer, read-only network preflight and monitoring, a deployment-budget check, and a guarded transfer executor. The executor validates the EIP-712 signature, configured chain and guard, pinned runtime-code hash, on-chain authority signer, deadline, recipient and amount; it simulates the exact call and checks guard funds and relayer gas budget before broadcasting. By default it is dry-run only; submitting a transaction requires an explicit `--broadcast` flag. CI exercises the full flow on a temporary loopback Hardhat EVM only. It does not broadcast to public PortalDot and does not claim a live deployment. The bridge pins the Verigate issuer key with `VERIGATE_PUBLIC_KEY_SHA256`, preserves Python-signed JSON number spellings, and accepts only exact positive base-unit integer strings. CI covers replay protection, authorization tampering, unsafe RPC settings, deploy/execution budget arithmetic and isolated Verigate ALLOW/BLOCK. See the [test workflow](https://github.com/rudimentall1/verigate-portaldot/actions), [network configuration](docs/portaldot-v3-network.md), and [RPC evidence log](docs/rpc-health-evidence.md). The dependency audit is not a full application or smart-contract audit. These checks reduce configuration mistakes but do not make an RPC endpoint trustworthy; independently verify the issuer-key fingerprint, network details and deployed bytecode. No live PortalDot deployment is claimed.
 
 ## What this MVP demonstrates
 
@@ -117,6 +117,27 @@ The accepted action must have:
 - metadata.portaldot_v3 containing matching chain_id, recipient, and amount_base_units.
 
 The amount is represented in raw EVM transfer base units to avoid guessing how PortalDot V3 maps Substrate token decimals to EVM value units. Confirm the live network denomination before presenting user-facing amounts. The bridge CLI signs a payload; it does not broadcast a transaction.
+
+## Execute a signed transfer
+
+A signed authorization JSON created by the bridge is not automatically submitted. The execution CLI validates its EIP-712 signer/domain and exact transfer fields, checks the deployed guard's bytecode hash and `authoritySigner()`, validates expiry and guard balance, then simulates the call and checks the relayer's gas budget with a 20% margin.
+
+First sign the already-authorized Verigate response and run the executor in read-only simulation mode:
+
+```bash
+npm run bridge:sign -- ./authorization-response.json > ./signed-transfer.json
+npm run execute:authorization -- ./signed-transfer.json
+```
+
+Dry-run mode does not broadcast a transaction. It still needs the verified network URL and chain ID, `PORTALDOT_GUARD_ADDRESS`, `PORTALDOT_GUARD_CODE_HASH`, `AUTHORITY_SIGNER_ADDRESS`, and `DEPLOYMENT_ESTIMATE_FROM` (public relayer address). If a relayer private key is configured, its derived address must match `DEPLOYMENT_ESTIMATE_FROM`.
+
+**The following command is the only executor path that submits a payment:**
+
+```bash
+npm run execute:authorization -- ./signed-transfer.json --broadcast
+```
+
+Broadcast mode additionally requires `DEPLOYER_PRIVATE_KEY` in the local, untracked `.env`; that key pays transaction fees and must be different from the authority signer. Immediately before submission the CLI refreshes the block timestamp, rechecks the guard deployment and balance, and refuses if the authorization is about to expire or the fee budget is insufficient. The command executes only the exact recipient, amount, nonce, deadline and action ID in the signed payload. **Do not use `--broadcast` until the target network, deployed contract, signer, balance and fee estimate have been independently checked.** The repository's automated integration uses the broadcast path only against its temporary loopback EVM.
 
 ## Verigate integration boundary
 
