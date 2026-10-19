@@ -35,15 +35,24 @@ export function validateMappingInputs(h160, ss58Address) {
 export function parseDotJsonValue(stdout, label = "Polkadot CLI result") {
   const text = String(stdout ?? "").trim();
   if (!text) fail(`${label} is empty; cannot interpret an empty response as a missing mapping.`);
-  // polkadot-cli 0.7.0 prints the literal "undefined" for an absent map entry,
-  // even with --output json. Treat that explicit sentinel as no entry, not as
-  // malformed JSON or a successful mapping.
-  if (text === "undefined") return null;
+
+  // polkadot-cli prints a human-readable chain banner before some query results,
+  // even when --output json is selected. Parse the final non-empty output line,
+  // not the banner, and recognize the explicit undefined sentinel emitted for
+  // an absent storage key.
+  const lines = text.split(/\\r?\\n/).map((line) => line.trim()).filter(Boolean);
+  const payload = lines[lines.length - 1];
+  if (payload === "undefined") return null;
+
   let value;
   try {
-    value = JSON.parse(text);
+    value = JSON.parse(payload);
   } catch {
-    fail(`${label} was not valid JSON. Use polkadot-cli 0.7.0 with --output json; got: ${text.slice(0, 240)}`);
+    // Some CLI versions print a bare SCALE display value despite --output json.
+    // Allow only formats valid for this storage's AccountId32 result.
+    if (/^0x[a-fA-F0-9]{64}$/.test(payload)) return payload;
+    if (/^[1-9A-HJ-NP-Za-km-z]{45,50}$/.test(payload)) return payload;
+    fail(`${label} did not contain valid JSON or an AccountId32 display value. Use polkadot-cli 0.7.0 with --output json; got: ${text.slice(0, 240)}`);
   }
   if (value && typeof value === "object" && !Array.isArray(value) && Object.hasOwn(value, "value")) {
     return value.value;
