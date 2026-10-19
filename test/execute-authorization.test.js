@@ -131,9 +131,8 @@ describe("Authorized transfer executor input validation", function () {
   });
 
   it("rejects uint256 overflow and zero transfer values", async function () {
-    const overflow = await makeArtifact({
-      transferOverrides: { amount: (1n << 256n).toString() }
-    });
+    const overflow = await makeArtifact();
+    overflow.transfer.amount = (1n << 256n).toString();
     expect(() => validate(overflow)).to.throw(/uint256 limit/);
 
     const zero = await makeArtifact({ transferOverrides: { amount: "0" } });
