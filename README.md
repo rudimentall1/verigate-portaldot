@@ -89,7 +89,7 @@ npm install --global polkadot-cli@1.25.0
 npm run verify:account-mapping -- 0xCandidateEvmAddress 5RegisteredSubstrateAddress
 ```
 
-The command reads the chain's runtime metadata, checks the reported `Revive.ChainId`, queries exactly one H160 key, and compares the returned raw `AccountId32` bytes with the supplied SS58 account. It uses a temporary Polkadot CLI home, no private key or mnemonic, and makes no extrinsic or transaction. Its output distinguishes `mapping_matches`, `mapping_points_to_another_account`, and `no_mapping_entry`. Run this locally rather than putting a personally identifying address pair in public CI logs or artifacts. A one-RPC result is still not independent network authentication.
+The command reads the chain's runtime metadata, checks the reported `Revive.ChainId`, queries exactly one H160 key at the captured finalized block, and compares the returned raw `AccountId32` bytes with the supplied SS58 account. It uses a temporary Polkadot CLI home, no private key or mnemonic, and makes no extrinsic or transaction. Its output distinguishes `mapping_matches`, `mapping_points_to_another_account`, and `no_mapping_entry`. Add `--redact` to print the result and runtime block fingerprint without either wallet address or mapped AccountId32. The RPC still receives the one H160 key to perform the lookup; the flag prevents the address pair from being echoed to the terminal or a copied report. Run this locally rather than putting a personally identifying address pair in public CI logs or artifacts. A one-RPC result is still not independent network authentication.
 
 Do not infer the reason for a balance difference without transaction evidence.
 
