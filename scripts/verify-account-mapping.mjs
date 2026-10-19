@@ -35,6 +35,10 @@ export function validateMappingInputs(h160, ss58Address) {
 export function parseDotJsonValue(stdout, label = "Polkadot CLI result") {
   const text = String(stdout ?? "").trim();
   if (!text) fail(`${label} is empty; cannot interpret an empty response as a missing mapping.`);
+  // polkadot-cli 0.7.0 prints the literal "undefined" for an absent map entry,
+  // even with --output json. Treat that explicit sentinel as no entry, not as
+  // malformed JSON or a successful mapping.
+  if (text === "undefined") return null;
   let value;
   try {
     value = JSON.parse(text);
