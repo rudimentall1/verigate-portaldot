@@ -52,7 +52,7 @@ jobs:
           DOT_NO_UPDATE_CHECK: "1"
         run: |
           mkdir -p "$RUNNER_TEMP/substrate-runtime-evidence" "$DOT_HOME"
-          npm install --global polkadot-cli@0.7.0
+          npm install --global polkadot-cli@1.25.0
           dot --version > "$RUNNER_TEMP/substrate-runtime-evidence/dot-cli-version.txt" 2>&1
           dot chain add portaldot-v3 --rpc "$PORTALDOT_SUBSTRATE_RPC_URL" > "$RUNNER_TEMP/substrate-runtime-evidence/dot-chain-add.txt" 2>&1
           dot chain update portaldot-v3 >> "$RUNNER_TEMP/substrate-runtime-evidence/dot-chain-add.txt" 2>&1
@@ -83,7 +83,16 @@ jobs:
           # Exercise the account-mapping verifier against a fixed synthetic H160
           # and synthetic SS58 account only. Never put real wallet pairs in CI.
           synthetic_ss58="$(node -e 'const { encodeSs58AccountId } = require("./scripts/portaldot-address.js"); process.stdout.write(encodeSs58AccountId(Buffer.alloc(32, 0x42), 42));')"
-          run_capture verify-one-key-synthetic npm run --silent verify:account-mapping -- 0x0000000000000000000000000000000000000001 "$synthetic_ss58"
+          set +e
+          npm run --silent verify:account-mapping -- 0x0000000000000000000000000000000000000001 "$synthetic_ss58" > "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt" 2>&1
+          mapping_exit_code=$?
+          set -e
+          printf '%s\n' "$mapping_exit_code" > "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic-exit-code.txt"
+          if [ "$mapping_exit_code" -ne 0 ]; then
+            cat "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt"
+            exit "$mapping_exit_code"
+          fi
+          node -e 'const fs = require("node:fs"); const p = process.argv[1]; const r = JSON.parse(fs.readFileSync(p, "utf8")); if (r.status !== "no_mapping_entry" || r.mappingMatchesRegisteredAccount !== null || r.queryScope !== "one H160 key only" || r.transactionSubmitted !== false || !/^0x[a-fA-F0-9]{64}$/.test(r.runtimeSnapshot?.finalizedHead ?? "")) throw new Error("Synthetic mapping query did not return a correctly pinned no_mapping_entry result."); process.stdout.write(JSON.stringify({status:r.status, finalizedBlockNumber:r.runtimeSnapshot.finalizedBlockNumber, finalizedHead:r.runtimeSnapshot.finalizedHead, queryScope:r.queryScope, transactionSubmitted:r.transactionSubmitted}, null, 2)+"\n");' "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt"
       - name: Upload runtime metadata evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
