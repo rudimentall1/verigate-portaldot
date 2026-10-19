@@ -52,7 +52,16 @@ async function main() {
     data: deploymentTx.data
   }]);
   const gasUnits = parseHexQuantity(estimateResponse, "eth_estimateGas result");
-  const gasPriceWei = parseHexQuantity(await rpc(config.rpcUrl, "eth_gasPrice"), "eth_gasPrice result");
+  const feeData = await localEthers.provider.getFeeData();
+  if (feeData.maxFeePerGas === null || feeData.maxPriorityFeePerGas === null) {
+    throw new Error("RPC did not provide complete EIP-1559 fee data; no budget estimate made.");
+  }
+  const maxFeePerGas = feeData.maxFeePerGas;
+  const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+  if (maxFeePerGas <= 0n || maxPriorityFeePerGas < 0n || maxPriorityFeePerGas > maxFeePerGas) {
+    throw new Error("RPC returned invalid EIP-1559 fee parameters; no budget estimate made.");
+  }
+  const gasPriceWei = maxFeePerGas;
   const balanceWei = parseHexQuantity(
     await rpcResult(config.rpcUrl, "eth_getBalance", [ethersLib.getAddress(estimateFrom), "latest"]),
     "eth_getBalance result"
@@ -83,6 +92,9 @@ async function main() {
     contract: "PortalDotAgentGuard",
     creationBytecodeBytes: initCodeBytes,
     estimatedGasUnits: gasUnits.toString(),
+    feeModel: "EIP-1559 maxFeePerGas cap",
+    maxFeePerGasWei: maxFeePerGas.toString(),
+    maxPriorityFeePerGasWei: maxPriorityFeePerGas.toString(),
     gasPriceWei: gasPriceWei.toString(),
     estimatedCostWei: calc.estimatedCostWei.toString(),
     estimatedCostPot: formatUnitsExact(calc.estimatedCostWei, 18, 6),
