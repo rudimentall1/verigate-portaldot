@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-10-19T08:14:51.005Z",
+  "observedAt": "2026-10-19T08:38:14.267Z",
   "source": {
-    "workflowRun": "https://github.com/rudimentall1/verigate-portaldot/actions/runs/39221376587",
-    "workflowArtifact": "portaldot-substrate-runtime-metadata",
+    "runtimeWorkflowRun": "https://github.com/rudimentall1/verigate-portaldot/actions/runs/39224062246",
+    "runtimeWorkflowArtifactId": "12172618775",
     "endpoint": "wss://test-node-v3.portaldot.dev",
-    "method": "read-only Substrate JSON-RPC plus polkadot-cli 0.7.0 metadata inspection"
+    "method": "read-only Substrate JSON-RPC plus polkadot-cli 0.7.0 storage metadata and one-key query"
   },
   "networkResponse": {
     "chainName": "PortaldotV3 Test",
     "nodeName": "PortaldotV3 Node",
     "nodeVersion": "3.0.0-dev-fddd43141f2",
     "genesisHashReportedByEndpoint": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
-    "finalizedBlockNumber": "100400",
-    "finalizedHeadHash": "0xd5bbc826181d840972ccfff591eaf1a2938f956d874d9c91bc5e116eabcc0735",
+    "finalizedBlockNumber": "100630",
+    "finalizedHeadHash": "0xbcb5bddab8e8c3814cea295552313ae39d576cf89473462b95a3b6c94452564e",
     "runtimeVersion": {
       "specName": "portaldot-v3",
       "specVersion": 3002,
@@ -22,7 +22,7 @@
       "transactionVersion": 2
     },
     "metadataBytes": 561916,
-    "metadataSha256Observed": "0ae6b33052e5e0f3ea3f90239220b77090f73b2a8a46a4a8a1e4ed74296d75be"
+    "metadataSha256Observed": "6f1a091ea11094219f947a1cea32672582c404ce75ad517553727e7b8c023ce0"
   },
   "reviveStorage": {
     "OriginalAccount": {
@@ -50,10 +50,14 @@
   "syntheticKeyProbe": {
     "storageItem": "Revive.OriginalAccount",
     "h160": "0x0000000000000000000000000000000000000001",
-    "reportedResult": null,
+    "cliReportedResult": null,
     "cliPrintedSentinel": "undefined",
+    "resultStatus": "no_mapping_entry",
+    "queryFinalizedBlockNumber": "100630",
+    "queryFinalizedHeadHash": "0xbcb5bddab8e8c3814cea295552313ae39d576cf89473462b95a3b6c94452564e",
     "scope": "single synthetic key only",
-    "transactionOrExtrinsicSubmitted": false
+    "transactionOrExtrinsicSubmitted": false,
+    "verifierOutputJsonConfirmed": true
   },
   "interpretation": {
     "runtimeMappingForAnyUserAddressVerified": false,
@@ -61,8 +65,9 @@
     "genesisHashOrMetadataHashTrustedAsPin": false,
     "notes": [
       "This is an observation from one RPC endpoint at the recorded finalized block, not independent authentication of that endpoint.",
-      "The raw metadata digest is a per-observation value, not a trusted runtime identity pin.",
+      "The raw metadata digest is a per-observation value, not a trusted runtime identity pin; earlier inspections returned a different digest while reporting the same specVersion.",
       "The synthetic H160 query was intentionally limited to one fixed non-user key and does not establish the mapping for a real wallet.",
+      "The CLI was exercised through the new one-key verifier; it emitted a structured no_mapping_entry result, a reported chain ID, and the finalized block/runtime snapshot.",
       "Current runtime metadata exposes Revive.OriginalAccount as the H160-to-AccountId32 storage; Revive.AddressSuffix is absent in this runtime."
     ]
   }
