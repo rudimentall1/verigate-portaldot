@@ -507,6 +507,21 @@ describe("Verigate bridge binding", function () {
       .to.throw(/expired or has invalid timestamps/);
   });
 
+  it("refuses string-encoded authorization timestamps instead of coercing them", function () {
+    const now = 2000000000;
+
+    const stringIssuedAt = response(now);
+    stringIssuedAt.execution_authorization.payload.issued_at = String(now - 1);
+    expect(() => validateAuthorizationBinding(stringIssuedAt, { now, expectedChainId: 420420777 }))
+      .to.throw(/expired or has invalid timestamps/);
+
+    const stringExpiresAt = response(now);
+    stringExpiresAt.execution_authorization.payload.expires_at = String(now + 240);
+    expect(() => validateAuthorizationBinding(stringExpiresAt, { now, expectedChainId: 420420777 }))
+      .to.throw(/expired or has invalid timestamps/);
+  });
+
+
   it("refuses to assume a chain ID when none is configured", function () {
     const configured = process.env.PORTALDOT_CHAIN_ID;
     delete process.env.PORTALDOT_CHAIN_ID;
@@ -792,6 +807,50 @@ describe("On-chain PortalDot guard verification before signing", function () {
       contractFactory: () => ({ authoritySigner: async () => otherAuthority })
     }));
     expect(error.message).to.match(/does not match AUTHORITY_SIGNER_ADDRESS/);
+  });
+
+  it("fails closed when any read-only RPC call fails", async function () {
+    const networkError = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      providerFactory: async () => ({
+        getNetwork: async () => { throw new Error("RPC getNetwork unavailable"); },
+        getCode: async () => { throw new Error("getCode must not run after getNetwork fails"); }
+      })
+    }));
+    expect(networkError.message).to.equal("RPC getNetwork unavailable");
+
+    const codeError = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      providerFactory: async () => ({
+        getNetwork: async () => ({ chainId: 420420777n }),
+        getCode: async () => { throw new Error("RPC getCode unavailable"); }
+      })
+    }));
+    expect(codeError.message).to.equal("RPC getCode unavailable");
+
+    const authorityError = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      providerFactory: async () => ({
+        getNetwork: async () => ({ chainId: 420420777n }),
+        getCode: async () => "0x6000"
+      }),
+      contractFactory: () => ({
+        authoritySigner: async () => { throw new Error("RPC authoritySigner unavailable"); }
+      })
+    }));
+    expect(authorityError.message).to.equal("RPC authoritySigner unavailable");
   });
 
   it("rejects remote RPC over plain HTTP before making any request", async function () {
