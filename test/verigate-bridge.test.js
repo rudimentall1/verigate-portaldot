@@ -302,6 +302,71 @@ describe("Verigate bridge binding", function () {
     }
   });
 
+  it("refuses to send verifier requests to remote HTTP endpoints", async function () {
+    const originalFetch = global.fetch;
+    let calls = 0;
+    global.fetch = async () => {
+      calls += 1;
+      return { ok: true, status: 200, json: async () => ({ valid: true }) };
+    };
+    try {
+      await expect(verifyWithVerigate(
+        "http://verigate.example",
+        { algorithm: "Ed25519", signature: "fixture", payload: { id: "test" } },
+        "fixture-api-key"
+      )).to.be.rejectedWith(/must use HTTPS except for loopback/);
+      expect(calls).to.equal(0);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("allows HTTP only for loopback verifier development", async function () {
+    const originalFetch = global.fetch;
+    let calls = 0;
+    global.fetch = async (url) => {
+      calls += 1;
+      expect(url.toString()).to.equal("http://127.0.0.1:8000/v1/verify");
+      return { ok: true, status: 200, json: async () => ({ valid: true }) };
+    };
+    try {
+      await verifyWithVerigate(
+        "http://127.0.0.1:8000",
+        { algorithm: "Ed25519", signature: "fixture", payload: { id: "test" } },
+        ""
+      );
+      expect(calls).to.equal(1);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("refuses credentials embedded in the verifier URL", async function () {
+    const originalFetch = global.fetch;
+    let calls = 0;
+    global.fetch = async () => {
+      calls += 1;
+      return { ok: true, status: 200, json: async () => ({ valid: true }) };
+    };
+    try {
+      let error;
+      try {
+        await verifyWithVerigate(
+          "https://user:password@verigate.example",
+          { algorithm: "Ed25519", signature: "fixture", payload: { id: "test" } },
+          ""
+        );
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).to.be.instanceOf(Error);
+      expect(error.message).to.match(/must not embed credentials/);
+      expect(calls).to.equal(0);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it("sends the exact signed artifact to the configured Verigate verifier", async function () {
     const originalFetch = global.fetch;
     const attestation = {
