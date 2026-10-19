@@ -121,6 +121,7 @@ module.exports = {
   parseHexQuantity,
   formatUnitsExact,
   calculateDeploymentCost,
+  buildDeploymentReadiness,
   resolveEstimateAuthoritySigner,
   resolveEstimateFromAddresses,
   substrateRawToEvmWei,
