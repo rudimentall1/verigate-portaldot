@@ -26,6 +26,26 @@ function formatUnitsExact(value, decimals = EVM_DECIMALS, fractionDigits = 4) {
   return `${whole}.${frac}`;
 }
 
+function resolveEstimateFromAddresses(configuredValue, privateKeyAddress) {
+  const configured = typeof configuredValue === "string" ? configuredValue.trim() : "";
+  const derived = typeof privateKeyAddress === "string" ? privateKeyAddress.trim() : "";
+  const isAddress = (value) => /^0x[a-fA-F0-9]{40}$/.test(value);
+  if (configured && !isAddress(configured)) {
+    throw new Error("DEPLOYMENT_ESTIMATE_FROM must be a valid EVM address.");
+  }
+  if (derived && !isAddress(derived)) {
+    throw new Error("Derived deployer address must be a valid EVM address.");
+  }
+  if (configured && derived && configured.toLowerCase() !== derived.toLowerCase()) {
+    throw new Error("DEPLOYMENT_ESTIMATE_FROM does not match the address derived from DEPLOYER_PRIVATE_KEY.");
+  }
+  const address = configured || derived;
+  if (!address) {
+    throw new Error("Set DEPLOYMENT_ESTIMATE_FROM to the public EVM deployer address, or set DEPLOYER_PRIVATE_KEY locally.");
+  }
+  return address;
+}
+
 function resolveEstimateAuthoritySigner(value) {
   const configured = typeof value === "string" ? value.trim() : "";
   if (!configured) {
@@ -85,6 +105,7 @@ module.exports = {
   formatUnitsExact,
   calculateDeploymentCost,
   resolveEstimateAuthoritySigner,
+  resolveEstimateFromAddresses,
   substrateRawToEvmWei,
   evmWeiToSubstrateRaw
 };
