@@ -1,9 +1,9 @@
 # Read-only PortalDot V3 deployment estimate
 
-**Observed:** 2026-10-19 06:54 UTC  
+**Observed:** 19 October 2026, 06:54 UTC  
 **Workflow evidence:** https://github.com/rudimentall1/verigate-portaldot/actions/runs/39212571573  
-**Network response:** configured PortalDot V3 RPC reported chain ID `420420777`  
-**Operation:** read-only `eth_estimateGas`, `eth_gasPrice`, and `eth_getBalance`; no signing and no transaction broadcast.
+**Operation:** read-only `eth_estimateGas`, `eth_gasPrice`, and `eth_getBalance`; no signing and no transaction broadcast.  
+**Important:** the quote used a placeholder authority signer, and the deployer-to-Substrate account relationship had not been reconciled. It is preliminary evidence only.
 
 ## Result
 
@@ -13,28 +13,41 @@
 | Compiled creation bytecode | 2,363 bytes |
 | `eth_estimateGas` result | 4,724,145,944,260,813 |
 | `eth_gasPrice` | 38,975 wei |
-| Calculated deployment cost | 184.123588 POT |
+| Calculated `estimateGas × gasPrice` | 184.123588 POT |
 | Budget check with 20% margin | 220.948305 POT |
-| EVM balance at quote time | 0.900000 POT |
+| EVM balance reported for the candidate H160 | 0.900000 POT |
 | Shortfall to the 20% margin budget | 220.048305 POT |
 | Result | **Insufficient balance** |
 
-The estimator used its explicitly labelled placeholder authority signer (`0x0000000000000000000000000000000000000001`) because a final `AUTHORITY_SIGNER_ADDRESS` had not been selected. The placeholder is only for a preliminary quote and must not be used for deployment. The constructor argument is fixed-width, but the estimate must be re-run with the actual dedicated authority signer before deployment.
+The estimator used `0x0000000000000000000000000000000000000001` as a clearly labelled placeholder authority signer. It is not a valid deployment configuration; the estimate must be re-run with the real dedicated authority signer and verified deployer address immediately before any deployment.
 
-## Interpreting the unusually large estimate
+## Live Revive runtime configuration subsequently observed
 
-A PortalDot V3 field guide linked from `docs/portaldot-v3-network.md` reports an indicative code-storage deposit around 0.08 POT per byte plus a base cost around 18 POT. Applying that *rough reference only* to 2,363 bytes gives:
+A separate read-only Substrate metadata probe on 19 October 2026 reported `specName=portaldot-v3`, `specVersion=3002`, `transactionVersion=2`, `Revive.ChainId=420420777`, `Revive.NativeToEthRatio=10000`, `Revive.AutoMap=true`, `Revive.GasScale=5`, and `Revive.CodeHashLockupDepositPercent=300000000` (30% Perbill). The decoded `Revive.OriginalAccount` storage is a map keyed by 20-byte H160 with `AccountId32` values; `Revive.AddressSuffix` is not present in this runtime.
 
-- Indicative deposit component: 2,363 × 0.08 = 189.04 POT
-- Plus indicative base cost: about 18 POT
-- Rough guide-derived total: about 207.04 POT
+The observed native-token storage constants were:
 
-That rough total is in the same order of magnitude as the RPC-derived 184.123588 POT, so the large estimate is not, by itself, evidence of an RPC bug. The figures do not match exactly and must not be treated as a fee formula for this contract. The guide describes another sample, and actual costs may depend on optimized deployed code size, runtime parameters, gas accounting, storage deposits, and chain state. In particular, creation bytecode size is not necessarily the exact stored runtime-code size used to calculate a deposit.
+| Constant | Raw native units | Approximate value if native precision is 14 decimals |
+|---|---:|---:|
+| `DepositPerByte` | 6,000,000,000,000 | 0.06 POT per byte |
+| `DepositPerItem` | 15,000,000,000,000 | 0.15 POT per storage item |
+| `DepositPerChildTrieItem` | 150,000,000,000 | 0.0015 POT per child-trie item |
 
-Treat the RPC value as a preliminary live quote, not a permanent price guarantee or independent proof that the RPC is trustworthy. The configured genesis-hash pin was unset in this run. Re-run the estimate against the final compiled artifact, with the real dedicated authority signer and a verified deployer address, before any explicitly authorized deployment.
+Those are runtime constants, not a full per-contract quote. The earlier community field-guide approximation of about 0.08 POT per byte plus a base cost around 18 POT does not match the observed `DepositPerByte` value for this runtime; do not use that guide estimate as the active fee formula.
+
+## Interpreting the quote
+
+The 184.123588 POT figure is the direct result of multiplying the endpoint's `eth_estimateGas` response by `eth_gasPrice` and formatting the result as 18-decimal EVM POT. It is not an independently verified breakdown of transaction fees, code deposits, code-hash lockup, storage items, or other runtime charges. The runtime constants above help explain why ordinary Ethereum gas intuition is insufficient, but they do not by themselves reconcile every part of the earlier estimate.
+
+In particular:
+
+- Creation bytecode size is not necessarily the byte length charged by the runtime for stored deployed code.
+- The previous estimate used a placeholder constructor signer and an unverified candidate H160.
+- `GasScale` and native/EVM denomination rules affect how EVM gas/fees should be interpreted.
+- A quote from one RPC endpoint is neither a permanent price guarantee nor independent authentication of that endpoint.
 
 ## Decision
 
-Do **not** deploy with the observed 0.9 POT balance. The quote reported a requirement of 220.948305 POT including the project's 20% margin, with a shortfall of approximately 220.048305 POT at the time of measurement. This is the reported EVM-account shortfall, **not** a safe instruction for how much to transfer from Substrate: the earlier small transfer's 1 tPOT-to-0.9 POT difference has not been independently reconciled, and the registered SS58 account's mapping to the candidate H160 remains unverified. Do not fund a derived fallback address based only on offline address conversion.
+Do **not** deploy using the observed 0.9 POT balance or transfer the reported 220.048305 POT shortfall as a funding instruction. The SS58-to-H160 mapping for the chosen deployer must first be verified from the live `Revive.OriginalAccount[H160]` state or independently confirmed with PortalDot.
 
-A real deployment also requires a dedicated non-zero `AUTHORITY_SIGNER_ADDRESS` that differs from the deployer, and local configuration of the deployer key. Private keys must never be committed or shared in chat. Verify the live runtime's account mapping and token denomination, then re-run the read-only estimate with the selected authority signer and current balance immediately before any explicitly authorized deployment.
+Before any explicitly authorized deployment, re-run the estimate against the actual optimized contract, with the real authority signer and the selected public deployer H160. Confirm the RPC/network identity, storage-deposit semantics, current balance and fee budget first. The estimator never signs or broadcasts a transaction.
