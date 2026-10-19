@@ -21,6 +21,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Install dependencies
+        run: npm ci
       - name: Configure public testnet endpoint
         run: |
           echo "PORTALDOT_RPC_URL=https://test-evm-rpc-v3.portaldot.dev" >> "$GITHUB_ENV"
