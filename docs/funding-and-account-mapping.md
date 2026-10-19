@@ -7,7 +7,7 @@ PortalDot V3 exposes a Substrate account interface and an EVM-compatible `pallet
 - Substrate wallets show an SS58 address and native balance.
 - EVM JSON-RPC reads the balance of an H160 address with `eth_getBalance`.
 - The deterministic fallback account for an H160 is formed by appending twelve `0xEE` bytes to the 20-byte address and encoding the 32-byte result as SS58.
-- A native Substrate account may require a stateful `pallet_revive.map_account` mapping before it can act as an origin in the contract system. Do not assume an SS58 account and an H160 are the same account or automatically mapped.
+- SubWallet can present Substrate and EVM addresses under one Unified Account. Its documentation describes ecosystem-specific derivation paths (the default Substrate path is empty; the default EVM path is `m/44'/60'/0'/0/0`): https://docs.subwallet.app/main/extension-user-guide/account-management/derive-a-new-account-from-an-existing-account/understand-derivation-paths . This confirms the wallet's account-grouping model, but the UI alone does not prove that PortalDot V3 has an on-chain mapping between these exact SS58 and H160 addresses. A native Substrate account may require a stateful `pallet_revive.map_account` mapping before it can act as an origin in the contract system.
 
 The general Polkadot `pallet-revive` documentation describes this distinction and the `map_account` extrinsic: https://docs.polkadot.com/smart-contracts/for-eth-devs/accounts/ . This is general SDK guidance, **not proof of PortalDot V3's deployed runtime configuration**. PortalDot's runtime state or a team-confirmed procedure must establish the mapping.
 
