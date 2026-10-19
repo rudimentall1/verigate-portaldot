@@ -95,7 +95,7 @@ describe("Read-only Revive OriginalAccount verifier", function () {
       if (args[0] === "const") return '"420420777"';
       if (args[0] === "query") {
         expect(args).to.include(h160);
-        expect(args).to.include("Revive.OriginalAccount");
+        expect(args[0]).to.include("Revive.OriginalAccount");
         expect(args).to.include("--output");
         expect(args).to.include("json");
         expect(args).to.include("--at");
