@@ -40,7 +40,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: rudimentall1/verigate
-          ref: main
+          # Keep the integration source reproducible; update this SHA deliberately.
+          ref: de24e7a02911b5803bac60f799bc1ab37891fec2 # upstream snapshot checked 2026-10-19
           path: verigate-upstream
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
