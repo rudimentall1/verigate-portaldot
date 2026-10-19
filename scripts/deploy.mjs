@@ -22,6 +22,11 @@ async function main() {
     throw new Error(`Refusing deployment: expected chain ID ${expectedChainId}, got ${network.chainId}`);
   }
   const expectedGenesisHash = configuredGenesisHash(process.env.PORTALDOT_GENESIS_HASH);
+  if (!expectedGenesisHash) {
+    throw new Error(
+      "Refusing public deployment: PORTALDOT_GENESIS_HASH must be independently confirmed and pinned before deployment."
+    );
+  }
   const actualGenesisHash = await verifyGenesisHashIfConfigured(ethers.provider, expectedGenesisHash);
   if (!process.env.DEPLOYER_PRIVATE_KEY) {
     throw new Error("DEPLOYER_PRIVATE_KEY is missing. Put it in an untracked .env file; never commit it.");
