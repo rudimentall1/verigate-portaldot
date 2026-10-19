@@ -213,10 +213,23 @@ async function main() {
     if (currentGuardBalance < amount) {
       throw new Error("Guard balance changed below the authorized amount before broadcast; no transaction sent.");
     }
+
+    // Re-simulate at the latest state immediately before broadcast. Another
+    // relayer may already have consumed this nonce since the first simulation.
+    await writableGuard.executeTransfer.staticCall(
+      recipient, amount, nonce, deadline, actionId, authorization.signature
+    );
+    const preBroadcastGasUnits = await writableGuard.executeTransfer.estimateGas(
+      recipient, amount, nonce, deadline, actionId, authorization.signature
+    );
+    const preBroadcastGasPriceWei = parseHexQuantity(
+      await provider.send("eth_gasPrice", []),
+      "eth_gasPrice result immediately before broadcast"
+    );
     const currentRelayerBalance = await provider.getBalance(relayerAddress);
     const currentBudget = calculateExecutionBudget({
-      gasUnits,
-      gasPriceWei,
+      gasUnits: preBroadcastGasUnits,
+      gasPriceWei: preBroadcastGasPriceWei,
       relayerBalanceWei: currentRelayerBalance,
       safetyMarginBps: SAFETY_MARGIN_BPS
     });
@@ -227,10 +240,12 @@ async function main() {
         `required with margin: ${formatUnitsExact(currentBudget.costWithMarginWei, 18, 6)} POT.`
       );
     }
+    const preBroadcastGasLimit =
+      (preBroadcastGasUnits * BigInt(10000 + SAFETY_MARGIN_BPS) + 9999n) / 10000n;
 
     const tx = await writableGuard.executeTransfer(
       recipient, amount, nonce, deadline, actionId, authorization.signature,
-      { gasLimit: safetyGasLimit, gasPrice: gasPriceWei }
+      { gasLimit: preBroadcastGasLimit, gasPrice: preBroadcastGasPriceWei }
     );
     let receipt;
     try {
@@ -297,6 +312,15 @@ async function main() {
     }
     console.log(JSON.stringify({
       ...result,
+      estimatedGasUnits: preBroadcastGasUnits.toString(),
+      gasPriceWei: preBroadcastGasPriceWei.toString(),
+      estimatedRelayerFeeWei: currentBudget.estimatedCostWei.toString(),
+      feeWithSafetyMarginWei: currentBudget.costWithMarginWei.toString(),
+      relayerBalanceWei: currentRelayerBalance.toString(),
+      relayerBalancePot: formatUnitsExact(currentRelayerBalance, 18, 6),
+      feeBudgetStatus: currentBudget.isSufficient ? "sufficient_with_20_percent_margin" : "insufficient_for_20_percent_margin",
+      shortfallWei: currentBudget.shortfallWei.toString(),
+      gasLimitIfBroadcast: preBroadcastGasLimit.toString(),
       status: transferEventFound ? "transfer_executed" : "transaction_confirmed_event_missing",
       transactionBroadcast: true,
       transactionHash: receipt.hash,
