@@ -5,6 +5,9 @@ on:
     branches: [chore/hardhat3-migration-preview]
     paths:
       - ".github/workflows/portal-readonly-quote.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/portal-readonly-quote.yml"
   workflow_dispatch:
 
 permissions:
