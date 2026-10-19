@@ -3,7 +3,8 @@ import { createRequire } from "node:module";
 import { ethers as ethersLib } from "ethers";
 
 const require = createRequire(import.meta.url);
-const { requiredNetworkConfig, rpc, rpcResult, readGenesisHash } = require("./preflight.js");
+const { requiredNetworkConfig, rpc, rpcResult } = require("./preflight.js");
+const { verifySubstrateGenesisHash } = require("./substrate-genesis.js");
 const { parseHexQuantity, formatUnitsExact, calculateDeploymentCost, resolveEstimateAuthoritySigner, resolveEstimateFromAddresses } = require("./deployment-estimate.js");
 
 async function main() {
@@ -13,10 +14,7 @@ async function main() {
     throw new Error(`RPC chain ID ${actualChainId} does not match configured ${config.expectedChainId}; no estimate made.`);
   }
 
-  let actualGenesisHash = null;
-  if (config.expectedGenesisHash) {
-    actualGenesisHash = await readGenesisHash(config.rpcUrl, config.expectedGenesisHash);
-  }
+  const actualSubstrateGenesisHash = await verifySubstrateGenesisHash(config.substrateRpcUrl, config.expectedSubstrateGenesisHash);
 
   // Estimation does not sign or deploy. If the real authority signer has not been
   // selected yet, use a clearly labelled non-zero placeholder; the constructor
@@ -71,8 +69,8 @@ async function main() {
     rpcOrigin: new URL(config.rpcUrl).origin,
     expectedChainId: config.expectedChainId.toString(),
     actualChainId: actualChainId.toString(),
-    genesisHashPinConfigured: Boolean(config.expectedGenesisHash),
-    ...(actualGenesisHash ? { genesisHash: actualGenesisHash } : {}),
+    substrateGenesisHashPinConfigured: true,
+    substrateGenesisHash: actualSubstrateGenesisHash,
     deployerAddress: ethersLib.getAddress(estimateFrom),
     authoritySignerForEstimate: ethersLib.getAddress(authoritySigner),
     authoritySignerIsPlaceholder,
