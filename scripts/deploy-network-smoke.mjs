@@ -189,17 +189,17 @@ try {
   const unpinnedResult = await runDeploy(unpinnedGenesisEnv);
   const unpinnedOutput = `${unpinnedResult.stdout ?? ""}\\n${unpinnedResult.stderr ?? ""}`;
   assert.equal(unpinnedResult.error, undefined, `Unpinned deployment smoke failed to launch: ${unpinnedResult.error?.message}`);
-  assert.notEqual(unpinnedResult.status, 0, "Deployment must stop at missing deployer key without optional genesis pin.");
+  assert.notEqual(unpinnedResult.status, 0, "Deployment must refuse to run without a pinned genesis hash.");
   assert(
-    unpinnedOutput.includes("DEPLOYER_PRIVATE_KEY is missing"),
-    `Expected unpinned path to stop at missing deployer key after network checks. Output:\\n${unpinnedOutput}`
+    unpinnedOutput.includes("PORTALDOT_GENESIS_HASH must be independently confirmed and pinned"),
+    `Expected unpinned path to refuse deployment before checking deployer credentials. Output:\\n${unpinnedOutput}`
   );
   assert.equal(
     methodsSeen.slice(countBeforeUnpinned).includes("eth_getBlockByNumber"),
     false,
     "Without PORTALDOT_GENESIS_HASH, deployment must not require a genesis RPC response."
   );
-  console.log("PASS: genesis hash pin is optional; no transaction RPC methods were called.");
+  console.log("PASS: deployment refuses to proceed without an independently pinned genesis hash; no transaction RPC methods were called.");
 
   const rpcCallCountBeforeCredentialTest = methodsSeen.length;
   const credentialEnv = {
