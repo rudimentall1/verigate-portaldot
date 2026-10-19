@@ -581,6 +581,90 @@ def main() -> int:
                         + bridge_block.stderr[-3000:]
                     )
 
+                # Fund the deployed guard only on this loopback-only test EVM, then
+                # prove that the signed ALLOW payload is executable on the real guard
+                # source. This uses a built-in unlocked Hardhat account, never a public RPC.
+                payment_amount = int(signed_dry_run["transfer"]["amount"])
+                local_funding_hash = rpc_call(
+                    evm_rpc_url,
+                    "eth_sendTransaction",
+                    [{
+                        "from": unlocked_accounts[0],
+                        "to": guard_address,
+                        "value": hex(payment_amount * 2),
+                    }],
+                )
+                funded_guard_balance = int(
+                    rpc_call(evm_rpc_url, "eth_getBalance", [guard_address, "latest"]), 16
+                )
+                if funded_guard_balance < payment_amount:
+                    raise RuntimeError("The isolated guard did not receive enough local test funds.")
+
+                execution_env = bridge_env.copy()
+                execution_env.update({
+                    "DEPLOYER_PRIVATE_KEY": test_wallets["deployerPrivateKey"],
+                    "DEPLOYMENT_ESTIMATE_FROM": test_wallets["deployerAddress"],
+                })
+
+                # First call the executor without --broadcast. It must simulate the
+                # exact transfer and produce no state-changing transaction.
+                dry_run = subprocess.run(
+                    ["node", "scripts/execute-authorized-transfer.mjs", str(signed_path)],
+                    cwd=project_root,
+                    env=execution_env,
+                    capture_output=True,
+                    text=True,
+                    timeout=20,
+                    check=False,
+                )
+                if dry_run.returncode != 0:
+                    raise RuntimeError(
+                        "The authorized-transfer executor dry run failed: "
+                        + (dry_run.stderr + dry_run.stdout)[-5000:]
+                    )
+                dry_run_result = json.loads(dry_run.stdout)
+                if dry_run_result.get("status") != "simulation_passed" or dry_run_result.get("transactionBroadcast") is not False:
+                    raise RuntimeError("The executor did not clearly report a no-broadcast successful simulation.")
+                guard_balance_after_dry_run = int(
+                    rpc_call(evm_rpc_url, "eth_getBalance", [guard_address, "latest"]), 16
+                )
+                if guard_balance_after_dry_run != funded_guard_balance:
+                    raise RuntimeError("Executor dry-run unexpectedly changed the guard balance.")
+
+                recipient_balance_before = int(
+                    rpc_call(evm_rpc_url, "eth_getBalance", [ALLOW_RECIPIENT, "latest"]), 16
+                )
+                execution = subprocess.run(
+                    [
+                        "node",
+                        "scripts/execute-authorized-transfer.mjs",
+                        str(signed_path),
+                        "--broadcast",
+                    ],
+                    cwd=project_root,
+                    env=execution_env,
+                    capture_output=True,
+                    text=True,
+                    timeout=25,
+                    check=False,
+                )
+                if execution.returncode != 0:
+                    raise RuntimeError(
+                        "The executor failed to submit the signed ALLOW transfer to the isolated EVM: "
+                        + (execution.stderr + execution.stdout)[-5000:]
+                    )
+                execution_result = json.loads(execution.stdout)
+                if execution_result.get("status") != "transfer_executed" or execution_result.get("transactionBroadcast") is not True:
+                    raise RuntimeError("Executor did not confirm the authorized transfer event on the isolated EVM.")
+                recipient_balance_after = int(
+                    rpc_call(evm_rpc_url, "eth_getBalance", [ALLOW_RECIPIENT, "latest"]), 16
+                )
+                recipient_balance_delta = recipient_balance_after - recipient_balance_before
+                if recipient_balance_delta != payment_amount:
+                    raise RuntimeError(
+                        f"Local recipient balance delta {recipient_balance_delta} does not match authorized amount {payment_amount}."
+                    )
+
                 summary = {
                     "test_instance": "isolated temporary Verigate API",
                     "base_url": base_url,
