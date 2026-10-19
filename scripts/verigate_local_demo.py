@@ -412,6 +412,8 @@ def main() -> int:
                         "node",
                         "node_modules/hardhat/dist/src/cli.js",
                         "node",
+                        "--network",
+                        "hardhatMainnet",
                         "--hostname",
                         "127.0.0.1",
                         "--port",
