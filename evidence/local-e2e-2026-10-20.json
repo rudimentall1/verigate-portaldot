@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc_date": "2026-10-20",
+  "environment": {
+    "verigate_source_revision": "de24e7a02911b5803bac60f799bc1ab37891fec2",
+    "execution_network": "temporary loopback-only Hardhat EVM",
+    "simulated_chain_id": 420420777,
+    "public_portaldot_rpc_used_for_execution": false,
+    "real_portaldot_testnet_transaction": false
+  },
+  "verigate_allow": {
+    "decision": "ALLOW",
+    "decision_receipt_signature_valid": true,
+    "execution_authorization_present": true,
+    "execution_authorization_signature_valid": true,
+    "bridge_created_eip712_signature": true
+  },
+  "verigate_block": {
+    "decision": "BLOCK",
+    "decision_receipt_signature_valid": true,
+    "execution_authorization_present": false,
+    "bridge_refused_execution": true
+  },
+  "executor_dry_run": {
+    "simulation_passed": true,
+    "transaction_broadcast": false,
+    "guard_balance_unchanged": true
+  },
+  "local_execution": {
+    "status": "transfer_executed",
+    "transaction_hash": "0x302d3e06f67bbe8383d13d8ece9d0261d62798e00fce37cf667e638ce9492a1b",
+    "block_number": 4,
+    "guard_address": "0x465d70E24767AA86d1549154E28C27C39891cAaB",
+    "runtime_code_hash": "0xaf6c49f6138d0911efbcbddd5fe3a601e8141465a9cdc09cb1ebca311939a5cc",
+    "transfer_executed_event_confirmed": true,
+    "recipient": "0x1111111111111111111111111111111111111111",
+    "authorized_amount_base_units": "1000000",
+    "recipient_balance_delta_base_units": "1000000",
+    "balance_delta_matches_authorized_amount": true,
+    "pre_broadcast_resimulation_passed": true,
+    "pre_broadcast_gas_quote_refreshed": true,
+    "pre_broadcast_fee_budget_passed": true
+  },
+  "test_suite": {
+    "command": "npm test",
+    "result": "passed",
+    "tests": 156
+  },
+  "limitations": [
+    "Transaction hashes in this record belong only to the disposable local Hardhat chain and are not publicly verifiable on PortalDot.",
+    "This record does not prove a live PortalDot V3 transfer through Verigate.",
+    "The local EVM used the target chain ID for EIP-712 domain testing but was not the PortalDot network."
+  ]
+}
