@@ -1,0 +1,57 @@
+name: Deploy Web3 DApp to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web3-dapp/**"
+      - ".github/workflows/deploy-dapp-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Validate and package static DApp
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s web3-dapp/index.html
+          grep -q "test-evm-rpc-v3.portaldot.dev" web3-dapp/index.html
+          grep -q "eth_chainId" web3-dapp/index.html
+          grep -q "authoritySigner" web3-dapp/index.html
+          mkdir -p _site
+          cp web3-dapp/index.html _site/index.html
+          touch _site/.nojekyll
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
