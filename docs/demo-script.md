@@ -1,6 +1,6 @@
 # Three-minute Hacker House demo plan
 
-**Recording status:** pending. Public Web3 console: https://html-preview.github.io/?url=https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
+**Recording status:** pending. Public Web3 console: https://rudimentall1.github.io/verigate-portaldot/
 
 The console performs live read-only RPC calls and wallet connection; it is not a transaction demo. The presentation PDF is not a substitute for the required product video.
 
@@ -9,7 +9,7 @@ The console performs live read-only RPC calls and wallet connection; it is not a
 ## Recording plan (target: 2 minutes 40 seconds)
 
 ### 0:00–0:20 — Live Web3 console and design
-Open the [public Web3 console](https://html-preview.github.io/?url=https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html) and press Refresh live state. Show current chain ID, latest block, guard bytecode presence, contract balance and `authoritySigner()`. Connect a testnet wallet if available. The page must not ask for secrets or send transactions. Then briefly show the [architecture diagram](architecture.md).
+Open the [public Web3 console](https://rudimentall1.github.io/verigate-portaldot/) and press Refresh live state. Show current chain ID, latest block, guard bytecode presence, contract balance and `authoritySigner()`. Connect a testnet wallet if available. The page must not ask for secrets or send transactions. Then briefly show the [architecture diagram](architecture.md).
 
 Say: An agent proposal is not spending authority. Verigate decides; the bridge verifies the signed artifacts and constrains the approved action; the contract enforces the EIP-712 transfer scope.
 
