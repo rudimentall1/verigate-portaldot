@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1423">
+<meta name="description" content="Verigate PortalDot V3 live guard console. Inspect the deployed AI-agent payment guard and connect a Web3 wallet.">
+<title>Verigate · PortalDot V3 Guard Console</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1423;--panel:#111f33;--panel2:#162840;--line:#29415e;--cyan:#67d5f0;--blue:#43b5e8;--text:#f4f7fc;--muted:#a5b6ca;--green:#78ddb0;--amber:#f4c66d;--red:#f28f91}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 72% -10%,#15314a 0,transparent 42%),var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}.wrap{max-width:1120px;margin:auto;padding:25px 22px 52px}
+header{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:8px 0 30px;border-bottom:1px solid var(--line)}
+.brand{display:flex;gap:12px;align-items:center;font-weight:850;letter-spacing:.12em;font-size:14px}.mark{width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--cyan);border-radius:12px;background:#122d43}
+.status-pill{border:1px solid #38664f;background:#112b26;color:var(--green);padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.hero{padding:44px 0 26px;max-width:820px}.eyebrow{color:var(--cyan);text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:800}
+h1{font-size:clamp(34px,5vw,58px);line-height:1.07;letter-spacing:-.04em;margin:13px 0 18px}.hero p{font-size:17px;max-width:700px;color:var(--muted);margin:0}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:23px}
+button{font:inherit;font-size:13px;font-weight:750;border:1px solid var(--line);border-radius:11px;padding:11px 15px;color:var(--text);background:var(--panel2);cursor:pointer}
+button.primary{background:var(--cyan);border-color:var(--cyan);color:#061521}button:hover{filter:brightness(1.08)}button:disabled{opacity:.5;cursor:wait}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;margin-top:18px}
+.card{background:linear-gradient(160deg,rgba(22,40,64,.96),rgba(15,29,47,.97));border:1px solid var(--line);border-radius:18px;padding:21px;min-width:0}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 16px}.network{grid-column:span 4}.contract{grid-column:span 8}.stat{grid-column:span 3}.proof{grid-column:span 7}.wallet{grid-column:span 5}
+.value{font-size:24px;line-height:1.25;font-weight:800;letter-spacing:-.025em;overflow-wrap:anywhere}.small{font-size:12px;color:var(--muted);margin-top:8px}.label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin:15px 0 5px}
+.mono{font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere;color:#d5e6f9}
+.rowline{height:1px;background:var(--line);margin:16px 0}.ok{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:7px}
+.notice{margin-top:16px;border:1px solid #745c32;background:#292316;color:#f2d89d;padding:13px 15px;border-radius:12px;font-size:13px}
+.list{display:grid;gap:12px}.item{display:flex;gap:10px;align-items:flex-start}.check{flex:0 0 22px;height:22px;display:grid;place-items:center;border:1px solid #38664f;border-radius:7px;color:var(--green);font-size:12px}
+footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+#message{min-height:20px;margin-top:12px;color:var(--muted);font-size:12px}
+@media(max-width:820px){.network,.contract{grid-column:span 12}.stat{grid-column:span 6}.proof,.wallet{grid-column:span 12}}@media(max-width:440px){.wrap{padding:18px 14px 38px}.stat{grid-column:span 12}.value{font-size:21px}header{align-items:flex-start;flex-direction:column}.hero{padding-top:32px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand"><div class="mark" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 20V8L12 3L19 8V20" stroke="#67d5f0" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 20V11H15V20" stroke="#f4f7fc" stroke-width="1.8"/><path d="M8 8L12 5L16 8" stroke="#43b5e8" stroke-width="1.8"/></svg></div><span>VERIGATE</span><span style="color:var(--muted);font-weight:500;letter-spacing:0">/ PortalDot V3</span></div>
+  <span class="status-pill"><span class="dot"></span>TESTNET · READ-ONLY CONSOLE</span>
+</header>
+<main>
+<section class="hero">
+  <div class="eyebrow">AI agent authority · on-chain guard</div>
+  <h1>A proposal is not authority.</h1>
+  <p>Inspect the live PortalDot V3 guard contract, verify the configured authority signer, and connect a Web3 wallet to the testnet. This page never asks for private keys and never submits a transaction.</p>
+  <div class="actions">
+    <button class="primary" id="connect">Connect wallet</button>
+    <button id="addNetwork">Add PortalDot V3 to wallet</button>
+    <button id="refresh">Refresh live state</button>
+  </div>
+  <div id="message" role="status" aria-live="polite">Loading live contract data…</div>
+</section>
+<section class="grid" aria-label="Live PortalDot data">
+  <article class="card network">
+    <h2>Network status</h2>
+    <div class="value" id="chain">Checking…</div>
+    <div class="small" id="networkStatus">Reading chain ID from public RPC</div>
+    <div class="rowline"></div>
+    <div class="label">Latest block</div><div class="value" id="block">—</div>
+    <div class="label">RPC endpoint</div><div class="mono">test-evm-rpc-v3.portaldot.dev</div>
+  </article>
+  <article class="card contract">
+    <h2>Deployed guard contract</h2>
+    <div class="value" style="font-size:clamp(19px,2.5vw,28px)" id="contractAddress">0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b</div>
+    <div class="actions"><button id="copyContract">Copy contract address</button><a href="https://node-console.portaldot.dev/" target="_blank" rel="noopener noreferrer"><button type="button">Open PortalDot console ↗</button></a></div>
+    <div class="rowline"></div>
+    <div class="grid" style="margin:0;gap:8px">
+      <div style="grid-column:span 6"><div class="label" style="margin-top:0">Runtime bytecode</div><div class="value" id="codeSize">—</div><div class="small">bytes at the deployed address</div></div>
+      <div style="grid-column:span 6"><div class="label" style="margin-top:0">Guard balance</div><div class="value" id="guardBalance">—</div><div class="small">EVM native units (POT)</div></div>
+    </div>
+    <div class="label">Recorded deployment bytecode Keccak-256</div>
+    <div class="mono">0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671</div>
+  </article>
+  <article class="card stat">
+    <h2>Chain ID</h2><div class="value">420420777</div><div class="small">PortalDot V3 EVM testnet</div>
+  </article>
+  <article class="card stat">
+    <h2>Authority signer</h2><div class="value" id="signerStatus">Checking…</div><div class="small" id="signerHint">Reading authoritySigner()</div>
+  </article>
+  <article class="card stat">
+    <h2>Contract methods</h2><div class="value">Native transfer</div><div class="small">EIP-712 · nonce · expiry · recipient and amount bound</div>
+  </article>
+  <article class="card stat">
+    <h2>Safety model</h2><div class="value">Fail closed</div><div class="small">Invalid or replayed signatures are rejected</div>
+  </article>
+  <article class="card proof">
+    <h2>Deployment evidence</h2>
+    <div class="label" style="margin-top:0">Deployment transaction</div>
+    <div class="mono" id="txHash">0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c</div>
+    <div class="actions"><button id="copyTx">Copy transaction hash</button><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/deployment-evidence-2026-10-20.md" target="_blank" rel="noopener noreferrer"><button type="button">Read verification record ↗</button></a></div>
+    <p class="small">The RPC currently provides live contract state, but its historical transaction lookup may not return old receipts. The repository records the deployment receipt, block, bytecode fingerprint and authority signer read-back.</p>
+  </article>
+  <article class="card wallet">
+    <h2>Web3 wallet</h2>
+    <div class="value" id="walletStatus">Not connected</div>
+    <div class="small" id="walletHint">Connect a compatible browser wallet to inspect its active network.</div>
+    <div class="label">Your connected account</div>
+    <div class="mono" id="walletAddress">—</div>
+    <div class="label">Wallet network</div>
+    <div class="mono" id="walletNetwork">—</div>
+    <div class="label">Wallet balance</div>
+    <div class="value" id="walletBalance">—</div>
+  </article>
+  <article class="card" style="grid-column:span 12">
+    <h2>What this console proves</h2>
+    <div class="list">
+      <div class="item"><span class="check">✓</span><div>Live EVM chain ID, block height, contract bytecode presence, contract balance and on-chain <span class="mono">authoritySigner()</span> are read directly from the public PortalDot V3 RPC.</div></div>
+      <div class="item"><span class="check">✓</span><div>The guard is designed to reject altered recipients or amounts, invalid signatures, expired authorizations, reused nonces and re-entrant transfers.</div></div>
+      <div class="item"><span class="check">i</span><div>This console is a read-only Web3 frontend. Full Verigate ALLOW/BLOCK execution has been verified on a local EVM; a public end-to-end PortalDot payment is reported separately and is not implied by this page.</div></div>
+    </div>
+    <div class="notice">Security: never enter a seed phrase or private key into this page. There are no transaction buttons. Wallet connection is used only to display the selected account and network.</div>
+  </article>
+</section>
+</main>
+<footer><span>VERIGATE · PortalDot V3 testnet prototype</span><span><a href="https://github.com/rudimentall1/verigate-portaldot" target="_blank" rel="noopener noreferrer">Open-source repository ↗</a> · No audit or mainnet claims</span></footer>
+</div>
+<script>
+(() => {
+  const RPC = "https://test-evm-rpc-v3.portaldot.dev";
+  const CHAIN_HEX = "0x190f1ca9";
+  const CHAIN_DEC = "420420777";
+  const CONTRACT = "0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b";
+  const TX = "0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c";
+  const EXPECTED_SIGNER = "0x48F9B07d37b5AF744BA8195c4d6740145b593ea6";
+  const RPC_SIGNER_SELECTOR = "0x834ff80b";
+  const $ = (id) => document.getElementById(id);
+  let rpcId = 0;
+  let wallet = null;
+  const shorten = (s) => s && s.length > 16 ? s.slice(0, 10) + "…" + s.slice(-6) : (s || "—");
+  const formatNative = (wei) => {
+    const n = BigInt(wei);
+    const base = 10n ** 18n;
+    const whole = n / base;
+    const frac = (n % base).toString().padStart(18,"0").slice(0,6).replace(/0+$/,"");
+    return whole.toString() + (frac ? "." + frac : "") + " POT";
+  };
+  const setMessage = (s, cls="") => { $("message").className = cls; $("message").textContent = s; };
+  async function rpc(method, params=[]) {
+    const res = await fetch(RPC,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:++rpcId,method,params}),cache:"no-store"});
+    if (!res.ok) throw new Error("RPC HTTP " + res.status);
+    const payload = await res.json();
+    if (payload.error) throw new Error(payload.error.message || "RPC error");
+    if (!("result" in payload)) throw new Error("Invalid JSON-RPC response");
+    return payload.result;
+  }
+  async function refresh() {
+    $("refresh").disabled = true;
+    setMessage("Refreshing live PortalDot V3 state…");
+    try {
+      const [chain, block, code, balance, signer] = await Promise.all([
+        rpc("eth_chainId"), rpc("eth_blockNumber"), rpc("eth_getCode",[CONTRACT,"latest"]),
+        rpc("eth_getBalance",[CONTRACT,"latest"]), rpc("eth_call",[{to:CONTRACT,data:RPC_SIGNER_SELECTOR},"latest"])
+      ]);
+      $("chain").textContent = BigInt(chain).toString() === CHAIN_DEC ? "PortalDot V3" : "Unexpected chain";
+      $("networkStatus").textContent = "RPC chain ID: " + BigInt(chain).toString();
+      $("networkStatus").className = "small " + (BigInt(chain).toString() === CHAIN_DEC ? "ok" : "bad");
+      $("block").textContent = BigInt(block).toString();
+      $("codeSize").textContent = code === "0x" ? "No code" : String((code.length - 2) / 2);
+      $("codeSize").className = "value " + (code === "0x" ? "bad" : "ok");
+      $("guardBalance").textContent = formatNative(balance);
+      const signerAddress = "0x" + String(signer).slice(-40);
+      const match = signerAddress.toLowerCase() === EXPECTED_SIGNER.toLowerCase();
+      $("signerStatus").textContent = match ? "Verified" : shorten(signerAddress);
+      $("signerStatus").className = "value " + (match ? "ok" : "bad");
+      $("signerHint").textContent = match ? shorten(signerAddress) + " matches the recorded signer" : "On-chain value differs from the published record";
+      if (BigInt(chain).toString() !== CHAIN_DEC || code === "0x" || !match) setMessage("Live state loaded, but at least one deployment check differs from the expected configuration.","warn");
+      else setMessage("Live state verified: expected chain ID, contract code and authority signer are present.","ok");
+      if (wallet) await refreshWallet(false);
+    } catch (e) {
+      setMessage("Could not read PortalDot RPC: " + e.message + ". Try Refresh live state.","bad");
+      $("networkStatus").textContent = "RPC check failed";
+      $("networkStatus").className = "small bad";
+    } finally { $("refresh").disabled = false; }
+  }
+  async function addNetwork() {
+    if (!window.ethereum) { setMessage("No injected wallet detected. Open this page in a browser with MetaMask or another EVM wallet.","warn"); return; }
+    try {
+      await window.ethereum.request({method:"wallet_addEthereumChain",params:[{chainId:CHAIN_HEX,chainName:"PortalDot V3 Testnet",nativeCurrency:{name:"POT",symbol:"POT",decimals:18},rpcUrls:[RPC],blockExplorerUrls:["https://node-console.portaldot.dev/"]}]});
+      try { await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:CHAIN_HEX}]}); } catch (_) {}
+      await refreshWallet(true);
+    } catch(e) { setMessage("Wallet did not add the network: " + (e.message || e.code),"warn"); }
+  }
+  async function refreshWallet(requestAccess) {
+    if (!window.ethereum) { $("walletStatus").textContent = "No injected wallet"; $("walletHint").textContent = "Open in a browser with an EVM wallet to connect."; return; }
+    try {
+      const accounts = await window.ethereum.request({method:requestAccess ? "eth_requestAccounts" : "eth_accounts"});
+      if (!accounts || !accounts.length) {
+        wallet = null; $("walletStatus").textContent = "Not connected"; $("walletAddress").textContent="—"; $("walletNetwork").textContent="—"; $("walletBalance").textContent="—";
+        $("walletHint").textContent = "Select Connect wallet to reveal the active account.";
+        return;
+      }
+      wallet = accounts[0];
+      const [chain,balance] = await Promise.all([
+        window.ethereum.request({method:"eth_chainId"}),
+        window.ethereum.request({method:"eth_getBalance",params:[wallet,"latest"]})
+      ]);
+      const isExpected = BigInt(chain).toString() === CHAIN_DEC;
+      $("walletStatus").textContent = isExpected ? "Connected · PortalDot V3" : "Connected · wrong network";
+      $("walletStatus").className = "value " + (isExpected ? "ok" : "warn");
+      $("walletAddress").textContent = wallet;
+      $("walletNetwork").textContent = BigInt(chain).toString() + (isExpected ? " · expected" : " · switch to " + CHAIN_DEC);
+      $("walletBalance").textContent = formatNative(balance);
+      $("walletHint").textContent = "Read-only account display. This page does not request signatures or send transactions.";
+    } catch(e) { setMessage("Wallet action cancelled or failed: " + (e.message || e.code),"warn"); }
+  }
+  $("connect").addEventListener("click",() => refreshWallet(true));
+  $("addNetwork").addEventListener("click",addNetwork);
+  $("refresh").addEventListener("click",refresh);
+  $("copyContract").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(CONTRACT);setMessage("Contract address copied.","ok")}catch(_){setMessage(CONTRACT)}});
+  $("copyTx").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(TX);setMessage("Deployment transaction hash copied.","ok")}catch(_){setMessage(TX)}});
+  if(window.ethereum){window.ethereum.on?.("accountsChanged",()=>refreshWallet(false));window.ethereum.on?.("chainChanged",()=>refreshWallet(false));}
+  refresh();
+})();
+</script>
+</body>
+</html>
