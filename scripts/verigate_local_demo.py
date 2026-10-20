@@ -14,6 +14,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -81,6 +82,50 @@ def verify_attestation(base_url: str, artifact: dict[str, Any]) -> tuple[bool, s
     if status != 200 or not isinstance(result, dict):
         return False, f"verification endpoint returned HTTP {status}: {result}"
     return result.get("valid") is True, str(result.get("reason", "no reason returned"))
+
+
+def unused_loopback_port() -> int:
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return int(probe.getsockname()[1])
+
+
+def rpc_call(rpc_url: str, method: str, params: list[Any] | None = None, timeout: float = 5.0) -> Any:
+    status, body = http_json(
+        rpc_url,
+        {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or []},
+        timeout=timeout,
+    )
+    if status != 200 or not isinstance(body, dict):
+        raise RuntimeError(f"Local EVM RPC {method} returned HTTP {status}: {body}")
+    if body.get("error") is not None:
+        raise RuntimeError(f"Local EVM RPC {method} failed: {body['error']}")
+    if "result" not in body:
+        raise RuntimeError(f"Local EVM RPC {method} response has no result: {body}")
+    return body["result"]
+
+
+def wait_for_rpc(rpc_url: str, process: subprocess.Popen, log_path: Path, expected_chain_id: int, seconds: float = 20.0) -> None:
+    deadline = time.monotonic() + seconds
+    last_error = "not attempted"
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            break
+        try:
+            actual = int(rpc_call(rpc_url, "eth_chainId", timeout=1.0), 16)
+            if actual == expected_chain_id:
+                return
+            last_error = f"RPC reports chain ID {actual}; expected {expected_chain_id}"
+        except Exception as exc:  # expected while Hardhat starts
+            last_error = str(exc)
+        time.sleep(0.25)
+    log_text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.exists() else ""
+    raise RuntimeError(
+        "Temporary local EVM failed to start. Last probe: "
+        + last_error
+        + "\nHardhat node log:\n"
+        + log_text[-5000:]
+    )
 
 
 def main() -> int:
@@ -153,6 +198,8 @@ def main() -> int:
     )
 
     sys.path.insert(0, str(source_root))
+    evm_process: subprocess.Popen | None = None
+    evm_log_file = None
 
     try:
         from cryptography.hazmat.primitives import serialization
@@ -337,18 +384,67 @@ def main() -> int:
                 allow_path.write_text(json.dumps(allow_response, indent=2), encoding="utf-8")
                 block_path.write_text(json.dumps(block_response, indent=2), encoding="utf-8")
 
-                # Run the actual Node bridge CLI against the fresh responses while
-                # the temporary Verigate verifier is still online. The signer key
-                # is generated in memory and the domain uses a dummy contract address.
-                # This signs data only; it cannot broadcast a transaction.
+                # Run a temporary Hardhat EVM bound only to loopback. The local
+                # simulator uses the PortalDot chain ID to exercise EIP-712 domain
+                # binding, but it is never the real PortalDot RPC and is not deployment evidence.
                 project_root = Path(__file__).resolve().parents[1]
+                evm_port = unused_loopback_port()
+                evm_rpc_url = f"http://127.0.0.1:{evm_port}"
+                hardhat_env = os.environ.copy()
+                for name in (
+                    "PORTALDOT_RPC_URL",
+                    "PORTALDOT_CHAIN_ID",
+                    "PORTALDOT_SUBSTRATE_RPC_URL",
+                    "PORTALDOT_SUBSTRATE_GENESIS_HASH",
+                    "PORTALDOT_GUARD_ADDRESS",
+                    "PORTALDOT_GUARD_CODE_HASH",
+                    "DEPLOYER_PRIVATE_KEY",
+                    "BRIDGE_SIGNER_PRIVATE_KEY",
+                    "AUTHORITY_SIGNER_ADDRESS",
+                    "VERIGATE_BASE_URL",
+                    "VERIGATE_API_KEY",
+                    "VERIGATE_PUBLIC_KEY_FILE",
+                    "VERIGATE_PUBLIC_KEY_SHA256",
+                ):
+                    hardhat_env[name] = ""
+                hardhat_env["PORTALDOT_SIMULATED_CHAIN_ID"] = str(CHAIN_ID)
+                node_log_path = runtime_root / "hardhat-node.log"
+                evm_log_file = node_log_path.open("w", encoding="utf-8")
+                evm_process = subprocess.Popen(
+                    [
+                        "node",
+                        "node_modules/hardhat/dist/src/cli.js",
+                        "node",
+                        "--network",
+                        "hardhatMainnet",
+                        "--hostname",
+                        "127.0.0.1",
+                        "--port",
+                        str(evm_port),
+                    ],
+                    cwd=project_root,
+                    env=hardhat_env,
+                    stdout=evm_log_file,
+                    stderr=subprocess.STDOUT,
+                )
+                wait_for_rpc(evm_rpc_url, evm_process, node_log_path, CHAIN_ID)
+                genesis_block = rpc_call(evm_rpc_url, "eth_getBlockByNumber", ["0x0", False])
+                if not isinstance(genesis_block, dict) or not re.fullmatch(r"0x[a-fA-F0-9]{64}", str(genesis_block.get("hash", ""))):
+                    raise RuntimeError("Temporary local EVM did not return a valid genesis block hash.")
+                local_genesis_hash = genesis_block["hash"]
+                unlocked_accounts = rpc_call(evm_rpc_url, "eth_accounts")
+                if not isinstance(unlocked_accounts, list) or not unlocked_accounts:
+                    raise RuntimeError("Temporary local EVM exposes no unlocked test account for faucet funding.")
+
                 wallet_result = subprocess.run(
                     [
                         "node",
                         "-e",
                         "const { Wallet } = require('ethers'); "
-                        "const w = Wallet.createRandom(); "
-                        "process.stdout.write(JSON.stringify({privateKey:w.privateKey,address:w.address}));",
+                        "const b = Wallet.createRandom(); const d = Wallet.createRandom(); "
+                        "process.stdout.write(JSON.stringify({"
+                        "bridgePrivateKey:b.privateKey,bridgeAddress:b.address,"
+                        "deployerPrivateKey:d.privateKey,deployerAddress:d.address}));",
                     ],
                     cwd=project_root,
                     capture_output=True,
@@ -357,15 +453,99 @@ def main() -> int:
                     check=False,
                 )
                 if wallet_result.returncode != 0:
-                    raise RuntimeError("Could not create an ephemeral bridge test key: " + wallet_result.stderr[-2000:])
-                test_wallet = json.loads(wallet_result.stdout)
+                    raise RuntimeError("Could not create ephemeral bridge/deployer keys: " + wallet_result.stderr[-2000:])
+                test_wallets = json.loads(wallet_result.stdout)
+                funding_hash = rpc_call(
+                    evm_rpc_url,
+                    "eth_sendTransaction",
+                    [{
+                        "from": unlocked_accounts[0],
+                        "to": test_wallets["deployerAddress"],
+                        "value": "0x16345785d8a0000",
+                    }],
+                )
+                if not isinstance(funding_hash, str) or not funding_hash.startswith("0x"):
+                    raise RuntimeError("Temporary local EVM did not accept the test deployer funding request.")
+                funded_balance = int(rpc_call(
+                    evm_rpc_url, "eth_getBalance", [test_wallets["deployerAddress"], "latest"]
+                ), 16)
+                if funded_balance <= 0:
+                    raise RuntimeError("Temporary test deployer account was not funded on the isolated local EVM.")
+
+                # Deploy the repository's actual PortalDotAgentGuard source to the
+                # loopback EVM. The deployer and authority signer are disposable,
+                # distinct keys. No real PortalDot RPC URL is used by this process.
+                deploy_env = env.copy()
+                deploy_env.update({
+                    "PORTALDOT_RPC_URL": evm_rpc_url,
+                    "PORTALDOT_CHAIN_ID": str(CHAIN_ID),
+                    "PORTALDOT_SUBSTRATE_RPC_URL": "wss://test-node-v3.portaldot.dev",
+                    "PORTALDOT_SUBSTRATE_GENESIS_HASH": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+                    "PORTALDOT_SIMULATED_CHAIN_ID": str(CHAIN_ID),
+                    "DEPLOYER_PRIVATE_KEY": test_wallets["deployerPrivateKey"],
+                    "BRIDGE_SIGNER_PRIVATE_KEY": "",
+                    "AUTHORITY_SIGNER_ADDRESS": test_wallets["bridgeAddress"],
+                    "PORTALDOT_GUARD_ADDRESS": "",
+                    "PORTALDOT_GUARD_CODE_HASH": "",
+                })
+                deployment = subprocess.run(
+                    [
+                        "node",
+                        "node_modules/hardhat/dist/src/cli.js",
+                        "run",
+                        "scripts/deploy.mjs",
+                        "--network",
+                        "portaldot",
+                    ],
+                    cwd=project_root,
+                    env=deploy_env,
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    check=False,
+                )
+                deployment_output = deployment.stdout + "\n" + deployment.stderr
+                if deployment.returncode != 0:
+                    raise RuntimeError(
+                        "Could not deploy the test guard to the isolated local EVM: "
+                        + deployment_output[-5000:]
+                    )
+                address_match = re.search(
+                    r'"address"\s*:\s*"(0x[a-fA-F0-9]{40})"',
+                    deployment_output,
+                )
+                code_hash_match = re.search(
+                    r'"runtimeCodeHash"\s*:\s*"(0x[a-fA-F0-9]{64})"',
+                    deployment_output,
+                )
+                if address_match is None or code_hash_match is None:
+                    raise RuntimeError(
+                        "Local EVM deployment output did not include an address and runtime code hash: "
+                        + deployment_output[-5000:]
+                    )
+                guard_address = address_match.group(1)
+                guard_code_hash = code_hash_match.group(1)
+
                 bridge_env = env.copy()
-                bridge_env["VERIGATE_BASE_URL"] = base_url
-                bridge_env["VERIGATE_PUBLIC_KEY_FILE"] = env["VERIGATE_PUBLIC_KEY"]
-                bridge_env["BRIDGE_SIGNER_PRIVATE_KEY"] = test_wallet["privateKey"]
-                bridge_env["AUTHORITY_SIGNER_ADDRESS"] = test_wallet["address"]
-                bridge_env["PORTALDOT_GUARD_ADDRESS"] = "0x000000000000000000000000000000000000dEaD"
-                bridge_env["PORTALDOT_CHAIN_ID"] = str(CHAIN_ID)
+                bridge_env.update({
+                    "VERIGATE_BASE_URL": base_url,
+                    "VERIGATE_PUBLIC_KEY_FILE": env["VERIGATE_PUBLIC_KEY"],
+                    "VERIGATE_PUBLIC_KEY_SHA256": hashlib.sha256(
+                        base64.b64decode(
+                            "".join(Path(env["VERIGATE_PUBLIC_KEY"]).read_text(encoding="ascii").splitlines()[1:-1])
+                        )
+                    ).hexdigest(),
+                    "BRIDGE_SIGNER_PRIVATE_KEY": test_wallets["bridgePrivateKey"],
+                    "AUTHORITY_SIGNER_ADDRESS": test_wallets["bridgeAddress"],
+                    "PORTALDOT_GUARD_ADDRESS": guard_address,
+                    "PORTALDOT_GUARD_CODE_HASH": guard_code_hash,
+                    "PORTALDOT_RPC_URL": evm_rpc_url,
+                    "PORTALDOT_CHAIN_ID": str(CHAIN_ID),
+                    "PORTALDOT_SUBSTRATE_RPC_URL": "wss://test-node-v3.portaldot.dev",
+                    "PORTALDOT_SUBSTRATE_GENESIS_HASH": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+                    "PORTALDOT_SIMULATED_CHAIN_ID": str(CHAIN_ID),
+                    "DEPLOYER_PRIVATE_KEY": "",
+                })
 
                 bridge_allow = subprocess.run(
                     ["node", "adapter/verigate-bridge.js", str(allow_path)],
@@ -373,7 +553,7 @@ def main() -> int:
                     env=bridge_env,
                     capture_output=True,
                     text=True,
-                    timeout=12,
+                    timeout=30,
                     check=False,
                 )
                 if bridge_allow.returncode != 0:
@@ -391,7 +571,7 @@ def main() -> int:
                     env=bridge_env,
                     capture_output=True,
                     text=True,
-                    timeout=12,
+                    timeout=30,
                     check=False,
                 )
                 block_refused = (
@@ -404,8 +584,101 @@ def main() -> int:
                         + bridge_block.stderr[-3000:]
                     )
 
+                # Fund the deployed guard only on this loopback-only test EVM, then
+                # prove that the signed ALLOW payload is executable on the real guard
+                # source. This uses a built-in unlocked Hardhat account, never a public RPC.
+                payment_amount = int(signed_dry_run["transfer"]["amount"])
+                local_funding_hash = rpc_call(
+                    evm_rpc_url,
+                    "eth_sendTransaction",
+                    [{
+                        "from": unlocked_accounts[0],
+                        "to": guard_address,
+                        "value": hex(payment_amount * 2),
+                    }],
+                )
+                funded_guard_balance = int(
+                    rpc_call(evm_rpc_url, "eth_getBalance", [guard_address, "latest"]), 16
+                )
+                if funded_guard_balance < payment_amount:
+                    raise RuntimeError("The isolated guard did not receive enough local test funds.")
+
+                execution_env = bridge_env.copy()
+                execution_env.update({
+                    "DEPLOYER_PRIVATE_KEY": test_wallets["deployerPrivateKey"],
+                    "DEPLOYMENT_ESTIMATE_FROM": test_wallets["deployerAddress"],
+                })
+
+                # First call the executor without --broadcast. It must simulate the
+                # exact transfer and produce no state-changing transaction.
+                dry_run = subprocess.run(
+                    ["node", "scripts/execute-authorized-transfer.mjs", str(signed_path)],
+                    cwd=project_root,
+                    env=execution_env,
+                    capture_output=True,
+                    text=True,
+                    timeout=20,
+                    check=False,
+                )
+                if dry_run.returncode != 0:
+                    raise RuntimeError(
+                        "The authorized-transfer executor dry run failed: "
+                        + (dry_run.stderr + dry_run.stdout)[-5000:]
+                    )
+                dry_run_result = json.loads(dry_run.stdout)
+                if dry_run_result.get("status") != "simulation_passed" or dry_run_result.get("transactionBroadcast") is not False:
+                    raise RuntimeError("The executor did not clearly report a no-broadcast successful simulation.")
+                guard_balance_after_dry_run = int(
+                    rpc_call(evm_rpc_url, "eth_getBalance", [guard_address, "latest"]), 16
+                )
+                if guard_balance_after_dry_run != funded_guard_balance:
+                    raise RuntimeError("Executor dry-run unexpectedly changed the guard balance.")
+
+                recipient_balance_before = int(
+                    rpc_call(evm_rpc_url, "eth_getBalance", [ALLOW_RECIPIENT, "latest"]), 16
+                )
+                execution = subprocess.run(
+                    [
+                        "node",
+                        "scripts/execute-authorized-transfer.mjs",
+                        str(signed_path),
+                        "--broadcast",
+                    ],
+                    cwd=project_root,
+                    env=execution_env,
+                    capture_output=True,
+                    text=True,
+                    timeout=25,
+                    check=False,
+                )
+                if execution.returncode != 0:
+                    raise RuntimeError(
+                        "The executor failed to submit the signed ALLOW transfer to the isolated EVM: "
+                        + (execution.stderr + execution.stdout)[-5000:]
+                    )
+                execution_result = json.loads(execution.stdout)
+                if execution_result.get("status") != "transfer_executed" or execution_result.get("transactionBroadcast") is not True:
+                    raise RuntimeError("Executor did not confirm the authorized transfer event on the isolated EVM.")
+                for safety_field in (
+                    "preBroadcastResimulationPassed",
+                    "preBroadcastGasQuoteRefreshed",
+                    "preBroadcastFeeBudgetPassed",
+                ):
+                    if execution_result.get(safety_field) is not True:
+                        raise RuntimeError(
+                            f"Executor did not report its last-moment safety check as passed: {safety_field}."
+                        )
+                recipient_balance_after = int(
+                    rpc_call(evm_rpc_url, "eth_getBalance", [ALLOW_RECIPIENT, "latest"]), 16
+                )
+                recipient_balance_delta = recipient_balance_after - recipient_balance_before
+                if recipient_balance_delta != payment_amount:
+                    raise RuntimeError(
+                        f"Local recipient balance delta {recipient_balance_delta} does not match authorized amount {payment_amount}."
+                    )
+
                 summary = {
-                    "test_instance": "isolated temporary Verigate API",
+                    "test_instance": "isolated temporary Verigate API plus loopback-only Hardhat EVM",
                     "base_url": base_url,
                     "policy": "only the ALLOW recipient is permitted",
                     "allow": {
@@ -422,19 +695,42 @@ def main() -> int:
                         "bridge_cli_refused_block": block_refused,
                         "response_file": str(block_path),
                     },
-                    "bridge_cli_allow_dry_run": {
+                    "bridge_cli_allow": {
                         "signature_created": True,
                         "signature_file": str(signed_path),
-                        "authority_signer": test_wallet["address"],
-                        "domain_contract_is_dummy": True,
+                        "authority_signer": test_wallets["bridgeAddress"],
+                        "guard_address": guard_address,
+                        "runtime_code_hash_verified": guard_code_hash,
+                        "deployed_on_isolated_loopback_evm": True,
+                        "domain_contract_is_dummy": False,
                     },
-                    "note": "Temporary test-only issuer/bridge keys and test recipients. The bridge CLI generated a typed signature for a dummy contract domain; no transaction was broadcast and this signature is not deployment evidence.",
+                    "executor_dry_run": {
+                        "status": dry_run_result["status"],
+                        "transaction_broadcast": dry_run_result["transactionBroadcast"],
+                        "guard_balance_unchanged": guard_balance_after_dry_run == funded_guard_balance,
+                    },
+                    "local_execution": {
+                        "status": execution_result["status"],
+                        "transaction_hash": execution_result["transactionHash"],
+                        "block_number": execution_result["blockNumber"],
+                        "transfer_executed_event_confirmed": execution_result["transferExecutedEventConfirmed"],
+                        "pre_broadcast_resimulation_passed": execution_result["preBroadcastResimulationPassed"],
+                        "pre_broadcast_gas_quote_refreshed": execution_result["preBroadcastGasQuoteRefreshed"],
+                        "pre_broadcast_fee_budget_passed": execution_result["preBroadcastFeeBudgetPassed"],
+                        "recipient": ALLOW_RECIPIENT,
+                        "authorized_amount_base_units": str(payment_amount),
+                        "recipient_balance_delta_base_units": str(recipient_balance_delta),
+                        "balance_delta_matches_authorized_amount": recipient_balance_delta == payment_amount,
+                        "local_guard_funding_transaction_hash": local_funding_hash,
+                    },
+                    "note": "The real PortalDotAgentGuard source was deployed only to a temporary loopback Hardhat EVM configured with the target chain ID. A signed ALLOW authorization passed a read-only simulation, then executed successfully on that local EVM and transferred the exact amount. BLOCK was refused. No public PortalDot RPC was contacted; local transactions are not testnet deployment evidence.",
                 }
                 summary_path = output_root / "summary.json"
                 summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
                 print(json.dumps(summary, indent=2))
                 print("\nPASS: real Verigate HTTP routes issued ALLOW and BLOCK; signed artifacts verified; bridge signed ALLOW and refused BLOCK.")
-                print("No on-chain transaction was signed or broadcast.")
+                print("PASS: executor dry-run changed no state, then the signed ALLOW transfer executed and delivered the exact authorized amount on the temporary loopback EVM.")
+                print("No transaction was sent to public PortalDot. All deployment, funding and transfer transactions stayed on the isolated local EVM.")
                 return 0
             finally:
                 process.terminate()
@@ -444,6 +740,15 @@ def main() -> int:
                     process.kill()
                     process.wait(timeout=5)
     finally:
+        if evm_process is not None:
+            evm_process.terminate()
+            try:
+                evm_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                evm_process.kill()
+                evm_process.wait(timeout=5)
+        if evm_log_file is not None:
+            evm_log_file.close()
         # Delete all temporary runtime state and test issuer private keys; preserve
         # only the response artifacts and summary in output_root.
         shutil.rmtree(runtime_root, ignore_errors=True)

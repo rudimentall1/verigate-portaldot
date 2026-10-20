@@ -1,0 +1,258 @@
+VERIGATE PORTALDOT
+AI-agent authorization and on-chain enforcement
+PortalDot V3 testnet demonstration
+
+UTC: 2026-10-20 12:34:40
+
+=== 1. DEPLOYED CONTRACT ===
+Contract: 0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b
+Deployment transaction:
+0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c
+
+=== 2. TEST SUITE ===
+
+> verigate-portaldot@0.1.0 test
+> hardhat test
+
+No contracts to compile
+
+Running Solidity tests
+
+
+Running Mocha tests
+
+
+  PortalDotAgentGuard
+    ✔ rejects deployment with a zero authority signer (81ms)
+    ✔ executes a valid, exact payment and consumes its nonce (223ms)
+    ✔ blocks a reentrant replay from a recipient contract (88ms)
+    ✔ rejects a changed recipient (81ms)
+    ✔ rejects a changed amount
+    ✔ rejects a changed action identifier
+    ✔ rejects signatures from an untrusted signer
+    ✔ rejects signatures made for a different chain id
+    ✔ rejects a valid signature replayed against a different guard deployment (48ms)
+    ✔ rejects authorizations with a deadline more than five minutes away
+    ✔ rejects expired authorizations
+    ✔ rejects replay of a successfully used nonce
+    ✔ rejects zero amounts and zero recipients
+    ✔ rejects the guard as its own recipient
+    ✔ rejects transfers larger than the available balance without consuming the nonce (105ms)
+    ✔ rejects malformed signatures
+    ✔ rejects signatures with an invalid recovery byte
+    ✔ rejects malleable high-s signatures
+    ✔ does not consume a nonce when the recipient rejects the native transfer (73ms)
+    ✔ accepts an authorization whose deadline is exactly five minutes away
+
+  PortalDot deployment estimator arithmetic
+    ✔ parses only canonical JSON-RPC hex quantities
+    ✔ formats native EVM units without floating-point arithmetic
+    ✔ converts Substrate raw POT units to EVM value units with the 10^4 ratio
+    ✔ rejects a quote address that differs from the locally configured deployer key
+    ✔ allows a clearly labelled placeholder only for preliminary cost estimation
+    ✔ fails closed for deployment readiness while keeping estimates useful for budget planning
+    ✔ returns nonzero status when a budget quote is not deployment authorization
+    ✔ passes the exact fee cap and gas limit used by the budget guard into the deployment transaction
+    ✔ compares the 20 percent deployment-cost margin against balance exactly
+    ✔ rejects invalid gas, price, balance and safety margin inputs
+
+  Authorized transfer executor input validation
+    ✔ accepts a valid short-lived signature and preserves uint256 values as BigInt (64ms)
+    ✔ rejects a different configured chain before trying to submit
+    ✔ rejects a different guard address in the signed domain
+    ✔ rejects a signature from a key other than the configured authority
+    ✔ rejects transfer tampering after the authority signature was created
+    ✔ rejects a non-canonical or unsafe numeric amount (45ms)
+    ✔ rejects uint256 overflow and zero transfer values
+    ✔ rejects zero recipient and the guard as recipient
+    ✔ rejects expired and overlong authorizations
+    ✔ rejects an incorrectly encoded signature
+    ✔ rejects malleable high-s signatures before contract simulation
+    ✔ requires the canonical 27/28 recovery-byte encoding
+    ✔ requires the signed contract and reported authority to match configuration
+    ✔ calculates a 20 percent fee margin exactly without floating point
+    ✔ rejects invalid execution-budget parameters
+
+  PortalDot RPC monitor
+    ✔ reports a healthy snapshot when the chain ID matches
+    ✔ flags a chain ID mismatch without treating it as healthy
+    ✔ rejects insecure remote HTTP RPC endpoints
+    ✔ rejects RPC URLs with embedded username/password credentials
+    ✔ disables redirects for read-only JSON-RPC requests
+    ✔ rejects malformed envelopes, errors, and non-canonical quantities
+    ✔ rejects unsuccessful HTTP responses
+    ✔ accepts the announced PortalDot endpoint configuration
+
+  PortalDot account address derivation
+    ✔ matches the published H160-to-Substrate fallback-address example
+    ✔ normalizes EVM address casing without changing the mapped fallback account
+    ✔ rejects invalid EVM addresses and unsupported SS58 prefixes
+    ✔ rejects non-32-byte account IDs when encoding SS58
+
+  SS58 AccountId32 to H160 inspection
+    ✔ matches the public Polkadot CLI Alice AccountId32-to-H160 vector
+    ✔ decodes a known SS58 address and verifies its checksum
+    ✔ rejects an invalid SS58 checksum rather than guessing
+    ✔ recovers an H160 from its deterministic fallback AccountId32
+    ✔ reports an offline candidate mismatch without claiming the live mapping is disproved
+
+  PortalDot RPC preflight configuration
+    ✔ requires the EVM RPC, canonical chain ID, Substrate WebSocket and pinned Substrate genesis
+    ✔ rejects insecure remote endpoints and credential-bearing URLs
+    ✔ disables redirects and validates JSON-RPC response envelopes
+
+  PortalDot Substrate genesis identity
+    ✔ requires secure WSS except for local loopback
+    ✔ requests chain_getBlockHash(0) and compares the pinned hash
+    ✔ fails closed on mismatches, invalid IDs, and RPC errors
+
+  PortalDot Substrate runtime metadata preflight
+    ✔ defaults to the configured V3 Substrate WebSocket endpoint
+    ✔ rejects credentialed, remote plaintext and non-WebSocket endpoints
+    ✔ parses only canonical hexadecimal block numbers
+    ✔ hashes metadata and only emits candidate storage-name hints
+    ✔ collects chain, finalized block, runtime version and metadata through read-only methods
+
+  Read-only Revive OriginalAccount verifier
+    ✔ pins the expected PortalDot V3 chain ID and validates the user-supplied addresses
+    ✔ parses plain JSON storage values without coercing them into mappings
+    ✔ confirms only a mapping value that matches the exact AccountId32 bytes
+    ✔ does not mistake a different account or missing storage entry for a match
+    ✔ runs a one-key mapping query after checking the reported V3 runtime and records its finalized block
+    ✔ refuses a different runtime name before running Polkadot CLI commands
+    ✔ redacts both wallet addresses from a mapping result while preserving the decision and state reference
+    ✔ accepts a hex-encoded AccountId32 value returned by an alternate CLI formatter
+
+  Local deployer identity check
+    ✔ matches the supplied wallet address without exposing the private key
+    ✔ reports a wallet-address mismatch without pretending the mapping was verified
+    ✔ rejects a configured estimate address that differs from the local key
+    ✔ requires a configured authority signer to be non-zero and distinct
+    ✔ rejects invalid addresses, missing keys, and invalid private keys safely
+    ✔ supports redacted reports that retain comparison results
+
+  strict exact transfer amount types
+    ✔ accepts canonical decimal strings for exact base-unit amounts
+    ✔ rejects JSON-number amounts rather than accepting rounded values above the safe integer range
+    ✔ rejects numeric base-unit mappings even when their string form matches the amount
+
+  Verigate bridge binding
+    ✔ verifies both signed artifacts locally against the pinned Ed25519 key
+    ✔ refuses local verification when the issuer key fingerprint is missing or mismatched
+    ✔ refuses a forged artifact locally even if the remote verifier might approve it
+    ✔ fails closed if no pinned Verigate public key path is configured
+    ✔ refuses to sign when Verigate does not verify the decision receipt
+    ✔ refuses to sign when the execution authorization fails verification after the receipt passes
+    ✔ refuses to sign when the Verigate verification endpoint is unreachable
+    ✔ refuses to sign when Verigate verification times out
+    ✔ refuses to sign when the Verigate verification endpoint returns HTTP 503
+    ✔ refuses to sign when the Verigate verification endpoint returns malformed JSON
+    ✔ refuses to send verifier requests to remote HTTP endpoints
+    ✔ allows HTTP only for loopback verifier development
+    ✔ refuses credentials embedded in the verifier URL
+    ✔ sends the exact signed artifact to the configured Verigate verifier
+    ✔ matches Verigate's compact sorted-key UTF-8 canonical JSON
+    ✔ maps a valid ALLOW to an exact bounded transfer
+    ✔ refuses an action whose canonical digest no longer matches
+    ✔ refuses an authorization action that differs from the receipt intent
+    ✔ refuses BLOCK even when no execution authorization is present
+    ✔ refuses WARN and BLOCK
+    ✔ refuses a changed recipient mapping
+    ✔ refuses a changed amount mapping
+    ✔ refuses a wrong chain and expired authorization
+    ✔ refuses future-issued and overlong execution authorizations
+    ✔ refuses timestamps outside JavaScript's safe integer range
+    ✔ refuses string-encoded authorization timestamps instead of coercing them
+    ✔ refuses to assume a chain ID when none is configured
+    ✔ refuses an invalid expected chain ID
+    ✔ refuses non-canonical chain ID encodings
+    ✔ refuses a transfer amount above the EVM uint256 limit
+    ✔ refuses an authorization ID not derived from the receipt signature and nonce
+    ✔ refuses a nonce that differs from the receipt intent
+    ✔ refuses a policy digest mismatch
+    ✔ accepts the exact uint256 maximum without numeric coercion
+    ✔ refuses zero and non-integer transfer amounts
+    ✔ executes an end-to-end Verigate ALLOW through bridge EIP-712 signing into the guard on a local chain (210ms)
+
+  On-chain PortalDot guard verification before signing
+    ✔ rejects a guard RPC connected to a different chain
+    ✔ refuses bridge verification when the Substrate genesis pin is omitted
+    ✔ rejects a mismatched genesis hash before reading contract bytecode
+    ✔ rejects an address with no deployed contract bytecode
+    ✔ rejects runtime bytecode that differs from the pinned guard code hash
+    ✔ requires a pinned runtime-code hash before RPC requests
+    ✔ rejects a deployed guard whose authority signer differs from configuration
+    ✔ fails closed when any read-only RPC call fails
+    ✔ rejects remote RPC over plain HTTP before making any request
+
+  PortalDot RPC preflight configuration
+    ✔ fails closed when the RPC URL is missing
+    ✔ fails closed when the chain ID is missing
+    ✔ rejects non-canonical or non-positive chain IDs
+    ✔ rejects malformed RPC URLs
+    ✔ rejects non-HTTP RPC URLs
+    ✔ rejects remote RPC endpoints over plain HTTP
+    ✔ allows HTTP only for loopback development endpoints
+    ✔ accepts explicit HTTP(S) configuration and parses chain ID exactly
+    ✔ redacts credentials, endpoint paths, and query tokens from the logged RPC origin
+    ✔ preserves Python float spellings in signed payloads
+    ✔ preserves Python float spellings when sending the signed payload to Verigate
+
+  Verigate verifier transport hardening
+    ✔ disables redirects so API credentials cannot be forwarded to a redirect target
+    ✔ rejects a remote verifier URL using plain HTTP before sending credentials
+    ✔ rejects verifier URLs containing embedded credentials before sending a request
+    ✔ fails closed on malformed verifier JSON
+    ✔ fails closed when the verifier returns a non-success HTTP status
+
+  Verigate verifier response validation
+    ✔ rejects a verifier response that is not the literal boolean true ({"valid":false,"reason":"signature invalid"})
+    ✔ rejects a verifier response that is not the literal boolean true ({"valid":"true"})
+    ✔ rejects a verifier response that is not the literal boolean true ({"valid":1})
+    ✔ rejects a verifier response that is not the literal boolean true ({})
+    ✔ rejects a verifier response that is not the literal boolean true (null)
+
+
+  156 passing (5s)
+
+
+156 passing (156 mocha)
+
+TEST_EXIT_CODE=0
+
+=== 3. NETWORK PREFLIGHT ===
+
+> verigate-portaldot@0.1.0 preflight
+> node scripts/preflight.js
+
+Configured PortalDot EVM RPC origin: https://test-evm-rpc-v3.portaldot.dev
+Expected chain ID: 420420777
+Substrate RPC origin: wss://test-node-v3.portaldot.dev
+Expected Substrate genesis hash: 0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd
+Actual chain ID: 420420777
+Latest block: 117332
+Substrate genesis hash matches configured pin: 0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd
+RPC preflight passed: EVM chain ID and Substrate genesis pin matched. This does not cryptographically authenticate the RPC operator or prove wallet funding or deployment success.
+PREFLIGHT_EXIT_CODE=0
+
+=== 4. RPC MONITOR ===
+
+> verigate-portaldot@0.1.0 monitor:rpc
+> node scripts/monitor-rpc.js
+
+{
+  "network": "PortalDot V3 EVM",
+  "checkedAt": "2026-10-20T12:34:57.807Z",
+  "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev",
+  "status": "ok",
+  "expectedChainId": "420420777",
+  "actualChainId": "420420777",
+  "blockNumber": "117332",
+  "latencyMs": 1148
+}
+RPC_EXIT_CODE=0
+
+=== 5. SOURCE FILES ===
+23d900a
+?? demo/
+scripts/execute-authorized-transfer.mjs

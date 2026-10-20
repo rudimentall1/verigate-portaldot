@@ -1,0 +1,102 @@
+name: PortalDot Substrate runtime metadata
+
+on:
+  push:
+    branches: [main, chore/hardhat3-migration-preview]
+    paths:
+      - "scripts/substrate-runtime-preflight.mjs"
+      - "scripts/verify-account-mapping.mjs"
+      - "scripts/portaldot-address.js"
+      - "package.json"
+      - "test/substrate-runtime-preflight.test.js"
+      - ".github/workflows/portaldot-substrate-runtime.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Read-only Substrate runtime fingerprint
+        id: inspect
+        continue-on-error: true
+        env:
+          PORTALDOT_SUBSTRATE_RPC_URL: wss://test-node-v3.portaldot.dev
+        run: |
+          mkdir -p "$RUNNER_TEMP/substrate-runtime-evidence"
+          set +e
+          npm run --silent inspect:substrate-runtime > "$RUNNER_TEMP/substrate-runtime-evidence/runtime-metadata.json" 2>&1
+          inspector_exit_code=$?
+          printf '%s\n' "$inspector_exit_code" > "$RUNNER_TEMP/substrate-runtime-evidence/inspector-exit-code.txt"
+          cat "$RUNNER_TEMP/substrate-runtime-evidence/runtime-metadata.json"
+          exit "$inspector_exit_code"
+      - name: Decode live Revive storage metadata (read-only)
+        id: decode
+        env:
+          PORTALDOT_SUBSTRATE_RPC_URL: wss://test-node-v3.portaldot.dev
+          DOT_HOME: ${{ runner.temp }}/polkadot-cli-home
+          DOT_NO_UPDATE_CHECK: "1"
+        run: |
+          mkdir -p "$RUNNER_TEMP/substrate-runtime-evidence" "$DOT_HOME"
+          npm install --global polkadot-cli@1.25.0
+          dot --version > "$RUNNER_TEMP/substrate-runtime-evidence/dot-cli-version.txt" 2>&1
+          dot chain add portaldot-v3 --rpc "$PORTALDOT_SUBSTRATE_RPC_URL" > "$RUNNER_TEMP/substrate-runtime-evidence/dot-chain-add.txt" 2>&1
+          dot chain update portaldot-v3 >> "$RUNNER_TEMP/substrate-runtime-evidence/dot-chain-add.txt" 2>&1
+          run_capture() {
+            name="$1"
+            shift
+            set +e
+            "$@" > "$RUNNER_TEMP/substrate-runtime-evidence/$name.txt" 2>&1
+            result=$?
+            set -e
+            printf '%s\n' "$result" > "$RUNNER_TEMP/substrate-runtime-evidence/$name-exit-code.txt"
+          }
+          run_capture dot-chain-list dot chain list
+          run_capture revive-pallet-metadata dot inspect portaldot-v3.Revive
+          run_capture OriginalAccount-storage-definition dot inspect portaldot-v3.Revive.OriginalAccount
+          run_capture AddressSuffix-storage-definition dot inspect portaldot-v3.Revive.AddressSuffix
+          # Query a synthetic H160 only; never enumerate the live mapping or log a user's candidate address.
+          run_capture synthetic-account-mapping-query dot portaldot-v3.query.Revive.OriginalAccount 0x0000000000000000000000000000000000000001
+          run_capture revive-chain-id dot portaldot-v3.const.Revive.ChainId
+          run_capture revive-native-to-eth-ratio dot portaldot-v3.const.Revive.NativeToEthRatio
+          run_capture revive-auto-map dot portaldot-v3.const.Revive.AutoMap
+          run_capture revive-deposit-per-byte dot portaldot-v3.const.Revive.DepositPerByte
+          run_capture revive-deposit-per-item dot portaldot-v3.const.Revive.DepositPerItem
+          run_capture revive-deposit-per-child-trie-item dot portaldot-v3.const.Revive.DepositPerChildTrieItem
+          run_capture revive-gas-scale dot portaldot-v3.const.Revive.GasScale
+          run_capture revive-code-hash-lockup-deposit-percent dot portaldot-v3.const.Revive.CodeHashLockupDepositPercent
+          run_capture revive-allow-evm-bytecode dot portaldot-v3.const.Revive.AllowEVMBytecode
+          # Exercise the account-mapping verifier against a fixed synthetic H160
+          # and synthetic SS58 account only. Never put real wallet pairs in CI.
+          synthetic_ss58="$(node -e 'const { encodeSs58AccountId } = require("./scripts/portaldot-address.js"); process.stdout.write(encodeSs58AccountId(Buffer.alloc(32, 0x42), 42));')"
+          set +e
+          npm run --silent verify:account-mapping -- 0x0000000000000000000000000000000000000001 "$synthetic_ss58" --redact > "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt" 2>&1
+          mapping_exit_code=$?
+          set -e
+          printf '%s\n' "$mapping_exit_code" > "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic-exit-code.txt"
+          if [ "$mapping_exit_code" -ne 0 ]; then
+            cat "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt"
+            exit "$mapping_exit_code"
+          fi
+          node -e 'const fs = require("node:fs"); const p = process.argv[1]; const r = JSON.parse(fs.readFileSync(p, "utf8")); if (r.status !== "no_mapping_entry" || r.mappingMatchesRegisteredAccount !== null || r.queryScope !== "one H160 key only" || r.transactionSubmitted !== false || !/^0x[a-fA-F0-9]{64}$/.test(r.runtimeSnapshot?.finalizedHead ?? "") || Object.hasOwn(r, "candidateH160") || Object.hasOwn(r, "registeredSubstrateAddress") || Object.hasOwn(r, "mappingValueAccountIdHex")) throw new Error("Synthetic mapping query did not return a redacted, correctly pinned no_mapping_entry result."); process.stdout.write(JSON.stringify({status:r.status, finalizedBlockNumber:r.runtimeSnapshot.finalizedBlockNumber, finalizedHead:r.runtimeSnapshot.finalizedHead, queryScope:r.queryScope, transactionSubmitted:r.transactionSubmitted}, null, 2)+"\n");' "$RUNNER_TEMP/substrate-runtime-evidence/verify-one-key-synthetic.txt"
+      - name: Upload runtime metadata evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: portaldot-substrate-runtime-metadata
+          path: ${{ runner.temp }}/substrate-runtime-evidence/
+          if-no-files-found: warn
+          retention-days: 14

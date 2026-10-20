@@ -14,6 +14,9 @@ function requiredConfig(env = process.env) {
   } catch {
     throw new Error("PORTALDOT_RPC_URL must be an absolute URL.");
   }
+  if (parsed.username || parsed.password) {
+    throw new Error("PORTALDOT_RPC_URL must not embed credentials.");
+  }
   if (!["http:", "https:"].includes(parsed.protocol)) {
     throw new Error("RPC URL must use HTTP or HTTPS.");
   }
@@ -42,15 +45,27 @@ function evaluateSnapshot({ expectedChainId, actualChainId, blockNumber, latency
 async function rpc(rpcUrl, method) {
   const response = await fetch(rpcUrl, {
     method: "POST",
+    redirect: "error",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: [] }),
     signal: AbortSignal.timeout(8000)
   });
   if (!response.ok) throw new Error(`${method}: HTTP ${response.status}`);
   const data = await response.json();
-  if (data.error) throw new Error(`${method}: ${data.error.message || JSON.stringify(data.error)}`);
-  if (data.jsonrpc !== "2.0" || data.id !== 1 || typeof data.result !== "string") {
-    throw new Error(`${method}: malformed JSON-RPC response`);
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error(`${method}: invalid JSON-RPC response object`);
+  }
+  if (data.error !== undefined && data.error !== null) {
+    const message = data.error && typeof data.error.message === "string"
+      ? data.error.message
+      : JSON.stringify(data.error);
+    throw new Error(`${method}: JSON-RPC error: ${message}`);
+  }
+  if (data.jsonrpc !== "2.0" || data.id !== 1) {
+    throw new Error(`${method}: malformed JSON-RPC envelope`);
+  }
+  if (typeof data.result !== "string" || !/^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/.test(data.result)) {
+    throw new Error(`${method}: result must be a canonical hexadecimal quantity`);
   }
   return data.result;
 }
@@ -85,4 +100,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { requiredConfig, evaluateSnapshot };
+module.exports = { requiredConfig, evaluateSnapshot, rpc };

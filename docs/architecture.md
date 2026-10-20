@@ -1,6 +1,6 @@
 # Architecture and trust boundaries
 
-Updated: 14 October 2026
+Updated: 20 October 2026
 
 ## Current flow
 
@@ -11,29 +11,36 @@ flowchart TD
     C -->|WARN or BLOCK| X["Bridge refuses to sign"]
     C -->|ALLOW| D["Signed decision receipt + execution authorization"]
     D --> E["PortalDot bridge CLI"]
-    E --> F["Check intent/action binding, recipient, amount, chain ID, nonce and expiry"]
-    F --> G["Configured Verigate /v1/verify checks both Ed25519 signatures"]
-    G --> H["Dedicated EVM bridge key signs EIP-712 transfer authorization"]
-    H --> I["Dry-run JSON signature output"]
-    I -. "Not wired to a broadcaster; no transaction sent" .-> J["PortalDotAgentGuard contract"]
-    J --> K["Verify EIP-712 signature, deadline, balance and unused nonce"]
-    K --> L["Native-token transfer"]
+    E --> F["Verify Ed25519 locally and via Verigate /v1/verify"]
+    F --> G["Validate exact intent, recipient, amount, chain and expiry"]
+    G --> H["Read-only RPC: chain, guard code hash and authoritySigner"]
+    H --> I["Dedicated EVM signer creates EIP-712 authorization"]
+    I --> J["Signed authorization JSON"]
+    J --> K["Executor validates domain, signer and exact transfer"]
+    K --> L["Read-only simulation, contract balance and relayer fee checks"]
+    L --> M{"Explicit --broadcast?"}
+    M -->|No| N["Report simulation only; no transaction"]
+    M -->|Yes| O["PortalDotAgentGuard.executeTransfer"]
+    O --> P["Check receipt and TransferExecuted event"]
 ```
 
-The bridge CLI currently stops at the signed JSON output. The contract and its local Hardhat tests are in the repository, but the target PortalDot EVM testnet and a live contract deployment have not been independently verified. The dotted line is a future integration step, not a working path.
+The executor does not send a transaction by default. The explicit `--broadcast` path submits the signed transfer only after signature, network, deployed code hash, authority signer, expiry, contract balance, simulation and relayer fee budget checks pass. Automated CI exercises dry-run and the broadcast path only against a temporary loopback Hardhat EVM, then confirms that recipient balance delta equals the signed amount. This is local integration evidence, not a public PortalDot transfer or deployment.
 
 ## What is checked off-chain
 
-- Decision must be exactly `ALLOW`; `WARN` and `BLOCK` are refused.
-- Both Ed25519 artifacts are submitted to the configured Verigate `/v1/verify` endpoint.
+- Decision must be exactly ALLOW; WARN and BLOCK are refused.
+- Both Ed25519 artifacts are submitted to the configured Verigate `/v1/verify` endpoint after local verification against a pinned issuer key.
 - Receipt intent and authorization action must match by canonical SHA-256 digest.
-- Recipient and amount must match the PortalDot-specific mapping in the signed action.
-- The authorization must match the expected chain ID and have a valid nonce, authorization ID, issue time and expiry.
-- The bridge signer key must match the configured contract authority signer. The contract address must be explicitly configured.
+- Recipient must match the signed PortalDot mapping. Base-unit amounts in `amount_exact` and both `metadata.portaldot_v3.amount_base_units` fields must be canonical positive decimal strings; numeric amount fields are rejected instead of being coerced through JavaScript Number.
+- Preflight, RPC monitoring and Hardhat network configuration reject RPC URLs with embedded username/password. Read-only JSON-RPC requests disable redirects. Preflight checks JSON-RPC version, response ID, provider errors and canonical hexadecimal quantity format.
+- The bridge authorization must match the expected chain ID and have valid nonce, authorization ID, issue time and expiry.
+- Before signing, the bridge verifies chain ID, deployed bytecode, the Keccak runtime-code hash pinned in `PORTALDOT_GUARD_CODE_HASH`, and on-chain `authoritySigner()`.
+- The executor revalidates EIP-712 domain, recovered authority signer, contract, canonical transfer values and deadline immediately before any simulation or broadcast.
+- A separate read-only Substrate probe decoded the reported V3 Revive metadata at specVersion 3002. It found `Revive.OriginalAccount` as H160 → AccountId32, `Revive.AutoMap=true`, `NativeToEthRatio=10000`, and runtime deposit/gas constants. The specific registered-wallet H160 mapping remains a separate single-key lookup and is not inferred from offline derivation.
 
 ## What the contract enforces
 
-- EIP-712 domain binds the signature to the chain ID and contract address.
+- EIP-712 domain binds the signature to chain ID and contract address.
 - Signature binds recipient, amount, nonce, deadline and action ID.
 - Expired signatures, reused nonces, zero recipients, zero amounts, self-transfers, insufficient balance and invalid signatures are rejected.
 - A reentrancy guard protects the external value transfer.
@@ -41,12 +48,19 @@ The bridge CLI currently stops at the signed JSON output. The contract and its l
 
 ## Trust boundary
 
-The contract does **not** verify Verigate's Ed25519 signatures. The bridge verifies those through the configured Verigate instance, then uses a separate EVM key to produce an EIP-712 signature. The EVM contract trusts that bridge signer. Protecting the Verigate API and bridge key is therefore part of the security model.
+The contract does not verify Verigate's Ed25519 signatures. The bridge verifies those through the configured Verigate instance, then uses a separate EVM key to produce an EIP-712 signature. The executor relays that exact signed payload. The EVM contract trusts the bridge signer. Protecting the Verigate API and bridge key is part of the security model; the relayer key should be separate from the authority signer.
 
-## Deployment blocker
+## Testnet deployment status
 
-On 17 October 2026, the PortalDot team announced the updated V3 testnet EVM RPC `https://test-evm-rpc-v3.portaldot.dev` and chain ID `420420777`. These values are recorded in `.env.example` from that announcement. Run preflight to verify the endpoint responds and reports the expected chain ID before deployment. The announcement separately lists the Substrate node WebSocket `wss://test-node-v3.portaldot.dev` and explorer `https://node-console.portaldot.dev`; neither is the EVM JSON-RPC endpoint. Confirm token denomination and native/EVM wallet mapping before using testnet funds.
+`PortalDotAgentGuard` is deployed to the PortalDot V3 EVM testnet. Address, transaction hash, receipt, block hash, runtime bytecode fingerprint, configured authority signer, observed fee, and limitations are recorded in [deployment evidence](deployment-evidence-2026-10-20.md). The successful deployment is real testnet evidence. It is not evidence of a successful public testnet transfer through the complete Verigate bridge.
+
+The EVM RPC reported chain ID 420420777, and the Substrate endpoint reported the pinned genesis hash. These observations are consistent with the configured V3 network but do not independently authenticate either endpoint operator. The runtime mapping lookup for the wallet-displayed H160 did not establish the expected H160-to-SS58 mapping; the deployment used the funded EVM H160 and its matching local key. Do not claim that this mapping is verified.
 
 ## Validation evidence
 
-GitHub Actions passed the local contract and bridge tests plus Solidity compilation, and the separate integration job passed against an isolated Verigate API for [commit 78049cf](https://github.com/rudimentall1/verigate-portaldot/commit/78049cf2e5369efab8a3bbbaf47fcb5de4f1106c): [unit tests](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676086) and [PortalDot CI with ALLOW/BLOCK integration](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681676047). The integration locally verifies Ed25519 signatures against a pinned temporary public key, produces a dry-run signature only for ALLOW, refuses BLOCK and broadcasts no transaction. These checks are not evidence of a live PortalDot deployment.
+- 156 tests passed in the local deployment workspace on 20 October 2026.
+- Network preflight confirmed the expected EVM chain ID and configured Substrate genesis pin; the RPC monitor reported healthy at the last recorded check.
+- The isolated Verigate integration returned ALLOW and BLOCK from a temporary API, verified Ed25519 signatures, refused BLOCK, passed dry-run without state changes, then executed the exact ALLOW transfer against the real guard source on a loopback Hardhat EVM.
+- The existing GitHub Actions evidence on earlier revisions records 151 tests and a successful isolated integration. The latest six local commits were not yet present on the public branch at the time this document was updated. Re-run CI on the published head before treating these local results as public CI evidence.
+
+The isolated EVM is configured with chain ID 420420777 for EIP-712 domain testing. This configuration does not turn the local EVM into PortalDot testnet. No transaction from the local end-to-end test was sent to a public PortalDot RPC.

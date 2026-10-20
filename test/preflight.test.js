@@ -1,49 +1,14 @@
-const { expect } = require("chai");
-const { requiredNetworkConfig } = require("../scripts/preflight");
-
-describe("PortalDot RPC preflight configuration", function () {
-  const originalRpc = process.env.PORTALDOT_RPC_URL;
-  const originalChainId = process.env.PORTALDOT_CHAIN_ID;
-
-  afterEach(function () {
-    if (originalRpc === undefined) delete process.env.PORTALDOT_RPC_URL;
-    else process.env.PORTALDOT_RPC_URL = originalRpc;
-    if (originalChainId === undefined) delete process.env.PORTALDOT_CHAIN_ID;
-    else process.env.PORTALDOT_CHAIN_ID = originalChainId;
-  });
-
-  function configure(rpc, chainId) {
-    if (rpc === undefined) delete process.env.PORTALDOT_RPC_URL;
-    else process.env.PORTALDOT_RPC_URL = rpc;
-    if (chainId === undefined) delete process.env.PORTALDOT_CHAIN_ID;
-    else process.env.PORTALDOT_CHAIN_ID = chainId;
-  }
-
-  it("refuses a missing RPC endpoint", function () {
-    configure(undefined, "123");
-    expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_RPC_URL is required/);
-  });
-
-  it("refuses a missing or malformed chain ID", function () {
-    for (const chainId of [undefined, "", "0", "-1", "01", "1.5", "1e3"]) {
-      configure("https://rpc.example.invalid", chainId);
-      expect(() => requiredNetworkConfig()).to.throw(/PORTALDOT_CHAIN_ID/);
-    }
-  });
-
-  it("refuses invalid URLs and non-HTTP protocols", function () {
-    configure("not-a-url", "123");
-    expect(() => requiredNetworkConfig()).to.throw(/valid absolute URL/);
-
-    configure("wss://rpc.example.invalid", "123");
-    expect(() => requiredNetworkConfig()).to.throw(/HTTP or HTTPS/);
-  });
-
-  it("accepts an explicitly configured HTTP RPC and canonical chain ID", function () {
-    configure("https://rpc.example.invalid", "420420777");
-    expect(requiredNetworkConfig()).to.deep.equal({
-      rpcUrl: "https://rpc.example.invalid",
-      expectedChainId: 420420777n
-    });
-  });
+import { createRequire } from "node:module";
+const require=createRequire(import.meta.url);
+const {expect}=require("chai");
+const assert=require("node:assert/strict");
+const {requiredNetworkConfig,rpc}=require("../scripts/preflight");
+const HASH="0x"+"ab".repeat(32);
+describe("PortalDot RPC preflight configuration",function(){
+const saved={rpc:process.env.PORTALDOT_RPC_URL,chain:process.env.PORTALDOT_CHAIN_ID,subRpc:process.env.PORTALDOT_SUBSTRATE_RPC_URL,subHash:process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH,fetch:global.fetch};
+afterEach(function(){for(const [k,v] of [["PORTALDOT_RPC_URL",saved.rpc],["PORTALDOT_CHAIN_ID",saved.chain],["PORTALDOT_SUBSTRATE_RPC_URL",saved.subRpc],["PORTALDOT_SUBSTRATE_GENESIS_HASH",saved.subHash]]){if(v===undefined)delete process.env[k];else process.env[k]=v;}global.fetch=saved.fetch;});
+function configure(rpcUrl="https://rpc.example.invalid",chain="420420777",subRpc="wss://substrate.example.invalid",hash=HASH){for(const [key,value] of [["PORTALDOT_RPC_URL",rpcUrl],["PORTALDOT_CHAIN_ID",chain],["PORTALDOT_SUBSTRATE_RPC_URL",subRpc],["PORTALDOT_SUBSTRATE_GENESIS_HASH",hash]]){if(value===undefined||value===null)delete process.env[key];else process.env[key]=value;}}
+it("requires the EVM RPC, canonical chain ID, Substrate WebSocket and pinned Substrate genesis",function(){delete process.env.PORTALDOT_RPC_URL;expect(()=>requiredNetworkConfig()).to.throw(/PORTALDOT_RPC_URL is required/);configure(undefined,"01");expect(()=>requiredNetworkConfig()).to.throw(/PORTALDOT_CHAIN_ID/);configure("https://rpc.example.invalid","420420777",null,"");expect(()=>requiredNetworkConfig()).to.throw(/PORTALDOT_SUBSTRATE_RPC_URL is required/);configure("https://rpc.example.invalid","420420777","wss://substrate.example.invalid",null);expect(()=>requiredNetworkConfig()).to.throw(/PORTALDOT_SUBSTRATE_GENESIS_HASH/);configure();expect(requiredNetworkConfig()).to.deep.equal({rpcUrl:"https://rpc.example.invalid",expectedChainId:420420777n,substrateRpcUrl:"wss://substrate.example.invalid/",expectedSubstrateGenesisHash:HASH});});
+it("rejects insecure remote endpoints and credential-bearing URLs",function(){configure("http://remote.example.invalid");expect(()=>requiredNetworkConfig()).to.throw(/Remote RPC endpoints must use HTTPS/);configure("https://user:pass@rpc.example.invalid");expect(()=>requiredNetworkConfig()).to.throw(/must not embed credentials/);configure("https://rpc.example.invalid","420420777","ws://remote.example.invalid");expect(()=>requiredNetworkConfig()).to.throw(/must use WSS/);});
+it("disables redirects and validates JSON-RPC response envelopes",async function(){let options;global.fetch=async(_url,o)=>{options=o;return{ok:true,status:200,json:async()=>({jsonrpc:"2.0",id:1,result:"0x1"})}};expect(await rpc("https://rpc.example.invalid","eth_blockNumber")).to.equal("0x1");expect(options.redirect).to.equal("error");expect(JSON.parse(options.body)).to.deep.equal({jsonrpc:"2.0",id:1,method:"eth_blockNumber",params:[]});global.fetch=async()=>({ok:true,status:200,json:async()=>({jsonrpc:"1.0",id:1,result:"0x1"})});await assert.rejects(()=>rpc("https://rpc.example.invalid","eth_chainId"),/invalid JSON-RPC version/);global.fetch=async()=>({ok:false,status:503,json:async()=>({})});await assert.rejects(()=>rpc("https://rpc.example.invalid","eth_chainId"),/HTTP 503/);});
 });

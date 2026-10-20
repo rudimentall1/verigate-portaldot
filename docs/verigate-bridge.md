@@ -6,12 +6,13 @@ The bridge signer is the security boundary between Verigate's Ed25519 execution 
 
 1. Read a response captured from Verigate's POST /v1/actions/authorize endpoint.
 2. Require a decision receipt whose decision is exactly ALLOW, plus a separate execution authorization.
-3. Independently verify both Ed25519 signatures locally against the pinned issuer key configured by `VERIGATE_PUBLIC_KEY_FILE`.
+3. Independently verify both Ed25519 signatures locally against the pinned issuer key configured by VERIGATE_PUBLIC_KEY_FILE.
 4. Ask the configured Verigate instance's POST /v1/verify endpoint for a second validation; the server response is not the sole source of signature truth.
 5. Check that the receipt and execution authorization refer to the same intent and agent.
 6. Check that the signed action maps exactly to a PortalDot native transfer: recipient, raw base-unit amount, chain ID, asset and network.
-7. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing.
-8. Sign EIP-712 data using the dedicated bridge key; never broadcast automatically from this CLI.
+7. Use read-only RPC calls to verify the configured chain ID, non-empty guard bytecode, pinned PORTALDOT_GUARD_CODE_HASH, and on-chain authoritySigner() against AUTHORITY_SIGNER_ADDRESS.
+8. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing. The signed issued_at and expires_at fields must be safe-integer JSON numbers; string-encoded timestamps are rejected rather than coerced.
+9. Sign EIP-712 data using the dedicated bridge key. The signing CLI outputs JSON and never broadcasts.
 
 ## Required signed intent convention
 
@@ -20,7 +21,7 @@ The bridge signer is the security boundary between Verigate's Ed25519 execution 
 - network: portaldot-v3
 - asset: tPOTv3
 - amount_exact: positive integer string containing EVM transfer base units
-- metadata.portaldot_v3.chain_id: the explicitly configured positive EVM chain ID. The value `420420777` is used only by local test fixtures and is not confirmed live-network metadata.
+- metadata.portaldot_v3.chain_id: explicitly configured positive EVM chain ID. PortalDot's live Substrate runtime reported Revive.ChainId=420420777 at specVersion 3002, which agrees with the advertised EVM chain ID. This remains one endpoint's report, not independent network authentication.
 - metadata.portaldot_v3.recipient: same destination EVM address
 - metadata.portaldot_v3.amount_base_units: same integer string as amount_exact
 
@@ -32,26 +33,28 @@ Verigate signs its off-chain authorization artifacts with Ed25519. Solidity's ec
 
 ## Pinned issuer key
 
-Set `VERIGATE_PUBLIC_KEY_FILE` to a local PEM containing the trusted Verigate Ed25519 public key. Verify the key fingerprint through an independent trusted channel before pinning it. Fetching `/v1/public-key` over the same endpoint alone does not protect against a compromised issuer endpoint or key-substitution attack. The bridge verifies signatures locally first, then calls `/v1/verify` as a secondary check. A missing key, wrong key type or invalid signature stops signing.
+Set VERIGATE_PUBLIC_KEY_FILE to a local PEM containing the trusted Verigate Ed25519 public key. Verify the key fingerprint through an independent trusted channel before pinning it. Fetching /v1/public-key over the same endpoint alone does not protect against a compromised issuer endpoint or key-substitution attack. The bridge verifies signatures locally first, then calls /v1/verify as a secondary check. A missing key, wrong key type or invalid signature stops signing.
 
 ## Key separation
 
-The deployer key pays deployment gas. The bridge signer key is configured as the immutable signer in PortalDotAgentGuard. Keep them separate, use a throwaway/test-only bridge key, and keep the guarded balance small.
+The deployer/relayer key pays gas. The bridge signer key is configured as the immutable signer in PortalDotAgentGuard. Keep them separate, use a throwaway/test-only bridge key, and keep the guarded balance small.
 
 ## Cross-language canonical JSON
 
-Verigate signs compact, sorted-key JSON with Python's `json.dumps(..., ensure_ascii=False)`. Python preserves the distinction between integer `1` and float `1.0`; standard JavaScript `JSON.parse` followed by `JSON.stringify` does not. The CLI therefore retains the original numeric tokens from the Verigate JSON artifact when building canonical hashes and when asking `/v1/verify` to verify the payload. Do not parse and re-serialize the signed artifact through a JavaScript client before saving it. A changed numeric representation fails closed rather than being accepted as the original signature.
+Verigate signs compact, sorted-key JSON with Python's json.dumps(..., ensure_ascii=False). Python preserves the distinction between integer 1 and float 1.0; standard JavaScript JSON.parse followed by JSON.stringify does not. The CLI therefore retains the original numeric tokens from the Verigate JSON artifact when building canonical hashes and when asking /v1/verify to verify the payload. Do not parse and re-serialize the signed artifact through a JavaScript client before saving it. A changed numeric representation fails closed rather than being accepted as the original signature.
+
+## Guarded execution CLI
+
+The separate executor accepts the bridge's signed JSON. It revalidates the EIP-712 domain and recovered signer, rejects non-canonical or altered transfer fields, checks deadline, deployed guard runtime-code hash and on-chain authority signer, confirms the guard balance, then runs a read-only simulation and estimates relayer fees with a 20% margin. Without --broadcast it returns a simulation result and does not submit a transaction. With --broadcast it repeats critical checks immediately before submitting the exact signed transfer. The relayer private key pays gas and must be distinct from the authority signer. Use broadcast only after independently verifying target network, deployed contract, balance and fee budget.
 
 ## Remaining work
 
-- Run the current CLI against a real response from the configured Verigate instance.
-- Test authorization expiry, action mismatch, invalid signatures and denied decisions end to end.
+- Run the one-key mapping verifier locally for the intended H160 and registered SS58 account; do not query the whole map or put a personally identifying address pair into public CI.
 - Obtain the issuer public key through a trusted channel, verify its fingerprint, and keep the pinned PEM under controlled deployment configuration. Never commit private keys.
 - Never record a transaction hash or deployed address until it is confirmed on the live expected chain.
 
-
 ## Local end-to-end harness
 
-Run `scripts/verigate_local_demo.py` with the Python interpreter from the Verigate checkout. The harness creates an isolated temporary Verigate API instance, seeds a test-only identity and capability, submits ALLOW and BLOCK requests through the actual HTTP routes, verifies Ed25519 artifacts, and runs the Node bridge CLI with a fresh throwaway EVM signer against a dummy contract domain.
+Run scripts/verigate_local_demo.py with the Python interpreter from the Verigate checkout. The harness creates an isolated temporary Verigate API instance, seeds a test-only identity and capability, submits ALLOW and BLOCK requests through the actual HTTP routes, and verifies Ed25519 artifacts. It also starts an isolated loopback Hardhat EVM, deploys the actual PortalDotAgentGuard source using disposable deployer and bridge keys, pins that local deployment's runtime-code hash, and runs the bridge against the actual guard address. ALLOW signs only after chain, code-hash and authority checks pass; BLOCK is refused.
 
-The harness must never use the normal Verigate database, private keys or .env. GitHub Actions now runs it as a separate CI job on pushes and pull requests. It makes no RPC calls and broadcasts no transaction. A successful result validates isolated API-to-bridge plumbing only; it does not replace a check against the configured Verigate instance, a real agent integration, or a live PortalDot V3 deployment.
+The harness then runs the executor without --broadcast and proves the guard balance does not change. It executes the ALLOW transfer only on the temporary local simulator and confirms TransferExecuted plus the recipient's exact balance delta. The harness never uses the normal Verigate database or issuer keys. Temporary private keys, node state and database files are deleted after the run. It does not contact public PortalDot RPC or prove a live testnet deployment.

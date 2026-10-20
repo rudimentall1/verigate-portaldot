@@ -2,6 +2,7 @@ require("dotenv").config();
 const fs = require("node:fs");
 const crypto = require("node:crypto");
 const { ethers } = require("ethers");
+const { parseExpectedSubstrateGenesisHash, validateSubstrateRpcUrl, verifySubstrateGenesisHash } = require("../scripts/substrate-genesis.js");
 
 // Preserve Python JSON number spellings from Verigate's JSON artifacts. Python's
 // json.dumps distinguishes an integer (1) from an integral float (1.0), while
@@ -242,9 +243,13 @@ function validateAuthorizationBinding(response, options = {}) {
     fail("Execution authorization has no valid action digest.");
   }
 
-  const issuedAt = Number(authPayload.issued_at);
-  const expiresAt = Number(authPayload.expires_at);
-  if (!Number.isSafeInteger(issuedAt) || !Number.isSafeInteger(expiresAt) || !Number.isSafeInteger(now) || expiresAt <= now) {
+  // Authorization timestamps are JSON numbers in Verigate artifacts. Do not
+  // coerce strings such as "2000000240" into trusted clock values.
+  const issuedAt = authPayload.issued_at;
+  const expiresAt = authPayload.expires_at;
+  if (typeof issuedAt !== "number" || !Number.isSafeInteger(issuedAt) ||
+      typeof expiresAt !== "number" || !Number.isSafeInteger(expiresAt) ||
+      !Number.isSafeInteger(now) || expiresAt <= now) {
     fail("Execution authorization is expired or has invalid timestamps.");
   }
   if (issuedAt > now + 15 || expiresAt <= issuedAt || expiresAt - issuedAt > 300) {
@@ -286,11 +291,18 @@ function validateAuthorizationBinding(response, options = {}) {
     fail("Target and PortalDot metadata recipient do not match.");
   }
 
-  const amountText = String(action.amount_exact ?? "");
-  const mappedAmount = String(mapping.amount_base_units ?? "");
-  if (!/^[1-9][0-9]*$/.test(amountText) || amountText !== mappedAmount ||
-      String(intentMapping.amount_base_units ?? "") !== amountText) {
-    fail("amount_exact must equal metadata.portaldot_v3.amount_base_units as a positive base-unit integer.");
+  // Transfer amounts are exact base-unit values. Require canonical decimal strings
+  // rather than coercing JSON numbers, which can lose precision above 2^53 - 1.
+  const amountText = action.amount_exact;
+  const mappedAmount = mapping.amount_base_units;
+  const intentMappedAmount = intentMapping.amount_base_units;
+  if (typeof amountText !== "string" ||
+      typeof mappedAmount !== "string" ||
+      typeof intentMappedAmount !== "string" ||
+      !/^[1-9][0-9]*$/.test(amountText) ||
+      amountText !== mappedAmount ||
+      intentMappedAmount !== amountText) {
+    fail("amount_exact and metadata.portaldot_v3.amount_base_units must be matching canonical positive base-unit integer strings.");
   }
 
   const computedActionDigest = actionDigest(action);
@@ -322,9 +334,16 @@ function validateAuthorizationBinding(response, options = {}) {
   };
 }
 
-function verifyLocally(attestation, publicKeyPath = process.env.VERIGATE_PUBLIC_KEY_FILE) {
+function verifyLocally(
+  attestation,
+  publicKeyPath = process.env.VERIGATE_PUBLIC_KEY_FILE,
+  expectedKeySha256 = process.env.VERIGATE_PUBLIC_KEY_SHA256
+) {
   if (!publicKeyPath) {
     fail("VERIGATE_PUBLIC_KEY_FILE must point to a pinned Verigate issuer public key PEM.");
+  }
+  if (typeof expectedKeySha256 !== "string" || !/^[a-f0-9]{64}$/i.test(expectedKeySha256)) {
+    fail("VERIGATE_PUBLIC_KEY_SHA256 must be set to the independently verified SHA-256 fingerprint of the issuer public key.");
   }
   if (!attestation || attestation.algorithm !== "Ed25519" || !attestation.payload ||
       typeof attestation.payload !== "object" || Array.isArray(attestation.payload)) {
@@ -348,6 +367,15 @@ function verifyLocally(attestation, publicKeyPath = process.env.VERIGATE_PUBLIC_
   }
   if (publicKey.asymmetricKeyType !== "ed25519") {
     fail("VERIGATE_PUBLIC_KEY_FILE must contain an Ed25519 public key.");
+  }
+  // Hash normalized SubjectPublicKeyInfo DER, not PEM text, so harmless
+  // whitespace/line-ending changes cannot alter the fingerprint.
+  const actualKeySha256 = crypto
+    .createHash("sha256")
+    .update(publicKey.export({ type: "spki", format: "der" }))
+    .digest("hex");
+  if (actualKeySha256 !== expectedKeySha256.toLowerCase()) {
+    fail("Verigate issuer public-key fingerprint does not match VERIGATE_PUBLIC_KEY_SHA256; refusing to trust the issuer API response.");
   }
 
   let valid = false;
@@ -401,10 +429,102 @@ async function verifyWithVerigate(baseUrl, attestation, apiKey) {
   });
   if (!response.ok) fail(`Verigate signature verification endpoint returned HTTP ${response.status}.`);
   const result = await response.json();
-  if (result.valid !== true) fail(`Verigate signature was not validated: ${result.reason || "unknown reason"}`);
+  if (!result || result.valid !== true) fail(`Verigate signature was not validated: ${result?.reason || "unknown reason"}`);
 }
 
-async function signAuthorization(response) {
+const GUARD_READ_ABI = ["function authoritySigner() view returns (address)"];
+
+async function verifyGuardDeployment(options = {}) {
+  const rpcUrl = String(options.rpcUrl ?? process.env.PORTALDOT_RPC_URL ?? "").trim();
+  const chainIdText = String(options.expectedChainId ?? process.env.PORTALDOT_CHAIN_ID ?? "").trim();
+  const guardAddress = options.guardAddress ?? process.env.PORTALDOT_GUARD_ADDRESS;
+  const authorityAddress = options.authoritySigner ?? process.env.AUTHORITY_SIGNER_ADDRESS;
+  const expectedCodeHash = String(options.guardCodeHash ?? process.env.PORTALDOT_GUARD_CODE_HASH ?? "").trim();
+  const substrateRpcUrl = options.substrateRpcUrl ?? process.env.PORTALDOT_SUBSTRATE_RPC_URL;
+  const expectedSubstrateGenesisHashValue = options.substrateGenesisHash ?? options.genesisHash ?? process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH;
+
+  if (!rpcUrl) fail("PORTALDOT_RPC_URL is required to verify the deployed guard before signing.");
+  if (!/^[1-9][0-9]*$/.test(chainIdText)) {
+    fail("PORTALDOT_CHAIN_ID must be a canonical positive decimal integer before verifying the deployed guard.");
+  }
+  if (!guardAddress || !ethers.isAddress(guardAddress) || ethers.getAddress(guardAddress) === ethers.ZeroAddress) {
+    fail("PORTALDOT_GUARD_ADDRESS must be a non-zero EVM address.");
+  }
+  if (!authorityAddress || !ethers.isAddress(authorityAddress) || ethers.getAddress(authorityAddress) === ethers.ZeroAddress) {
+    fail("AUTHORITY_SIGNER_ADDRESS must be a non-zero EVM address before verifying the deployed guard.");
+  }
+  if (!/^0x[a-fA-F0-9]{64}$/.test(expectedCodeHash)) {
+    fail("PORTALDOT_GUARD_CODE_HASH must be the independently verified 32-byte runtime-code hash of PortalDotAgentGuard.");
+  }
+  const validatedSubstrateRpcUrl = validateSubstrateRpcUrl(substrateRpcUrl);
+  const expectedSubstrateGenesisHash = parseExpectedSubstrateGenesisHash(expectedSubstrateGenesisHashValue);
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(rpcUrl);
+  } catch {
+    fail("PORTALDOT_RPC_URL must be a valid absolute URL for guard verification.");
+  }
+  if (parsedUrl.username || parsedUrl.password) {
+    fail("PORTALDOT_RPC_URL must not embed credentials.");
+  }
+  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+    fail("PORTALDOT_RPC_URL must use HTTP or HTTPS for guard verification.");
+  }
+  const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+  if (parsedUrl.protocol === "http:" && !loopbackHosts.has(parsedUrl.hostname.toLowerCase())) {
+    fail("Remote RPC endpoints must use HTTPS for guard verification.");
+  }
+
+  const expectedChainId = BigInt(chainIdText);
+  let provider;
+  const ownsProvider = typeof options.providerFactory !== "function";
+  try {
+    provider = ownsProvider
+      ? new ethers.JsonRpcProvider(rpcUrl)
+      : await options.providerFactory(rpcUrl);
+
+    const network = await provider.getNetwork();
+    if (network.chainId !== expectedChainId) {
+      fail(`Guard RPC is on chain ID ${network.chainId}, expected ${expectedChainId}; refusing to sign.`);
+    }
+    const actualSubstrateGenesisHash = await verifySubstrateGenesisHash(validatedSubstrateRpcUrl, expectedSubstrateGenesisHash);
+
+    const address = ethers.getAddress(guardAddress);
+    const code = await provider.getCode(address);
+    if (typeof code !== "string" || !/^0x(?:[0-9a-fA-F]{2})+$/.test(code)) {
+      fail(`No deployed contract bytecode found at PORTALDOT_GUARD_ADDRESS ${address}; refusing to sign.`);
+    }
+    const actualCodeHash = ethers.keccak256(code);
+    if (actualCodeHash.toLowerCase() !== expectedCodeHash.toLowerCase()) {
+      fail(`Deployed guard runtime-code hash ${actualCodeHash} does not match PORTALDOT_GUARD_CODE_HASH; refusing to sign.`);
+    }
+
+    const makeContract = options.contractFactory ||
+      ((contractAddress, rpcProvider) => new ethers.Contract(contractAddress, GUARD_READ_ABI, rpcProvider));
+    const guard = makeContract(address, provider);
+    const actualAuthority = ethers.getAddress(await guard.authoritySigner());
+    const expectedAuthority = ethers.getAddress(authorityAddress);
+    if (actualAuthority !== expectedAuthority) {
+      fail(`Deployed guard authoritySigner ${actualAuthority} does not match AUTHORITY_SIGNER_ADDRESS ${expectedAuthority}; refusing to sign.`);
+    }
+
+    return {
+      chainId: network.chainId,
+      substrateGenesisHash: actualSubstrateGenesisHash,
+      guardAddress: address,
+      authoritySigner: actualAuthority,
+      runtimeCodeHash: actualCodeHash,
+      deployedCodeBytes: (code.length - 2) / 2
+    };
+  } finally {
+    if (ownsProvider && provider && typeof provider.destroy === "function") {
+      await provider.destroy();
+    }
+  }
+}
+
+async function signAuthorization(response, options = {}) {
   const transfer = validateAuthorizationBinding(response);
   const baseUrl = process.env.VERIGATE_BASE_URL || "http://127.0.0.1:8000";
   const apiKey = process.env.VERIGATE_API_KEY || "";
@@ -429,6 +549,10 @@ async function signAuthorization(response) {
   if (ethers.getAddress(wallet.address) !== ethers.getAddress(process.env.AUTHORITY_SIGNER_ADDRESS)) {
     fail("BRIDGE_SIGNER_PRIVATE_KEY does not match AUTHORITY_SIGNER_ADDRESS.");
   }
+
+  // Bind every EIP-712 signature to an actually deployed guard on the configured
+  // chain and verify that its on-chain immutable authority matches this signer.
+  await verifyGuardDeployment({ providerFactory: options.providerFactory });
 
   const domain = {
     name: "PortalDotAgentGuard",
@@ -481,4 +605,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { validateAuthorizationBinding, verifyLocally, verifyWithVerigate, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers };
+module.exports = { validateAuthorizationBinding, verifyLocally, verifyWithVerigate, verifyGuardDeployment, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers };

@@ -9,6 +9,11 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/dependency-audit.yml"
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/dependency-audit.yml"
 
 permissions:
   contents: read
@@ -19,21 +24,30 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 20
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
           cache: npm
+      - name: Record audited revision
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Revision: $GITHUB_SHA"
+          echo "Ref: $GITHUB_REF_NAME"
+          echo "Node.js: $(node --version)"
+          echo "npm: $(npm --version)"
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Generate actionable advisory summary (report-only)
+      - name: Generate advisory summary and fail on moderate-or-higher findings
         shell: bash
         run: |
           set +e
-          npm audit --json > "$RUNNER_TEMP/npm-audit.json"
+          npm audit --audit-level=moderate --json > "$RUNNER_TEMP/npm-audit.json"
           audit_status=$?
-          echo "npm audit exit code: $audit_status (non-zero means advisories were found or audit failed)"
+          echo "npm audit exit code: $audit_status (non-zero means moderate-or-higher advisories were found or audit failed)"
           node -e '
             const fs = require("node:fs");
             const p = process.argv[1];
@@ -60,10 +74,12 @@ jobs:
               process.exitCode = 1;
             }
           ' "$RUNNER_TEMP/npm-audit.json"
-          exit 0
+          summary_status=$?
+          if [ "$audit_status" -ne 0 ]; then exit "$audit_status"; fi
+          exit "$summary_status"
       - name: Upload full npm audit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: npm-audit-report
           path: ${{ runner.temp }}/npm-audit.json

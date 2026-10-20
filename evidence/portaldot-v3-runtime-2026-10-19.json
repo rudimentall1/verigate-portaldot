@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-19T08:46:43.745Z",
+  "source": {
+    "runtimeWorkflowRun": "https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225053317",
+    "runtimeWorkflowArtifactId": "12172714887",
+    "endpoint": "wss://test-node-v3.portaldot.dev",
+    "method": "read-only Substrate JSON-RPC plus polkadot-cli 1.25.0 runtime metadata inspection and one-key state query"
+  },
+  "networkResponse": {
+    "chainName": "PortaldotV3 Test",
+    "nodeName": "PortaldotV3 Node",
+    "nodeVersion": "3.0.0-dev-fddd43141f2",
+    "genesisHashReportedByEndpoint": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "finalizedBlockNumber": "100714",
+    "finalizedHeadHash": "0xd677439c22dc1d54491ae810df84762e2f098777c35a99737f7937804c6403fc",
+    "runtimeVersion": {
+      "specName": "portaldot-v3",
+      "specVersion": 3002,
+      "implName": "portaldot-v3-node",
+      "implVersion": 0,
+      "transactionVersion": 2
+    },
+    "metadataBytes": 561916,
+    "metadataSha256Observed": "02ba160e9ef55ad94874d51a130ab705240448a1fee2542c0bed24bf60d089f0"
+  },
+  "reviveStorage": {
+    "OriginalAccount": {
+      "exists": true,
+      "keyType": "[u8; 20]",
+      "valueType": "AccountId32",
+      "description": "Map an Ethereum H160 address to its original AccountId32; reverse mapping for reconstructing the original native account."
+    },
+    "AddressSuffix": {
+      "exists": false,
+      "pallet": "Revive"
+    }
+  },
+  "runtimeConstants": {
+    "ChainId": "420420777",
+    "NativeToEthRatio": "10000",
+    "AutoMap": true,
+    "AllowEVMBytecode": true,
+    "GasScale": 5,
+    "CodeHashLockupDepositPercent": "300000000",
+    "DepositPerByte": "6000000000000",
+    "DepositPerItem": "15000000000000",
+    "DepositPerChildTrieItem": "150000000000"
+  },
+  "syntheticKeyProbe": {
+    "storageItem": "Revive.OriginalAccount",
+    "h160": "0x0000000000000000000000000000000000000001",
+    "cliReportedResult": null,
+    "cliPrintedSentinel": "undefined",
+    "resultStatus": "no_mapping_entry",
+    "queryPinnedToCapturedFinalizedHead": true,
+    "queryFinalizedBlockNumber": "100714",
+    "queryFinalizedHeadHash": "0xd677439c22dc1d54491ae810df84762e2f098777c35a99737f7937804c6403fc",
+    "scope": "single synthetic key only",
+    "transactionOrExtrinsicSubmitted": false,
+    "verifierOutputJsonConfirmed": true,
+    "polkadotCliVersion": "1.25.0"
+  },
+  "interpretation": {
+    "runtimeMappingForAnyUserAddressVerified": false,
+    "networkIdentityIndependentlyAuthenticated": false,
+    "genesisHashOrMetadataHashTrustedAsPin": false,
+    "notes": [
+      "This is an observation from one RPC endpoint at the recorded finalized block, not independent authentication of that endpoint.",
+      "The raw metadata digest is a per-observation value, not a trusted runtime identity pin; earlier inspections returned different digests while reporting the same specVersion.",
+      "The synthetic H160 query was intentionally limited to one fixed non-user key and does not establish the mapping for a real wallet.",
+      "The mapping query was explicitly pinned to the same finalized block hash recorded by the runtime inspector.",
+      "Current runtime metadata exposes Revive.OriginalAccount as the H160-to-AccountId32 storage; Revive.AddressSuffix is absent in this runtime."
+    ]
+  }
+}

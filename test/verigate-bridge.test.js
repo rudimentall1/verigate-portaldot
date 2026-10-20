@@ -1,10 +1,20 @@
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 const { expect } = require("chai");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { ethers } = require("hardhat");
-const { validateAuthorizationBinding, verifyLocally, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate } = require("../adapter/verigate-bridge");
+const hre = (await import("hardhat")).default;
+const { ethers } = await hre.network.create();
+const { validateAuthorizationBinding, verifyLocally, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate, verifyGuardDeployment } = require("../adapter/verigate-bridge");
+const TEST_GENESIS_HASH = "0x" + "ab".repeat(32);
+class TestWebSocket extends EventTarget {
+  constructor(url) { super(); this.url=url; queueMicrotask(()=>this.dispatchEvent(new Event("open"))); }
+  send(raw) { const q=JSON.parse(raw); queueMicrotask(()=>this.dispatchEvent(new MessageEvent("message",{data:JSON.stringify({jsonrpc:"2.0",id:q.id,result:TEST_GENESIS_HASH})}))); }
+  close() {}
+}
+globalThis.WebSocket=TestWebSocket;
 
 describe("Verigate bridge binding", function () {
   let recipient;
@@ -13,20 +23,29 @@ describe("Verigate bridge binding", function () {
   let testKeyDir;
   let publicKeyFile;
   let originalPublicKeyFile;
+  let originalPublicKeySha256;
 
   before(function () {
     originalPublicKeyFile = process.env.VERIGATE_PUBLIC_KEY_FILE;
+    originalPublicKeySha256 = process.env.VERIGATE_PUBLIC_KEY_SHA256;
     const pair = crypto.generateKeyPairSync("ed25519");
     issuerPrivateKey = pair.privateKey;
     testKeyDir = fs.mkdtempSync(path.join(os.tmpdir(), "verigate-portaldot-tests-"));
     publicKeyFile = path.join(testKeyDir, "issuer.pub");
-    fs.writeFileSync(publicKeyFile, pair.publicKey.export({ type: "spki", format: "pem" }));
+    const publicKeyPem = pair.publicKey.export({ type: "spki", format: "pem" });
+    fs.writeFileSync(publicKeyFile, publicKeyPem);
     process.env.VERIGATE_PUBLIC_KEY_FILE = publicKeyFile;
+    process.env.VERIGATE_PUBLIC_KEY_SHA256 = crypto
+      .createHash("sha256")
+      .update(pair.publicKey.export({ type: "spki", format: "der" }))
+      .digest("hex");
   });
 
   after(function () {
     if (originalPublicKeyFile === undefined) delete process.env.VERIGATE_PUBLIC_KEY_FILE;
     else process.env.VERIGATE_PUBLIC_KEY_FILE = originalPublicKeyFile;
+    if (originalPublicKeySha256 === undefined) delete process.env.VERIGATE_PUBLIC_KEY_SHA256;
+    else process.env.VERIGATE_PUBLIC_KEY_SHA256 = originalPublicKeySha256;
     fs.rmSync(testKeyDir, { recursive: true, force: true });
   });
 
@@ -37,6 +56,8 @@ describe("Verigate bridge binding", function () {
   beforeEach(async function () {
     // Explicit fixture configuration; production code must not assume a chain ID.
     process.env.PORTALDOT_CHAIN_ID = "420420777";
+    process.env.PORTALDOT_SUBSTRATE_RPC_URL = "wss://substrate.example.invalid";
+    process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH = TEST_GENESIS_HASH;
     [, recipient, other] = await ethers.getSigners();
   });
 
@@ -102,6 +123,19 @@ describe("Verigate bridge binding", function () {
     const item = response(Math.floor(Date.now() / 1000));
     expect(verifyLocally(item.decision_receipt)).to.equal(true);
     expect(verifyLocally(item.execution_authorization)).to.equal(true);
+  });
+
+  it("refuses local verification when the issuer key fingerprint is missing or mismatched", function () {
+    const item = response(Math.floor(Date.now() / 1000));
+    const configuredFingerprint = process.env.VERIGATE_PUBLIC_KEY_SHA256;
+    try {
+      delete process.env.VERIGATE_PUBLIC_KEY_SHA256;
+      expect(() => verifyLocally(item.decision_receipt)).to.throw(/VERIGATE_PUBLIC_KEY_SHA256 must be set/);
+      process.env.VERIGATE_PUBLIC_KEY_SHA256 = "0".repeat(64);
+      expect(() => verifyLocally(item.decision_receipt)).to.throw(/fingerprint does not match/);
+    } finally {
+      process.env.VERIGATE_PUBLIC_KEY_SHA256 = configuredFingerprint;
+    }
   });
 
   it("refuses a forged artifact locally even if the remote verifier might approve it", async function () {
@@ -461,7 +495,7 @@ describe("Verigate bridge binding", function () {
     const item = response(2000000000);
     item.execution_authorization.payload.action.metadata.portaldot_v3.amount_base_units = "2000000";
     expect(() => validateAuthorizationBinding(item, { now: 2000000000, expectedChainId: 420420777 }))
-      .to.throw(/amount_exact must equal/);
+      .to.throw(/canonical positive base-unit integer strings/);
   });
 
   it("refuses a wrong chain and expired authorization", function () {
@@ -503,6 +537,21 @@ describe("Verigate bridge binding", function () {
     expect(() => validateAuthorizationBinding(unsafeExpiresAt, { now, expectedChainId: 420420777 }))
       .to.throw(/expired or has invalid timestamps/);
   });
+
+  it("refuses string-encoded authorization timestamps instead of coercing them", function () {
+    const now = 2000000000;
+
+    const stringIssuedAt = response(now);
+    stringIssuedAt.execution_authorization.payload.issued_at = String(now - 1);
+    expect(() => validateAuthorizationBinding(stringIssuedAt, { now, expectedChainId: 420420777 }))
+      .to.throw(/expired or has invalid timestamps/);
+
+    const stringExpiresAt = response(now);
+    stringExpiresAt.execution_authorization.payload.expires_at = String(now + 240);
+    expect(() => validateAuthorizationBinding(stringExpiresAt, { now, expectedChainId: 420420777 }))
+      .to.throw(/expired or has invalid timestamps/);
+  });
+
 
   it("refuses to assume a chain ID when none is configured", function () {
     const configured = process.env.PORTALDOT_CHAIN_ID;
@@ -596,17 +645,306 @@ describe("Verigate bridge binding", function () {
     }
   });
 
+
+  it("executes an end-to-end Verigate ALLOW through bridge EIP-712 signing into the guard on a local chain", async function () {
+    const envKeys = [
+      "PORTALDOT_CHAIN_ID",
+      "PORTALDOT_SUBSTRATE_GENESIS_HASH",
+      "PORTALDOT_RPC_URL",
+      "VERIGATE_BASE_URL",
+      "VERIGATE_API_KEY",
+      "VERIGATE_PUBLIC_KEY_FILE",
+      "VERIGATE_PUBLIC_KEY_SHA256",
+      "BRIDGE_SIGNER_PRIVATE_KEY",
+      "AUTHORITY_SIGNER_ADDRESS",
+      "PORTALDOT_GUARD_ADDRESS",
+      "PORTALDOT_GUARD_CODE_HASH"
+    ];
+    const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+    const originalFetch = global.fetch;
+    let verifierCalls = 0;
+
+    try {
+      const [deployer, , relayer] = await ethers.getSigners();
+      const chainId = (await ethers.provider.getNetwork()).chainId;
+      const now = Math.floor(Date.now() / 1000);
+      const item = response(now);
+      const intent = item.decision_receipt.payload.intent;
+      const action = item.execution_authorization.payload.action;
+
+      // Re-sign the fixtures for the actual local EVM chain so the EIP-712
+      // domain checked by the contract and the bridge uses the same chain ID.
+      intent.metadata.portaldot_v3.chain_id = Number(chainId);
+      action.metadata.portaldot_v3.chain_id = Number(chainId);
+      item.decision_receipt.signature = signPayload(item.decision_receipt.payload);
+
+      const executionPayload = item.execution_authorization.payload;
+      executionPayload.authorization_id = crypto
+        .createHash("sha256")
+        .update(item.decision_receipt.signature + String(executionPayload.nonce), "utf8")
+        .digest("hex");
+      executionPayload.action_sha256 = actionDigest(action);
+      item.execution_authorization.signature = signPayload(executionPayload);
+
+      const bridgeWallet = ethers.Wallet.createRandom();
+      const factory = await ethers.getContractFactory("PortalDotAgentGuard");
+      const guard = await factory.deploy(bridgeWallet.address);
+      await guard.waitForDeployment();
+      const guardAddress = await guard.getAddress();
+      await deployer.sendTransaction({ to: guardAddress, value: ethers.parseEther("1") });
+
+      process.env.PORTALDOT_CHAIN_ID = chainId.toString();
+      process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH = TEST_GENESIS_HASH;
+      process.env.PORTALDOT_RPC_URL = "http://127.0.0.1:8545";
+      process.env.VERIGATE_BASE_URL = "https://verigate.example";
+      process.env.VERIGATE_API_KEY = "disposable-test-api-key";
+      process.env.BRIDGE_SIGNER_PRIVATE_KEY = bridgeWallet.privateKey;
+      process.env.AUTHORITY_SIGNER_ADDRESS = bridgeWallet.address;
+      process.env.PORTALDOT_GUARD_ADDRESS = guardAddress;
+      process.env.PORTALDOT_GUARD_CODE_HASH = ethers.keccak256(await ethers.provider.getCode(guardAddress));
+      // The suite's before hook writes this temporary issuer public key.
+      process.env.VERIGATE_PUBLIC_KEY_FILE = publicKeyFile;
+      global.fetch = async (url, options) => {
+        verifierCalls += 1;
+        expect(String(url)).to.equal("https://verigate.example/v1/verify");
+        expect(options.method).to.equal("POST");
+        expect(options.redirect).to.equal("error");
+        return { ok: true, status: 200, json: async () => ({ valid: true }) };
+      };
+
+      const signed = await signAuthorization(item, { providerFactory: () => ethers.provider });
+      expect(signed.domain.chainId).to.equal(chainId);
+      expect(signed.domain.verifyingContract).to.equal(guardAddress);
+      expect(signed.authoritySigner).to.equal(bridgeWallet.address);
+      expect(verifierCalls).to.equal(2);
+
+      const transfer = signed.transfer;
+      const nonce = BigInt(transfer.nonce);
+      const amount = BigInt(transfer.amount);
+      const recipientBefore = await ethers.provider.getBalance(transfer.recipient);
+
+      await expect(guard.connect(relayer).executeTransfer(
+        transfer.recipient,
+        amount,
+        nonce,
+        BigInt(transfer.deadline),
+        transfer.actionId,
+        signed.signature
+      )).to.emit(guard, "TransferExecuted")
+        .withArgs(transfer.actionId, transfer.recipient, amount, nonce);
+
+      expect(await ethers.provider.getBalance(transfer.recipient)).to.equal(recipientBefore + amount);
+      expect(await guard.usedNonces(nonce)).to.equal(true);
+    } finally {
+      global.fetch = originalFetch;
+      for (const key of envKeys) {
+        if (originalEnv[key] === undefined) delete process.env[key];
+        else process.env[key] = originalEnv[key];
+      }
+    }
+  });
+
+});
+
+
+describe("On-chain PortalDot guard verification before signing", function () {
+  const rpcUrl = "https://rpc.example.invalid";
+  const guardAddress = "0x1111111111111111111111111111111111111111";
+  const expectedAuthority = "0x2222222222222222222222222222222222222222";
+  const otherAuthority = "0x3333333333333333333333333333333333333333";
+  const expectedCodeHash = ethers.keccak256("0x6000");
+  const expectedGenesisHash = TEST_GENESIS_HASH;
+
+  function mockProvider({ chainId = 420420777n, code = "0x6000", genesisHash = expectedGenesisHash } = {}) {
+    return {
+      getNetwork: async () => ({ chainId }),
+      getBlock: async (blockNumber) => ({ number: blockNumber, hash: genesisHash }),
+      getCode: async () => code
+    };
+  }
+
+  async function capturedError(promise) {
+    try {
+      await promise;
+    } catch (error) {
+      return error;
+    }
+    throw new Error("Expected guard verification to fail closed.");
+  }
+
+  it("rejects a guard RPC connected to a different chain", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      providerFactory: async () => mockProvider({ chainId: 1n }),
+      contractFactory: () => ({ authoritySigner: async () => expectedAuthority })
+    }));
+    expect(error.message).to.match(/expected 420420777; refusing to sign/);
+  });
+
+  it("refuses bridge verification when the Substrate genesis pin is omitted", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl, expectedChainId: "420420777", guardAddress, authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash, genesisHash: "",
+      providerFactory: async () => mockProvider(),
+      contractFactory: () => ({ authoritySigner: async () => expectedAuthority })
+    }));
+    expect(error.message).to.match(/PORTALDOT_SUBSTRATE_GENESIS_HASH/);
+  });
+
+  it("rejects a mismatched genesis hash before reading contract bytecode", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      genesisHash: "0x" + "cd".repeat(32),
+      providerFactory: async () => mockProvider(),
+      contractFactory: () => { throw new Error("Contract reads must not follow a genesis mismatch"); }
+    }));
+    expect(error.message).to.match(/does not match PORTALDOT_SUBSTRATE_GENESIS_HASH/);
+  });
+
+  it("rejects an address with no deployed contract bytecode", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      providerFactory: async () => mockProvider({ code: "0x" }),
+      contractFactory: () => {
+        throw new Error("authoritySigner must not be called when no bytecode exists");
+      }
+    }));
+    expect(error.message).to.match(/No deployed contract bytecode/);
+  });
+
+  it("rejects runtime bytecode that differs from the pinned guard code hash", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: ethers.keccak256("0x6001"),
+      providerFactory: async () => mockProvider(),
+      contractFactory: () => {
+        throw new Error("authoritySigner must not be queried after a code-hash mismatch");
+      }
+    }));
+    expect(error.message).to.match(/does not match PORTALDOT_GUARD_CODE_HASH/);
+  });
+
+  it("requires a pinned runtime-code hash before RPC requests", async function () {
+    let calls = 0;
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: "",
+      providerFactory: async () => {
+        calls += 1;
+        return mockProvider();
+      }
+    }));
+    expect(error.message).to.match(/PORTALDOT_GUARD_CODE_HASH must be/);
+    expect(calls).to.equal(0);
+  });
+
+  it("rejects a deployed guard whose authority signer differs from configuration", async function () {
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      providerFactory: async () => mockProvider(),
+      contractFactory: () => ({ authoritySigner: async () => otherAuthority })
+    }));
+    expect(error.message).to.match(/does not match AUTHORITY_SIGNER_ADDRESS/);
+  });
+
+  it("fails closed when any read-only RPC call fails", async function () {
+    const networkError = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      providerFactory: async () => ({
+        getNetwork: async () => { throw new Error("RPC getNetwork unavailable"); },
+        getCode: async () => { throw new Error("getCode must not run after getNetwork fails"); }
+      })
+    }));
+    expect(networkError.message).to.equal("RPC getNetwork unavailable");
+
+    const codeError = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      providerFactory: async () => ({
+        getNetwork: async () => ({ chainId: 420420777n }),
+        getBlock: async () => ({ hash: expectedGenesisHash }),
+        getCode: async () => { throw new Error("RPC getCode unavailable"); }
+      })
+    }));
+    expect(codeError.message).to.equal("RPC getCode unavailable");
+
+    const authorityError = await capturedError(verifyGuardDeployment({
+      rpcUrl,
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      providerFactory: async () => ({
+        getNetwork: async () => ({ chainId: 420420777n }),
+        getBlock: async () => ({ hash: expectedGenesisHash }),
+        getCode: async () => "0x6000"
+      }),
+      contractFactory: () => ({
+        authoritySigner: async () => { throw new Error("RPC authoritySigner unavailable"); }
+      })
+    }));
+    expect(authorityError.message).to.equal("RPC authoritySigner unavailable");
+  });
+
+  it("rejects remote RPC over plain HTTP before making any request", async function () {
+    let calls = 0;
+    const error = await capturedError(verifyGuardDeployment({
+      rpcUrl: "http://rpc.example.invalid",
+      expectedChainId: "420420777",
+      guardAddress,
+      authoritySigner: expectedAuthority,
+      guardCodeHash: expectedCodeHash,
+      providerFactory: async () => {
+        calls += 1;
+        return mockProvider();
+      }
+    }));
+    expect(error.message).to.match(/Remote RPC endpoints must use HTTPS/);
+    expect(calls).to.equal(0);
+  });
 });
 
 
 describe("PortalDot RPC preflight configuration", function () {
   const { requiredNetworkConfig, safeRpcOrigin } = require("../scripts/preflight");
-  const keys = ["PORTALDOT_RPC_URL", "PORTALDOT_CHAIN_ID"];
+  const keys = ["PORTALDOT_RPC_URL", "PORTALDOT_CHAIN_ID", "PORTALDOT_SUBSTRATE_RPC_URL", "PORTALDOT_SUBSTRATE_GENESIS_HASH"];
+  const testGenesisHash = "0x" + "ab".repeat(32);
   let originalEnv;
 
   beforeEach(function () {
     originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
     for (const key of keys) delete process.env[key];
+    process.env.PORTALDOT_SUBSTRATE_RPC_URL = "wss://substrate.example.invalid";
+    process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH = testGenesisHash;
   });
 
   afterEach(function () {
@@ -657,7 +995,9 @@ describe("PortalDot RPC preflight configuration", function () {
     process.env.PORTALDOT_CHAIN_ID = "31337";
     expect(requiredNetworkConfig()).to.deep.equal({
       rpcUrl: "http://127.0.0.1:8545",
-      expectedChainId: 31337n
+      expectedChainId: 31337n,
+      substrateRpcUrl: "wss://substrate.example.invalid/",
+      expectedSubstrateGenesisHash: testGenesisHash
     });
   });
 
@@ -666,7 +1006,9 @@ describe("PortalDot RPC preflight configuration", function () {
     process.env.PORTALDOT_CHAIN_ID = "420420777";
     expect(requiredNetworkConfig()).to.deep.equal({
       rpcUrl: "https://rpc.example/path",
-      expectedChainId: 420420777n
+      expectedChainId: 420420777n,
+      substrateRpcUrl: "wss://substrate.example.invalid/",
+      expectedSubstrateGenesisHash: testGenesisHash
     });
   });
 
