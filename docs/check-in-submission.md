@@ -1,37 +1,41 @@
 # Hacker House check-in submission draft
 
-Copy and adapt this text for DoraHacks. It deliberately does not claim a live PortalDot deployment.
+Copy this into the DoraHacks check-in form after verifying the current event requirements. This describes the state as of 20 October 2026; it does not claim a live token transfer.
 
 ## Project
 
 **Name:** Verigate PortalDot  
-**Track:** Node Operations & Tooling
+**Track:** Node Operations & Tooling  
+**Repository:** https://github.com/rudimentall1/verigate-portaldot
 
 **One-line overview**
 
-Verigate PortalDot is a narrow authorization bridge that prevents an AI agent's proposed native-token payment from being signed unless Verigate issues a valid signed `ALLOW` decision and execution authorization; a Solidity guard then enforces the resulting EIP-712 transfer constraints.
+Verigate is an authorization control layer for AI-agent payments. An agent's proposal is not sufficient authority to move funds: the bridge requires a valid signed Verigate ALLOW decision and execution authorization, and a Solidity guard enforces the exact recipient, amount, deadline and replay nonce.
 
-## Current progress
+## What works
 
-- **Public repository:** https://github.com/rudimentall1/verigate-portaldot
-- **Native-transfer guard:** `PortalDotAgentGuard` accepts only an EIP-712-authorized native-token transfer. It checks the trusted signer, recipient, amount, deadline and replay nonce; it has no arbitrary-call interface.
-- **Authorization bridge:** the bridge independently validates both Verigate Ed25519 artifacts using a locally pinned issuer public key, asks the API verifier for a second check, binds the authorization to the exact action, recipient and amount, and produces a short-lived EIP-712 signature only for `ALLOW`.
-- **Automated evidence:** GitHub Actions runs local Hardhat tests and Solidity compilation, plus a separate integration job using a temporary Verigate API instance with disposable test keys. The integration verifies genuine signed artifacts locally against a pinned Ed25519 public key, asks the API verifier for a second check, creates a dry-run EIP-712 signature for `ALLOW`, and refuses `BLOCK`. Unit tests also prove that an invalid signature is refused even if the API claims it is valid.
-- **Latest CI evidence:** https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783295
-- **Architecture and trust boundaries:** https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/architecture.md
-- **Demo recording plan:** https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/demo-script.md
+- **PortalDot V3 testnet deployment:** `PortalDotAgentGuard` deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`.
+- **Deployment transaction:** `0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c`, receipt status `0x1`, block `116872`.
+- **On-chain checks:** the deployed runtime bytecode was read back and hashed; the contract's `authoritySigner()` readback matched the configured signer. Evidence and limitations: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/deployment-evidence-2026-10-20.md
+- **Guard contract:** accepts only a short-lived EIP-712-authorized native-token transfer and has no arbitrary-call interface.
+- **Authorization bridge:** validates the signed Verigate decision and execution authorization, binds the action to the exact recipient and base-unit amount, and creates an EIP-712 authorization only for ALLOW.
+- **Guarded executor:** defaults to simulation; validates the signature/domain, deployed code hash, authority signer, deadline, contract funds and relayer gas budget. Broadcasting requires an explicit `--broadcast` flag.
+- **Automated checks:** 156 tests passed in the deployment workspace. Local end-to-end integration exercises ALLOW and BLOCK against a disposable loopback Hardhat EVM.
 
-## Outstanding work
+## Important limitations
 
-1. Run the network preflight against the EVM RPC and chain ID announced by the PortalDot team on 17 October 2026.
-2. Confirm native-token denomination and native/EVM wallet mapping with the PortalDot team, then deploy only if preflight succeeds. Capture the contract address, transaction hash, block number and explorer link if the network supports it.
-3. Record and publish an initial demo video of no more than three minutes. Until live preflight and deployment evidence exist, label the current integration as a local dry run.
+The contract deployment is confirmed on PortalDot V3 testnet, but the local ALLOW/BLOCK end-to-end transfer evidence is from a loopback Hardhat EVM, not a public PortalDot transfer. The EVM-to-SS58 account mapping has not been independently confirmed for the displayed wallet address. This is a testnet prototype, not an independent audit or production-ready key-management system.
 
-## Testnet deployment status
+## Next work
 
-**Not deployed to the PortalDot testnet.** No contract address, deployment transaction hash or explorer transaction link is claimed. `.env.example` records the RPC URL and chain ID announced by the PortalDot team on 17 October 2026. The CI demonstration remains local and does not broadcast a transaction. The current CI demonstration does not broadcast a transaction.
+1. Publish/review the guarded transfer executor and its dependencies on the public default branch so another developer can reproduce the flow.
+2. Record a demo under three minutes showing the authorization decision, BLOCK refusal, simulation and the confirmed testnet deployment evidence. Label local execution as local.
+3. Submit the check-in through DoraHacks and keep the repository and evidence links public.
 
-## Reproducibility
+## Operations and evidence
 
-The local contract and bridge checks run through GitHub Actions. The integration job uploads `summary.json`, signed `ALLOW` and `BLOCK` responses, and a dry-run signature as the `isolated-verigate-api-evidence` artifact. The artifact contains temporary test data only and is not proof of a live PortalDot transaction.
+- Deployment evidence: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/deployment-evidence-2026-10-20.md
+- Testnet operations runbook: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/testnet-operations-2026-10-20.md
+- Repository Actions: https://github.com/rudimentall1/verigate-portaldot/actions
 
+No private keys, seed phrases, API tokens or secret environment files belong in the submission.
