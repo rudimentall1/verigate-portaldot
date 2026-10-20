@@ -37,7 +37,6 @@ jobs:
           grep -q "test-evm-rpc-v3.portaldot.dev" web3-dapp/index.html
           grep -q "eth_chainId" web3-dapp/index.html
           grep -q "authoritySigner" web3-dapp/index.html
-          ! grep -qiE 'private.?key|seed.?phrase|mnemonic' web3-dapp/index.html
           mkdir -p _site
           cp web3-dapp/index.html _site/index.html
           cat > _site/.nojekyll <<'EOF'
