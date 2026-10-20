@@ -103,6 +103,13 @@ async function main() {
     );
   }
 
+  // The live PortalDot estimate is unusually large because pallet-revive may
+  // account for code/storage deposits in eth_estimateGas. The estimate is not a
+  // fee-only measurement. Keep the chain/genesis, signer, and balance guards above;
+  // submit the exact estimate with the same max-fee cap and verify the receipt/code
+  // below. This is a testnet deployment and may consume a substantial part of the
+  // configured deployer's test balance. The SS58 mapping is not asserted here.
+
   // Pass the exact fee caps used in the budget check; do not let ethers silently
   // populate a different maxFeePerGas after the balance guard has passed.
   const transactionOverrides = buildDeploymentTransactionOverrides({

@@ -8,3 +8,6 @@ types/ethers-contracts/
 .env.*
 !.env.example
 .DS_Store
+
+# Local signing secrets; never commit
+.secrets/

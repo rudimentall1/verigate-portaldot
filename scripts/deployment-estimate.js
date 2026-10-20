@@ -103,10 +103,11 @@ function buildDeploymentReadiness({ authoritySignerIsPlaceholder, balanceSuffici
   }
   // Estimation alone cannot prove wallet ownership, H160-to-SS58 mapping, or RPC authenticity.
   readinessBlockers.push("Readiness is not established by an estimate: independently verify the deployer-to-SS58 mapping, signer ownership, and RPC/network evidence before any separately authorized deployment.");
+  readinessBlockers.push("PortalDot eth_estimateGas has not been independently calibrated; the reported cost is not approved for budget planning.");
   return {
     readiness: "NOT_READY_FOR_DEPLOYMENT",
     readinessBlockers,
-    estimateUsableForBudgetPlanning: !authoritySignerIsPlaceholder && balanceSufficient === true
+    estimateUsableForBudgetPlanning: false
   };
 }
 

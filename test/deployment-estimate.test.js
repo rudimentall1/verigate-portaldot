@@ -79,8 +79,8 @@ describe("PortalDot deployment estimator arithmetic", function () {
       balanceSufficient: true
     });
     expect(fundedWithSelectedSigner.readiness).to.equal("NOT_READY_FOR_DEPLOYMENT");
-    expect(fundedWithSelectedSigner.estimateUsableForBudgetPlanning).to.equal(true);
-    expect(fundedWithSelectedSigner.readinessBlockers).to.have.length(1);
+    expect(fundedWithSelectedSigner.estimateUsableForBudgetPlanning).to.equal(false);
+    expect(fundedWithSelectedSigner.readinessBlockers).to.have.length(2);
 
     const underfunded = buildDeploymentReadiness({
       authoritySignerIsPlaceholder: false,

@@ -1,53 +1,57 @@
-# Hacker House check-in status
+# PortalDot Hacker House submission checklist
 
-Updated: 19 October 2026
+Updated: 20 October 2026
 
-The public event listing gives the check-in deadline as 24 October 2026, 20:00 UTC+8 (12:00 UTC, or 14:00 in Frankfurt). It lists the final submission/code-freeze deadline as 6 November 2026, 12:00 UTC+8 (04:00 UTC). Reconfirm current requirements and deadlines on the [official DoraHacks listing](https://dorahacks.io/hackathon/2362/detail) and [PortalDot Discord](https://discord.gg/portaldot).
+Event milestones from the published rules supplied for this project:
+- Registration/check-in deadline: 24 October 2026, 12:00 UTC.
+- Final submission and code freeze: 6 November 2026, 04:00 UTC.
+- Live demo day: 8–9 November 2026.
+- Community vote: 9 November, 16:00 UTC to 10 November, 16:00 UTC.
+- Winner announcement: 11 November 2026.
 
-## Current progress
+Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon/2362/detail) and announcements in the [official PortalDot Discord](https://discord.gg/portaldot). Times above are taken from the event information provided for this review.
 
+## Project and track
+
+- Project: Verigate PortalDot.
+- Recommended track: **Modular Cloud Solutions and Middleware**. This best matches the reusable authorization bridge and execution-control middleware. Do not describe the current product as a multi-chain asset bridge or node-monitoring product.
 - Public repository: https://github.com/rudimentall1/verigate-portaldot
-- Core contract: PortalDotAgentGuard accepts only EIP-712-authorized native-token transfers and has no generic arbitrary-call interface.
-- Bridge: verifies both Ed25519 artifacts against a locally pinned issuer key, checks the action and exact base-unit amount, and creates a short-lived EIP-712 authorization only for a genuine Verigate ALLOW.
-- Guarded executor: simulation is the default. Explicit --broadcast is required to submit the exact transfer, after validating EIP-712 signer/domain, canonical signature encoding, live guard code hash, authority signer, deadline, guard funds and relayer fee budget.
-- Live runtime metadata: a read-only Substrate probe returned specName=portaldot-v3, specVersion=3002, transactionVersion=2. The actual Revive.OriginalAccount storage has H160 keys and AccountId32 values. Revive.AddressSuffix is absent; AutoMap=true, NativeToEthRatio=10000 and runtime deposit/gas constants were read. [Runtime metadata evidence](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225053317). A fixed synthetic H160 returned `no_mapping_entry` at finalized block 100714; this does not decide the mapping for a user's wallet.
-- Address tools: offline SS58/H160 inspector plus a new one-key live mapping verifier. The latter queries only the supplied H160 at the captured finalized block and compares the returned AccountId32 bytes locally; it requires no private key and submits no transaction. Use `--redact` to keep the address pair out of the printed report, and run it locally so the pair isn't exposed in public CI logs. The RPC still receives the H160 necessary for the query.
-- Full local end-to-end exercise: CI submits ALLOW and BLOCK through a disposable Verigate API, verifies signatures, signs only ALLOW, proves dry run leaves guard funds unchanged, then executes ALLOW against the actual guard contract on a temporary loopback Hardhat EVM. It confirms the transfer event and exact recipient balance delta. BLOCK is refused.
-- Passing checks on code revision 9bb654b: [151 tests and Solidity compilation](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225345829); [PortalDot integration CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225345811); [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225339176); [dependency audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225345731).
-- Architecture and trust boundaries: [docs/architecture.md](architecture.md).
-- Demo plan: [docs/demo-script.md](demo-script.md).
-- DoraHacks text draft: [docs/check-in-submission.md](check-in-submission.md).
+- Current implementation branch: https://github.com/rudimentall1/verigate-portaldot/tree/chore/hardhat3-migration-preview
 
-## Remaining before check-in
+## Requirement matrix
 
-1. Use npm run verify:account-mapping -- 0xCandidateH160 5RegisteredSS58 locally to read exactly one Revive.OriginalAccount entry for the intended EVM/registered-SS58 pair. Do not use a keyless map query that enumerates accounts.
-2. Confirm the actual deployment authority signer and independently verify the intended guard fingerprint.
-3. Re-run read-only deployment estimation with the real signer and chosen deployer address. The earlier estimate used a placeholder signer and is preliminary.
-4. Reconcile account mapping, token units and current budget before funding/deploying.
-5. Deploy only after current network identity, mapping, budget and guard configuration are verified; preserve transaction and receipt evidence after confirmation.
-6. Record the demo video and submit the progress summary on DoraHacks.
+| Requirement | Current status | Evidence / action |
+|---|---|---|
+| Public GitHub repository | Present | Confirm latest commit/branch is published before submission |
+| Full README and architecture | Present, being reconciled | README, [architecture](architecture.md), [operations runbook](testnet-operations-2026-10-20.md) |
+| Ongoing development history | Present | Preserve dated commits and CI evidence from the event period |
+| Product prototype / core workflow | Partially demonstrated | Contract deployed; full Verigate ALLOW/BLOCK path verified on isolated loopback EVM |
+| PortalDot testnet deployment | Verified | [Deployment evidence](deployment-evidence-2026-10-20.md) |
+| Contract address and transaction hash | Verified and recorded | Address: `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`; tx: `0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c` |
+| Explorer link, if available | Entry point prepared | https://node-console.portaldot.dev/; confirm whether this console exposes a public transaction detail URL |
+| Demo URL or video under 3 minutes | **Pending by request** | Record later; do not treat slide deck as demo evidence |
+| Presentation PDF / public link | To be attached | Use the presentation PDF prepared for submission |
+| Clear local run instructions | Present | README and operations runbook |
+| Third-party sources/licenses disclosed | Review before final submission | MIT project license; retain dependency licenses and disclose pre-existing Verigate components |
+| At least three event-period commits | Strong history exists | Keep the original chronology; do not squash away event-period evidence |
+| Latest public-head CI | Pending | Publish updated branch and run GitHub Actions against that exact commit |
+| DoraHacks build submission sent | Not yet confirmed | Submit after demo link is available and required fields are complete |
 
-## Honest current limitations
+## Verified deployment facts
 
-- No live PortalDot contract deployment is claimed.
-- Read-only checks found no `OriginalAccount` entry for the wallet-displayed H160, while the offline-derived H160 mapped to the registered SS58 account at the endpoint's reported finalized block. This is endpoint-reported evidence only; it does not prove private-key control or independently authenticate the network.
-- Public RPC checks are read-only. Local transfer receipts come only from the loopback Hardhat integration.
-- No CI job sends a transaction to public PortalDot.
-- An HTTPS URL and reported chain ID do not independently authenticate a potentially malicious RPC.
-- This is an initial integration, not production key management or an independent smart-contract audit.
+- Network: PortalDot V3 EVM testnet; expected chain ID 420420777.
+- Contract: `PortalDotAgentGuard`.
+- Address: `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`.
+- Deployment transaction: `0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c`.
+- Receipt status: `0x1`; block: 116872.
+- Runtime bytecode Keccak-256: `0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671`.
+- Configured authority signer matches the on-chain `authoritySigner()` readback.
+- 156 local tests passed on the deployment workspace. Do not describe these as the latest public CI result until CI is run on the published head.
 
-## Submission checklist
+## Security and honesty requirements
 
-- [x] Public GitHub repository
-- [x] README with run instructions and explicit limitations
-- [x] Architecture diagram and trust-boundary notes
-- [x] Development commits during the build period
-- [x] Contract tests, compilation, dependency audit and isolated Verigate integration
-- [x] Executor defaults to simulation and local ALLOW execution is verified against the exact authorized amount
-- [x] Read-only runtime metadata, storage schema and runtime constants captured
-- [x] Local one-key OriginalAccount verification command added
-- [x] Passing 151-test / compile / integration evidence recorded
-- [ ] Exact registered-account mapping independently verified
-- [ ] Verified testnet deployment evidence, if supported and available
-- [ ] Initial demo link or video no longer than 3 minutes
-- [ ] Check-in submission entered on DoraHacks
+- The successful testnet contract deployment is real; the end-to-end transfer receipt is from a local loopback EVM.
+- The exact H160-to-SS58 mapping for the wallet-displayed EVM address remains unverified.
+- Do not claim an independent RPC authentication, public PortalDot transfer, security audit, or production readiness.
+- Never commit `.env`, `.env.save`, mnemonics, private keys, wallet exports, or sensitive signed authorizations.
+- The project uses pre-existing Verigate components and third-party dependencies. Clearly distinguish reused code from the PortalDot-specific work performed during the event.

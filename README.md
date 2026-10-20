@@ -2,7 +2,7 @@
 
 A focused PortalDot V3 Hacker House project exploring how an AI agent's proposed payment can be gated by an explicit, signed execution authorization.
 
-**Status (19 October 2026):** the repository includes a native-payment guard, an Ed25519-verifying bridge signer, read-only network preflight and monitoring, deployment-budget checks, a guarded transfer executor, and read-only Substrate runtime/account diagnostics. The executor validates the EIP-712 signature, configured chain and guard, pinned runtime-code hash, on-chain authority signer, deadline, recipient and amount; it simulates the exact call and checks guard funds and relayer gas budget before broadcasting. By default it is dry-run only; submitting a transaction requires an explicit `--broadcast` flag. CI exercises the full flow on a temporary loopback Hardhat EVM only. It does not broadcast to public PortalDot and no live deployment is claimed. The bridge pins the Verigate issuer key with `VERIGATE_PUBLIC_KEY_SHA256`, preserves Python-signed JSON number spellings, and accepts only exact positive base-unit integer strings. The latest passing code check reports 151 tests plus Solidity compilation, successful isolated ALLOW/BLOCK execution, RPC health and dependency audit. The one-key mapping verifier also records the reported runtime spec and finalized block before its storage lookup. A read-only Substrate metadata probe confirmed the reported V3 runtime (specVersion 3002), `Revive.OriginalAccount` mapping schema (H160 key to AccountId32 value), `AutoMap=true`, `NativeToEthRatio=10000`, and runtime storage-deposit constants. The exact H160-to-SS58 mapping for a particular wallet remains a separate one-key read-only check. See the [runtime evidence record](evidence/portaldot-v3-runtime-2026-10-19.json), [network configuration](docs/portaldot-v3-network.md), and [funding/account mapping guide](docs/funding-and-account-mapping.md). A chain ID or one RPC response does not authenticate the endpoint. These checks reduce configuration mistakes but are not a full application or smart-contract audit.
+**Status (20 October 2026):** the repository includes a native-payment guard, an Ed25519-verifying bridge signer, read-only network preflight and monitoring, deployment-budget checks, a guarded transfer executor, and read-only Substrate runtime/account diagnostics. The executor validates the EIP-712 signature, configured chain and guard, pinned runtime-code hash, on-chain authority signer, deadline, recipient and amount; it simulates the exact call and checks guard funds and relayer gas budget before broadcasting. By default it is dry-run only; submitting a transaction requires an explicit `--broadcast` flag. CI exercises the full flow on a temporary loopback Hardhat EVM only. A `PortalDotAgentGuard` testnet deployment has now been verified by transaction receipt, runtime bytecode hash, and on-chain authority-signer readback; see [live deployment evidence](docs/deployment-evidence-2026-10-20.md) and the [testnet operations runbook](docs/testnet-operations-2026-10-20.md). The bridge pins the Verigate issuer key with `VERIGATE_PUBLIC_KEY_SHA256`, preserves Python-signed JSON number spellings, and accepts only exact positive base-unit integer strings. The latest local deployment workspace verification reports 156 tests passing, with Solidity compilation, network preflight, RPC monitoring, and isolated ALLOW/BLOCK execution checked locally. Existing public CI links in the submission notes are from earlier revisions (151 tests); re-run CI on the updated public branch before claiming the latest commit has public CI coverage. The one-key mapping verifier also records the reported runtime spec and finalized block before its storage lookup. A read-only Substrate metadata probe confirmed the reported V3 runtime (specVersion 3002), `Revive.OriginalAccount` mapping schema (H160 key to AccountId32 value), `AutoMap=true`, `NativeToEthRatio=10000`, and runtime storage-deposit constants. The exact H160-to-SS58 mapping for a particular wallet remains a separate one-key read-only check. See the [runtime evidence record](evidence/portaldot-v3-runtime-2026-10-19.json), [network configuration](docs/portaldot-v3-network.md), and [funding/account mapping guide](docs/funding-and-account-mapping.md). A chain ID or one RPC response does not authenticate the endpoint. These checks reduce configuration mistakes but are not a full application or smart-contract audit.
 
 ## What this MVP demonstrates
 
@@ -14,7 +14,18 @@ A focused PortalDot V3 Hacker House project exploring how an AI agent's proposed
 
 The contract verifies an EIP-712 bridge authorization. It does **not** verify Verigate's Ed25519 signature on-chain. That verification belongs in the off-chain bridge, and this trust boundary must remain explicit.
 
-See [architecture and trust boundaries](docs/architecture.md) for the flow diagram and a clear distinction between implemented and not-yet-connected steps. The [Hacker House check-in checklist](docs/hacker-house-check-in.md) tracks deliverables and remaining blockers. The [three-minute demo script](docs/demo-script.md) covers the verified local flow and its limitations. The [check-in submission draft](docs/check-in-submission.md) is ready to adapt for DoraHacks.
+See [architecture and trust boundaries](docs/architecture.md), the [verified testnet deployment record](docs/deployment-evidence-2026-10-20.md), and the [testnet operations runbook](docs/testnet-operations-2026-10-20.md). The [Hacker House submission checklist](docs/hacker-house-check-in.md) tracks the requirements. The [submission text draft](docs/check-in-submission.md) and [seven-slide presentation PDF](docs/Verigate-PortalDot-Presentation.pdf) are prepared; the product demo recording remains pending and will be added separately.
+
+## Hacker House submission package
+
+- Recommended track: **Modular Cloud Solutions and Middleware**. The main contribution is an authorization/execution middleware component, not a node-monitoring dashboard or a cross-chain asset bridge.
+- [Submission text draft](docs/check-in-submission.md)
+- [Requirements and readiness checklist](docs/hacker-house-check-in.md)
+- [Presentation PDF](docs/Verigate-PortalDot-Presentation.pdf)
+- [Verified testnet deployment evidence](docs/deployment-evidence-2026-10-20.md)
+- Demo recording: pending; it will be added separately. The static presentation is not represented as a product demo.
+
+The public testnet deployment is real, but the complete Verigate-authorized transfer was exercised only on a temporary loopback Hardhat EVM. The specific H160-to-SS58 mapping remains unverified.
 
 ## Quick start
 
@@ -34,10 +45,12 @@ The helper runs a temporary Verigate instance on loopback port 8001 with a dispo
 
 The simulator is not the public PortalDot testnet, and the configured chain ID is not proof of network identity. Temporary private keys, issuer keys, and runtime database files are deleted after the run. Only sanitized response/signature fixtures and a summary are retained. The test does not contact a public RPC endpoint, and all EVM deployment/funding activity stays on the loopback simulator.
 
-Run from this repository in PowerShell, using the Python environment from your own Verigate checkout:
+The API route used by this integration (`/v1/actions/authorize`) is not available in older Verigate checkouts. The successful local run on 20 October used the Verigate repository at commit `de24e7a` in an isolated worktree; the installed `/opt/verigate` checkout on the build server remained untouched. Use a compatible, current Verigate source checkout with its dependencies installed. Do not assume an older deployment checkout is compatible just because its API starts.
+
+Run from this repository in PowerShell, using the Python environment associated with that compatible Verigate checkout:
 
 ```powershell
-$verigateRoot = Read-Host "Path to your Verigate checkout"
+$verigateRoot = Read-Host "Path to a compatible Verigate checkout"
 $python = Join-Path $verigateRoot ".venv\Scripts\python.exe"
 & $python ".\scripts\verigate_local_demo.py" --verigate-root $verigateRoot
 ```
@@ -176,7 +189,7 @@ The bridge-signing CLI is an initial integration step, not a claim that a full a
 
 - The first on-chain operation is a native-token payment only.
 - The PortalDot V3 EVM endpoint and chain ID are documented from a community field guide attributed to the official PortalDot Discord `#dev-announcement` dated 2026-10-16; this does not authenticate the RPC operator. `PORTALDOT_SUBSTRATE_GENESIS_HASH` is the separate Substrate genesis hash, not an EVM genesis hash. Reconfirm it through a trusted PortalDot source before using funds or broadcasting. Preflight, estimation, deployment and bridge signing fail closed while the pin is missing. The EVM/Substrate address mapping and token precision are documented with their community-guide source; independently verify them before using testnet funds or deploying.
-- No live deployment, independent audit, production key management, or production readiness is claimed.
+- No production deployment, independent audit, production key management, or production readiness is claimed. The testnet deployment and its limits are recorded in [deployment evidence](docs/deployment-evidence-2026-10-20.md).
 - This is a separate PortalDot integration, not a copy of the Verigate repository.
 
 ## Source and credits
