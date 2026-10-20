@@ -4,6 +4,8 @@
 
 The console performs live read-only RPC calls and wallet connection; it is not a transaction demo. The presentation PDF is not a substitute for the required product video.
 
+**Latest reproducible integration result (20 October 2026):** [`evidence/local-e2e-2026-10-20.json`](../evidence/local-e2e-2026-10-20.json) records a successful isolated run against Verigate HTTP authorization routes and a temporary loopback Hardhat EVM. ALLOW and BLOCK decisions, Ed25519 receipts, bridge refusal of BLOCK, executor dry-run, and exact local transfer execution passed. The run used Verigate revision `de24e7a02911b5803bac60f799bc1ab37891fec2`; all local transaction hashes are explicitly non-PortalDot evidence. The repository test suite also passed: 156 tests.
+
 **Goal:** show the product's actual authorization decision path, then distinguish that local end-to-end evidence from the contract's separately verified PortalDot V3 testnet deployment.
 
 ## Recording plan (target: 2 minutes 40 seconds)
