@@ -5,7 +5,8 @@ from PIL import Image, ImageDraw, ImageFont
 import textwrap
 
 W, H = 1920, 1080
-OUT = Path("/root/verigate-portaldot/docs/Verigate-PortalDot-Presentation.pdf")
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "docs" / "Verigate-PortalDot-Presentation.pdf"
 PREVIEW = Path("/tmp/verigate-portaldot-presentation")
 PREVIEW.mkdir(parents=True, exist_ok=True)
 
@@ -196,16 +197,16 @@ paragraph(d,(1070,680),"The end-to-end transfer executed only on a temporary loo
 slides.append(im)
 
 # 7. Roadmap and limitations
-im,d=base("Next steps and ecosystem value","The immediate work is reproducibility and honest evidence, not another deployment.",7)
-bullet(d,95,310,"Publish the current implementation branch","Preserve the event-period commit history and run CI on the exact public head.",800,BLUE)
-bullet(d,95,475,"Record a short product demo","Show the actual ALLOW/BLOCK path, local simulation, and the public testnet deployment evidence as distinct steps.",800,CYAN)
-bullet(d,95,640,"Close operational gaps","Verify the specific H160-to-SS58 mapping before using that wallet pair and plan any live transfer with explicit human approval.",800,GREEN)
+im,d=base("Next steps and ecosystem value","A public read-only Web3 console now exposes live PortalDot state; public end-to-end payment evidence remains the final proof gap.",7)
+bullet(d,95,310,"Open the live Web3 guard console","Inspect the current chain, contract code, guard balance and authority signer; connect a wallet in read-only mode.",800,BLUE)
+bullet(d,95,475,"Verify a public authorized payment","Capture a PortalDot receipt and TransferExecuted event for the full Verigate ALLOW path; keep local simulation evidence separate.",800,CYAN)
+bullet(d,95,640,"Record the product demo","Show the live console, ALLOW/BLOCK behavior and deployment evidence, clearly labelling which transfer ran on a local EVM.",800,GREEN)
 rounded(d,(1035,325,1800,800),28,fill=PANEL,outline="#2C4968")
 d.text((1080,375),"ECOSYSTEM VALUE",font=font(22,True),fill=CYAN)
-paragraph(d,(1080,435),"A reusable spending-control component, a minimal guard contract, deployment evidence, fail-closed network tooling and an operations runbook.",font(23,True),WHITE,max_width=620,leading=1.28)
+paragraph(d,(1080,435),"A reusable spending-control component, a minimal guard contract, deployment evidence, fail-closed network tooling, an operations runbook and a live read-only Web3 console.",font(22,True),WHITE,max_width=620,leading=1.25)
 d.line((1080,580,1745,580),fill="#2C4968",width=2)
 d.text((1080,610),"LIMITATIONS",font=font(20,True),fill=AMBER)
-paragraph(d,(1080,655),"Testnet prototype. No independent security audit. Specific EVM/SS58 mapping unverified. Public end-to-end transfer demo still pending.",font(18),BODY,max_width=620,leading=1.28)
+paragraph(d,(1080,655),"Testnet prototype. No independent security audit. Specific EVM/SS58 mapping unverified. Public ALLOW-to-transfer proof and video still pending.",font(18),BODY,max_width=620,leading=1.28)
 slides.append(im)
 
 # Save previews and multipage PDF.
