@@ -34,7 +34,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 | Clear local run instructions | Present | README and operations runbook |
 | Third-party sources/licenses disclosed | Review before final submission | MIT project license; retain dependency licenses and disclose pre-existing Verigate components |
 | At least three event-period commits | Strong history exists | Keep the original chronology; do not squash away event-period evidence |
-| Latest public-head CI | Pending | Publish updated branch and run GitHub Actions against that exact commit |
+| Latest implementation-tree CI | Passed on the validated tree | [Test](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39434604693), [audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39434604930), [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39434604789), [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39434605116), and [Substrate runtime metadata](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39434604965) succeeded; tree was unchanged by the branch-parent reconciliation |
 | DoraHacks build submission sent | Not yet confirmed | Submit after demo link is available and required fields are complete |
 
 ## Verified deployment facts
