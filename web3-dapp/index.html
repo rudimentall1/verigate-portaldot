@@ -180,8 +180,15 @@ footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);display
       await refreshWallet(true);
     } catch(e) { setMessage("Wallet did not add the network: " + (e.message || e.code),"warn"); }
   }
+  let walletConnectInFlight = false;
   async function refreshWallet(requestAccess) {
     if (!window.ethereum) { $("walletStatus").textContent = "No injected wallet"; $("walletHint").textContent = "Open in a browser with an EVM wallet to connect."; return; }
+    if (requestAccess && walletConnectInFlight) return;
+    if (requestAccess) {
+      walletConnectInFlight = true;
+      $("connect").disabled = true;
+      $("connect").textContent = "Connecting…";
+    }
     try {
       const accounts = await window.ethereum.request({method:requestAccess ? "eth_requestAccounts" : "eth_accounts"});
       if (!accounts || !accounts.length) {
@@ -202,6 +209,13 @@ footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);display
       $("walletBalance").textContent = formatNative(balance);
       $("walletHint").textContent = "Read-only account display. This page does not request signatures or send transactions.";
     } catch(e) { setMessage("Wallet action cancelled or failed: " + (e.message || e.code),"warn"); }
+    finally {
+      if (requestAccess) {
+        walletConnectInFlight = false;
+        $("connect").disabled = false;
+        $("connect").textContent = "Connect wallet";
+      }
+    }
   }
   $("connect").addEventListener("click",() => refreshWallet(true));
   $("addNetwork").addEventListener("click",addNetwork);
