@@ -2,7 +2,7 @@
 
 A focused PortalDot V3 Hacker House project exploring how an AI agent's proposed payment can be gated by an explicit, signed execution authorization.
 
-**Status (15 October 2026):** the repository has a native-payment guard, bridge-signing CLI, RPC preflight, local Hardhat tests, and a real-API integration harness. The latest successful [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783295) and [unit-test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/38681783332) validate the pinned-key integration and contract tests; subsequent edits here are documentation-only. The integration job starts a disposable loopback Verigate API, locally verifies both Ed25519 artifacts against a pinned public key, checks them through the API as a second layer, signs a dry-run EIP-712 authorization only for ALLOW, refuses BLOCK, and uploads its test evidence. A forged signature is refused locally even when a test verifier responds `valid: true`. No transaction is broadcast. The bridge preserves source numeric spellings in signed JSON because Python distinguishes `1` from `1.0`, while standard JavaScript parsing collapses them. The PortalDot team announced the updated V3 testnet endpoint `https://test-evm-rpc-v3.portaldot.dev` and EVM chain ID `420420777` on 17 October 2026. `.env.example` now uses those announced values; run preflight to verify live connectivity and chain ID before any deployment. No live PortalDot deployment is claimed.
+**Status (20 October 2026):** `PortalDotAgentGuard` has been deployed to PortalDot V3 testnet and the receipt, canonical block, runtime code hash, and on-chain authority signer have been checked. See the [deployment evidence](docs/deployment-evidence-2026-10-20.md) and [testnet operations runbook](docs/testnet-operations-2026-10-20.md). The deployed testnet contract is not a production deployment or an independent audit. The bridge broadcast executor is not yet present on `main`; the runbook documents this branch boundary. The integration job starts a disposable loopback Verigate API, locally verifies both Ed25519 artifacts against a pinned public key, checks them through the API as a second layer, signs a dry-run EIP-712 authorization only for ALLOW, refuses BLOCK, and uploads its test evidence. A forged signature is refused locally even when a test verifier responds `valid: true`. No transaction is broadcast. The bridge preserves source numeric spellings in signed JSON because Python distinguishes `1` from `1.0`, while standard JavaScript parsing collapses them. The PortalDot team announced the updated V3 testnet endpoint `https://test-evm-rpc-v3.portaldot.dev` and EVM chain ID `420420777` on 17 October 2026. `.env.example` now uses those announced values; run preflight to verify live connectivity and chain ID before any deployment. No live PortalDot deployment is claimed.
 
 ## What this MVP demonstrates
 
@@ -72,7 +72,7 @@ Copy `.env.example` to the untracked `.env`, preserve the announced RPC settings
 npm run deploy:portaldot
 ```
 
-The command runs network preflight before Hardhat deployment. Deployment is not verified yet. Save the actual address, transaction hash, block number, timestamp, and explorer link under evidence/ only after confirmation on the live expected chain.
+The command runs network preflight before Hardhat deployment. The verified 20 October 2026 deployment is documented in [deployment evidence](docs/deployment-evidence-2026-10-20.md). Do not run deployment again merely to inspect the existing contract.
 
 After deployment, set PORTALDOT_GUARD_ADDRESS in .env.
 
@@ -105,7 +105,7 @@ The bridge-signing CLI is an initial integration step, not a claim that a full a
 
 - The first on-chain operation is a native-token payment only.
 - The PortalDot team announced the V3 EVM RPC and chain ID on 17 October 2026. Live preflight is still required, and token denomination plus native/EVM wallet mapping should be confirmed before using testnet funds.
-- No live deployment, independent audit, production key management, or production readiness is claimed.
+- A PortalDot V3 testnet deployment is documented; no independent audit, production key management, or production readiness is claimed.
 - This is a separate PortalDot integration, not a copy of the Verigate repository.
 
 ## Source and credits
