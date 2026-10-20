@@ -54,13 +54,13 @@ The contract does not verify Verigate's Ed25519 signatures. The bridge verifies 
 
 `PortalDotAgentGuard` is deployed to the PortalDot V3 EVM testnet. Address, transaction hash, receipt, block hash, runtime bytecode fingerprint, configured authority signer, observed fee, and limitations are recorded in [deployment evidence](deployment-evidence-2026-10-20.md). The successful deployment is real testnet evidence. It is not evidence of a successful public testnet transfer through the complete Verigate bridge.
 
-The EVM RPC reported chain ID 420420777, and the Substrate endpoint reported the pinned genesis hash. These observations are consistent with the configured V3 network but do not independently authenticate either endpoint operator. The runtime mapping lookup for the wallet-displayed H160 did not establish the expected H160-to-SS58 mapping; the deployment used the funded EVM H160 and its matching local key. Do not claim that this mapping is verified.
+The EVM RPC reported chain ID 420420777, and the Substrate endpoint reported the pinned genesis hash. The live contract code hash and `authoritySigner()` also match the recorded deployment configuration. These observations are consistent with the configured V3 network but do not independently authenticate either endpoint operator. The public RPC no longer returns the historical deployment transaction or receipt and reports old block state as discarded; see `docs/deployment-evidence-2026-10-20.md` for the precise limitation. The runtime mapping lookup for the wallet-displayed H160 did not establish the expected H160-to-SS58 mapping; the deployment used the funded EVM H160 and its matching local key. Do not claim that this mapping is verified.
 
 ## Validation evidence
 
 - 156 tests passed in the local deployment workspace on 20 October 2026.
 - Network preflight confirmed the expected EVM chain ID and configured Substrate genesis pin; the RPC monitor reported healthy at the last recorded check.
 - The isolated Verigate integration returned ALLOW and BLOCK from a temporary API, verified Ed25519 signatures, refused BLOCK, passed dry-run without state changes, then executed the exact ALLOW transfer against the real guard source on a loopback Hardhat EVM.
-- The existing GitHub Actions evidence on earlier revisions records 151 tests and a successful isolated integration. The latest six local commits were not yet present on the public branch at the time this document was updated. Re-run CI on the published head before treating these local results as public CI evidence.
+- The published `main` commit `f5aee87126a87c3ca02a72ba7e7896c40d09ee55` has successful GitHub Actions runs for tests, the isolated Verigate integration, dependency audit, PortalDot RPC health, PortalDot CI, and Substrate runtime metadata. The local workspace also reports 156 tests passing. See the linked workflow runs in `docs/hacker-house-check-in.md`.
 
 The isolated EVM is configured with chain ID 420420777 for EIP-712 domain testing. This configuration does not turn the local EVM into PortalDot testnet. No transaction from the local end-to-end test was sent to a public PortalDot RPC.
