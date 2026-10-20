@@ -16,26 +16,28 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 - Project: Verigate PortalDot.
 - Recommended track: **Modular Cloud Solutions and Middleware**. This best matches the reusable authorization bridge and execution-control middleware. Do not describe the current product as a multi-chain asset bridge or node-monitoring product.
 - Public repository: https://github.com/rudimentall1/verigate-portaldot
-- Current implementation branch: https://github.com/rudimentall1/verigate-portaldot/tree/chore/hardhat3-migration-preview
+- Current implementation branch: https://github.com/rudimentall1/verigate-portaldot/tree/main
+- Live Web3 DApp: https://rudimentall1.github.io/verigate-portaldot/
+- DApp source: https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
 
 ## Requirement matrix
 
 | Requirement | Current status | Evidence / action |
 |---|---|---|
-| Public GitHub repository | Present | Confirm latest commit/branch is published before submission |
+| Public GitHub repository | Present | `main` is published and current CI runs succeeded |
 | Full README and architecture | Present, being reconciled | README, [architecture](architecture.md), [operations runbook](testnet-operations-2026-10-20.md) |
 | Ongoing development history | Present | Preserve dated commits and CI evidence from the event period |
-| Product prototype / core workflow | Partially demonstrated | Contract deployed; full Verigate ALLOW/BLOCK path verified on isolated loopback EVM |
+| Product prototype / core workflow | Partially demonstrated | Public read-only DApp shows live contract state; full Verigate ALLOW/BLOCK path verified on isolated loopback EVM |
 | PortalDot testnet deployment | Verified | [Deployment evidence](deployment-evidence-2026-10-20.md) |
 | Contract address and transaction hash | Verified and recorded | Address: `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`; tx: `0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c` |
-| Explorer link, if available | Entry point prepared | https://node-console.portaldot.dev/; confirm whether this console exposes a public transaction detail URL |
-| Demo URL or video under 3 minutes | **Pending by request** | Record later; do not treat slide deck as demo evidence |
-| Presentation PDF / public link | To be attached | Use the presentation PDF prepared for submission |
+| Explorer link, if available | Generic console available; transaction deep link unverified | https://node-console.portaldot.dev/; do not invent a transaction URL. The live DApp independently reads the current deployed code and signer. |
+| Live Web3 DApp URL | Available | https://rudimentall1.github.io/verigate-portaldot/ (read-only live state viewer; not a transaction demo) |\n| Demo URL or video under 3 minutes | **Pending** | Record the product workflow; clearly separate local execution from PortalDot deployment evidence |
+| Presentation PDF / public link | Published | https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/Verigate-PortalDot-Presentation.pdf |
 | Clear local run instructions | Present | README and operations runbook |
 | Third-party sources/licenses disclosed | Review before final submission | MIT project license; retain dependency licenses and disclose pre-existing Verigate components |
 | At least three event-period commits | Strong history exists | Keep the original chronology; do not squash away event-period evidence |
-| Latest implementation-tree CI | Passed on the validated tree | [Test](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39434604693), [audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39434604930), [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39434604789), [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39434605116), and [Substrate runtime metadata](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39434604965) succeeded; tree was unchanged by the branch-parent reconciliation |
-| DoraHacks build submission sent | Not yet confirmed | Submit after demo link is available and required fields are complete |
+| Latest published-main CI | Passed | [Test](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673209), [audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673259), [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673280), [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673277), and [Substrate runtime metadata](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673332) all succeeded on `f5aee87` |
+| DoraHacks build entry | Created; final publish state not independently verified here | https://dorahacks.io/build/50065. Confirm saved fields and public visibility in DoraHacks UI |
 
 ## Verified deployment facts
 
@@ -46,11 +48,11 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 - Receipt status: `0x1`; block: 116872.
 - Runtime bytecode Keccak-256: `0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671`.
 - Configured authority signer matches the on-chain `authoritySigner()` readback.
-- 156 local tests passed on the deployment workspace. Do not describe these as the latest public CI result until CI is run on the published head.
+- 156 local tests passed on the deployment workspace. The published `main` also has successful CI jobs; those CI results are separate from the local live RPC re-check.
 
 ## Security and honesty requirements
 
-- The successful testnet contract deployment is real; the end-to-end transfer receipt is from a local loopback EVM.
+- The initial deployment receipt was captured in the deployment record. On 20 October, the configured RPC still served the contract code and correct signer, but returned `null` for the historical deployment transaction and receipt and failed to serve the old block state. Do not interpret that RPC retention limitation as a failed deployment, and do not claim a new public end-to-end transfer until its receipt is observed.
 - The exact H160-to-SS58 mapping for the wallet-displayed EVM address remains unverified.
 - Do not claim an independent RPC authentication, public PortalDot transfer, security audit, or production readiness.
 - Never commit `.env`, `.env.save`, mnemonics, private keys, wallet exports, or sensitive signed authorizations.

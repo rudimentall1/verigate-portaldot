@@ -1,6 +1,6 @@
 # DoraHacks submission draft: Verigate PortalDot
 
-**Status:** technical submission package in preparation. The demo URL and actual DoraHacks submission are still pending.
+**Status:** the public repository, testnet guard, presentation PDF and live read-only Web3 console are prepared. A short recorded product demo and a publicly verified end-to-end PortalDot payment remain outstanding. The DoraHacks build entry is [50065](https://dorahacks.io/build/50065); confirm the final saved/published state in the DoraHacks UI.
 
 ## Submission fields
 
@@ -23,7 +23,9 @@ The project makes use of PortalDot V3's EVM-compatible execution environment for
 ## Status and evidence
 
 - **Public repository:** https://github.com/rudimentall1/verigate-portaldot
-- **Implementation branch:** https://github.com/rudimentall1/verigate-portaldot/tree/chore/hardhat3-migration-preview
+- **Implementation branch:** https://github.com/rudimentall1/verigate-portaldot/tree/main
+- **Live Web3 DApp:** https://rudimentall1.github.io/verigate-portaldot/
+- **DApp source:** https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
 - **Architecture:** [docs/architecture.md](architecture.md)
 - **Presentation PDF:** [Verigate-PortalDot-Presentation.pdf](Verigate-PortalDot-Presentation.pdf)
 - **Testnet deployment evidence:** [docs/deployment-evidence-2026-10-20.md](deployment-evidence-2026-10-20.md)
@@ -35,7 +37,7 @@ The project makes use of PortalDot V3's EVM-compatible execution environment for
 - **Deployment transaction:** `0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c`
 - **Receipt:** success (`0x1`), block `116872`
 - **Runtime bytecode Keccak-256:** `0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671`
-- **Local validation:** 156 tests passed on the server workspace; network preflight and the RPC monitor passed at the last recorded run.
+- **Local validation:** 156 tests passed on the server workspace; network preflight and RPC monitor passed on 20 October 2026. GitHub Actions test, integration, audit, RPC health, PortalDot CI and runtime metadata jobs passed on published `main`.
 - **Isolated end-to-end test:** Verigate returned ALLOW for the permitted case and BLOCK for the denied case. Signatures were verified; the guard's real Solidity source executed the exact authorized transfer on a temporary loopback Hardhat EVM. This is local integration evidence, not a public PortalDot transfer.
 
 ## Why PortalDot
@@ -44,7 +46,7 @@ PortalDot V3 offers an EVM-compatible deployment target for a narrow, reusable s
 
 ## Current limitations (disclose, do not hide)
 
-1. The contract is deployed on PortalDot V3 testnet, but the full Verigate-authorized transfer path has not yet been demonstrated as a public PortalDot transaction.
+1. The contract is deployed on PortalDot V3 testnet and its live runtime code hash and authority signer read back correctly. The full Verigate-authorized transfer path has not yet been demonstrated as a public PortalDot transaction.
 2. The specific H160-to-SS58 mapping for the wallet-displayed address has not been confirmed by the runtime storage lookup. The deployment evidence explicitly records this limitation.
 3. The public RPC's reported chain/genesis values are consistency checks, not independent authentication of the RPC operator.
 4. This is a testnet prototype, not a production deployment or independent security audit.
@@ -52,10 +54,10 @@ PortalDot V3 offers an EVM-compatible deployment target for a narrow, reusable s
 
 ## Remaining before submitting
 
-- [ ] Publish and verify the current implementation branch; make sure reviewers can access the files referenced above.
-- [ ] Run GitHub Actions on the published head and confirm all required jobs pass.
+- [x] Publish the implementation on `main`; verify the repository and current CI runs are publicly accessible.
+- [x] Add a public Web3 guard console with live PortalDot RPC reads and wallet connection (read-only; no transaction is sent by the page).
 - [ ] Add the short live/demo recording (under 3 minutes) showing the real product behavior and clearly separating local simulation from testnet deployment evidence.
-- [x] Presentation PDF prepared in the repository; keep it attached/publicly accessible in the final build. (This is not the demo video.)
+- [x] Presentation PDF is published in the repository. (This is not the demo video.)
 - [ ] Enter the final repository, deployment address, transaction hash, demo link, and PDF/public presentation link in DoraHacks.
 - [ ] Confirm the account/team registration is complete and the submission is actually visible on DoraHacks.
 
@@ -65,4 +67,4 @@ The submission should distinguish existing Verigate components from work specifi
 
 ## Suggested build update
 
-Verigate PortalDot has moved from a contract prototype to a deployed PortalDot V3 testnet guard with recorded receipt/code-fingerprint evidence. The off-chain bridge and execution path have been exercised in an isolated integration environment: signed ALLOW can execute an exact transfer on the local test EVM, while BLOCK is refused. The next milestone is publishing the current branch and showing a concise end-user demo; no public testnet transfer is claimed yet.
+Verigate PortalDot has a deployed PortalDot V3 testnet guard, a public read-only Web3 console, documented deployment evidence and a passing automated suite. The off-chain bridge and execution path have been exercised in an isolated integration environment: signed ALLOW can execute the exact transfer on a local test EVM, while BLOCK is refused. The key remaining proof is a successful public PortalDot transfer through the full Verigate authorization path and its receipt/event evidence, followed by a concise demo recording.

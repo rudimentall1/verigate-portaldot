@@ -41,3 +41,18 @@ The receipt cost is the observed gas-unit product reported by this RPC. PortalDo
 - The `Revive.OriginalAccount` lookup for the deployer H160 and the previously supplied SS58 address returned `no_mapping_entry`. This deployment used the funded EVM H160 and its matching local private key; this record does **not** claim that the H160-to-SS58 mapping was verified.
 - The 156 local tests passed after deployment. They are local tests and do not replace a full audit or an on-chain functional test of every bridge path.
 - The transaction is on the PortalDot V3 testnet only. No production deployment or production readiness is claimed.
+
+## Independent live-state re-check
+
+Read-only re-check performed on 20 October 2026 at 15:57 UTC using the project's `npm run verify:deployment` command:
+
+- Observed EVM chain ID: `420420777`; latest block observed: `119348`.
+- Contract bytecode length: `2,153` bytes.
+- Observed runtime code hash: `0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671`, matching the deployment record.
+- Live `authoritySigner()`: `0x48F9B07d37b5AF744BA8195c4d6740145b593ea6`, matching the configured signer.
+- Guard balance at that check: zero EVM wei.
+- The RPC returned `null` for both `eth_getTransactionByHash` and `eth_getTransactionReceipt` on the historical deployment transaction. A separate query for old block state returned an `UnknownBlock / State already discarded` error.
+
+This is a limitation of the historical data currently available from the queried RPC, not proof that deployment failed. The historical successful receipt, block hash and fee observations above were recorded at deployment time. The current live read confirms bytecode and signer configuration but does not replace historical receipt evidence. The new read-only verifier intentionally keeps these checks separate and exits successfully only when current chain, code and signer agree.
+
+The guard currently has no funds. A public end-to-end transfer must not be claimed unless funding and execution each have their own successful PortalDot receipt and the guard emits `TransferExecuted`.
