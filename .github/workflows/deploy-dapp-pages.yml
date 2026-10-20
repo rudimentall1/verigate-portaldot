@@ -27,8 +27,6 @@ jobs:
           persist-credentials: false
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Validate and package static DApp
         shell: bash
         run: |
