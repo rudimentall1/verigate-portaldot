@@ -24,7 +24,7 @@ The project makes use of PortalDot V3's EVM-compatible execution environment for
 
 - **Public repository:** https://github.com/rudimentall1/verigate-portaldot
 - **Implementation branch:** https://github.com/rudimentall1/verigate-portaldot/tree/main
-- **Live Web3 DApp:** https://html-preview.github.io/?url=https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
+- **Live Web3 DApp:** https://rudimentall1.github.io/verigate-portaldot/
 - **DApp source:** https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
 - **Architecture:** [docs/architecture.md](architecture.md)
 - **Presentation PDF:** [Verigate-PortalDot-Presentation.pdf](Verigate-PortalDot-Presentation.pdf)
