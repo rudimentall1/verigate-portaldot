@@ -17,7 +17,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 - Recommended track: **Modular Cloud Solutions and Middleware**. This best matches the reusable authorization bridge and execution-control middleware. Do not describe the current product as a multi-chain asset bridge or node-monitoring product.
 - Public repository: https://github.com/rudimentall1/verigate-portaldot
 - Current implementation branch: https://github.com/rudimentall1/verigate-portaldot/tree/main
-- Live Web3 DApp: https://htmlpreview.github.io/?https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
+- Live Web3 DApp: https://rudimentall1.github.io/verigate-portaldot/
 - DApp source: https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
 
 ## Requirement matrix
@@ -32,7 +32,8 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 | Verigate-authorized PortalDot transfer | Minimal amount confirmed | [Receipt and TransferExecuted evidence](authorized-transfer-evidence-2026-10-21.md); amount was one EVM base unit, so non-dust transfer still pending |
 | Contract address and transaction hash | Verified and recorded | Address: `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`; tx: `0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c` |
 | Explorer link, if available | Generic console available; transaction deep link unverified | https://node-console.portaldot.dev/; do not invent a transaction URL. The live DApp independently reads the current deployed code and signer. |
-| Live Web3 DApp preview URL | Available through HTML Preview | https://htmlpreview.github.io/?https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html (read-only live state viewer; not a transaction demo) |\n| Demo URL or video under 3 minutes | **Pending** | Record the product workflow; clearly separate local execution from PortalDot deployment evidence |
+| Live Web3 DApp preview URL | Deployed as a static GitHub Pages web app | https://rudimentall1.github.io/verigate-portaldot/ (live PortalDot RPC dashboard; read-only state view plus explicit wallet-gated execution of a signed Verigate authorization; not evidence of a transaction until a receipt is recorded)
+| Demo URL or video under 3 minutes | **Pending** | Record the product workflow; clearly separate local execution from PortalDot deployment evidence |
 | Presentation PDF / public link | Published | https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/Verigate-PortalDot-Presentation.pdf |
 | Clear local run instructions | Present | README and operations runbook |
 | Third-party sources/licenses disclosed | Review before final submission | MIT project license; retain dependency licenses and disclose pre-existing Verigate components |

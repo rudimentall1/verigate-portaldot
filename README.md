@@ -18,11 +18,11 @@ See [architecture and trust boundaries](docs/architecture.md), the [verified tes
 
 ## Live Web3 DApp
 
-Public Web3 DApp preview: https://htmlpreview.github.io/?https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
+Public Web3 DApp: https://rudimentall1.github.io/verigate-portaldot/
 
-The preview host renders the static file in the browser. Source: [web3-dapp/index.html](web3-dapp/index.html). The UI reads public PortalDot state and optionally connects an EVM wallet. It does not sign or send transactions. A minimal public authorized transfer is now recorded in [transaction evidence](docs/authorized-transfer-evidence-2026-10-21.md); a non-dust value transfer is still pending.
+GitHub Pages serves the static frontend directly from the repository. Source: [web3-dapp/index.html](web3-dapp/index.html). The live-state view works without a wallet; its separate executor supports opt-in wallet connection, exact bridge-signed authorization import, on-chain simulation, and a user-confirmed transaction relay. It never asks for private keys or seed phrases. A minimal public authorized guard call is now recorded in [transaction evidence](docs/authorized-transfer-evidence-2026-10-21.md); the amount was one EVM base unit, so a meaningful-value transfer remains pending.
 
-The read-only frontend is in [web3-dapp/index.html](web3-dapp/index.html). It reads the live PortalDot V3 chain ID, latest block, deployed contract code presence, guard balance, and on-chain `authoritySigner()`. It can connect an injected EVM wallet and add the testnet network. It never asks for private keys, signs messages, or submits transactions. The first minimal public authorized call is confirmed, but this read-only state viewer does not itself perform payments or prove a meaningful-value transfer.
+The Web3 DApp at https://rudimentall1.github.io/verigate-portaldot/ reads live PortalDot V3 state and includes an explicit wallet-gated execution panel for a signed Verigate authorization. Account access, network switching and transaction broadcast are user-triggered; the exact call must pass on-chain simulation before the wallet is asked to submit it. The DApp never asks for private keys or seed phrases. The minimal receipt confirms the guard call path, but does not prove a meaningful-value payment.
 
 ## Hacker House submission package
 
@@ -30,12 +30,11 @@ The read-only frontend is in [web3-dapp/index.html](web3-dapp/index.html). It re
 - [Submission text draft](docs/check-in-submission.md)
 - [Requirements and readiness checklist](docs/hacker-house-check-in.md)
 - [Presentation PDF](docs/Verigate-PortalDot-Presentation.pdf)
-- [Live Web3 DApp](https://htmlpreview.github.io/?https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html)
+- [Live Web3 DApp](https://rudimentall1.github.io/verigate-portaldot/)
 - [Verified testnet deployment evidence](docs/deployment-evidence-2026-10-20.md)
 - [Authorized public testnet transfer evidence](docs/authorized-transfer-evidence-2026-10-21.md)
-- Demo recording: pending. The live Web3 console is available now, but it is read-only and does not replace the required short product demo.
-
-The public testnet deployment is real, but the complete Verigate-authorized transfer was exercised only on a temporary loopback Hardhat EVM. The specific H160-to-SS58 mapping remains unverified.
+- Demo recording: pending. Show live state, the wallet-gated authorization flow and the verified receipt; clearly label the one-base-unit amount and remaining non-dust validation.
+The public testnet deployment and a minimal Verigate-authorized guard call are confirmed by receipt and TransferExecuted evidence. The amount was one EVM base unit, so a meaningful-value payment and the specific H160-to-SS58 mapping remain unverified.
 
 ## Quick start
 
