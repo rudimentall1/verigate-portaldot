@@ -288,7 +288,7 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
       $("receiptTo").textContent = tx?.to || receipt?.to || "Contract creation / unavailable";
       $("receiptGas").textContent = receipt?.gasUsed ? BigInt(receipt.gasUsed).toLocaleString("en-US") : "Unavailable";
       $("receiptLogs").textContent = receipt
-        ? (transferEvent ? "TransferExecuted verified; " + logs.length + " total log(s)" : logs.length + " log(s); no matching TransferExecuted verified")
+        ? (transferEvent ? "TransferExecuted decoded; " + logs.length + " total log(s)" : logs.length + " log(s); no matching TransferExecuted verified")
         : "Unavailable without receipt";
 
       if (!receipt) {
@@ -304,11 +304,11 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
         setLed("receiptLed", "bad");
         message("The configured RPC returned a receipt with a non-success status.", "bad");
       } else if (transferEvent) {
-        $("receiptStatus").textContent = "Verigate TransferExecuted verified";
+        $("receiptStatus").textContent = "PortalDotAgentGuard TransferExecuted found";
         $("receiptStatus").className = "value green";
         $("receiptHint").textContent = "Live receipt status 0x1. Guard event decoded: recipient " + transferEvent.recipient + "; amount " + fmtNative("0x" + transferEvent.amount.toString(16)) + " POT; nonce " + transferEvent.nonce.toString() + "; action ID " + transferEvent.actionId + ". This verifies the receipt and event returned by the configured RPC, not an independent second-provider cross-check.";
         setLed("receiptLed", "good");
-        message("Live receipt and matching PortalDotAgentGuard TransferExecuted event verified for the requested hash.", "good");
+        message("Live receipt succeeded and the configured guard emitted a decodable TransferExecuted event for the requested hash.", "good");
       } else {
         $("receiptStatus").textContent = "Receipt success; TransferExecuted not verified";
         $("receiptStatus").className = "value amber";
