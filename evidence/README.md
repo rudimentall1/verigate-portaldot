@@ -6,13 +6,14 @@
 
 The runtime metadata shows Revive.OriginalAccount keyed by H160 and storing AccountId32; Revive.AddressSuffix is absent; AutoMap=true and NativeToEthRatio=10000 were reported. The synthetic key query returned no value, as expected. This evidence does not include a user's wallet pair and does not establish its live mapping.
 
-## Deployment evidence
+## Deployment and authorized-transfer evidence
 
-Keep verified PortalDot V3 deployment evidence here after an authorized public transaction:
+- [authorized-transfer-2026-10-21.json](authorized-transfer-2026-10-21.json) records a read-only re-verification of a public PortalDot V3 receipt and its TransferExecuted event. The amount is one EVM base unit, so it proves the call path but not a meaningful-value transfer. The reproducible verifier is npm run verify:authorized-transfer -- <transaction-hash>.
+- Keep deployment evidence and further authorized transfer evidence here:
 - preflight output with timestamp, actual chain ID and latest block;
 - deployment address and transaction hash;
 - confirmed block number and explorer link;
 - demo transaction hashes for an allowed payment;
 - evidence that a denied or modified authorization did not execute.
 
-Do not add seed phrases, private keys, raw .env files, or credentials. No live deployment evidence is recorded yet. GitHub Actions local execution evidence uses disposable keys and a loopback Hardhat EVM; it is not evidence of a transaction to public PortalDot.
+Do not add seed phrases, private keys, raw .env files, signed authorization payloads, or credentials. The live transfer record is endpoint-reported evidence from the configured RPC, not independent authentication of its operator. GitHub Actions local execution evidence uses disposable keys and a loopback Hardhat EVM; keep it separate from public PortalDot evidence.

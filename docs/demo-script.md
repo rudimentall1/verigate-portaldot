@@ -37,10 +37,10 @@ Show contracts/PortalDotAgentGuard.sol and the test names covering replay, amoun
 
 Say: The contract has no generic arbitrary-call interface and only pays from its own balance. The bridge signer is a separate trust boundary; the contract itself does not verify Verigate's Ed25519 signatures.
 
-### 2:10–2:40 — Why PortalDot and limitations
-Show the network preflight evidence, operations runbook and presentation. If a verified public ALLOW transfer becomes available, show its actual PortalDot receipt and `TransferExecuted` event here. Otherwise state clearly that only the local EVM transfer has been demonstrated end-to-end.
+### 2:10–2:40 — Public transaction and limitations
+Show the verified receipt for transaction 0xbe3ade2ba3209cf0df3647cea50fb6608a77bb837213a25b8ec419fa9914cc14 and the matching TransferExecuted fields: action ID, recipient, amount and nonce. Say explicitly that this one-base-unit transaction proves the authorization call path but is not a meaningful-value payment.
 
-Say: PortalDot V3's EVM compatibility allows the Solidity/EIP-712 guard to run on this network. Substrate genesis/runtime checks are separate operational checks. The specific EVM-to-SS58 account mapping remains unverified, the public end-to-end transfer is not yet demonstrated, and this testnet prototype is not an independent audit.
+Say: PortalDot V3's EVM compatibility allows the Solidity/EIP-712 guard to run on this network. Substrate genesis/runtime checks are separate operational checks. The specific EVM-to-SS58 account mapping remains unverified, a non-dust transfer and recipient balance-delta check remain open, and this testnet prototype is not an independent audit.
 
 ## Do not claim
 - Do not present the local EVM transfer hash as a PortalDot transaction.

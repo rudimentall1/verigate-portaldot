@@ -29,6 +29,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 | Ongoing development history | Present | Preserve dated commits and CI evidence from the event period |
 | Product prototype / core workflow | Partially demonstrated | Public read-only DApp shows live contract state; full Verigate ALLOW/BLOCK path verified on isolated loopback EVM |
 | PortalDot testnet deployment | Verified | [Deployment evidence](deployment-evidence-2026-10-20.md) |
+| Verigate-authorized PortalDot transfer | Minimal amount confirmed | [Receipt and TransferExecuted evidence](authorized-transfer-evidence-2026-10-21.md); amount was one EVM base unit, so non-dust transfer still pending |
 | Contract address and transaction hash | Verified and recorded | Address: `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`; tx: `0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c` |
 | Explorer link, if available | Generic console available; transaction deep link unverified | https://node-console.portaldot.dev/; do not invent a transaction URL. The live DApp independently reads the current deployed code and signer. |
 | Live Web3 DApp preview URL | Available through HTML Preview | https://htmlpreview.github.io/?https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html (read-only live state viewer; not a transaction demo) |\n| Demo URL or video under 3 minutes | **Pending** | Record the product workflow; clearly separate local execution from PortalDot deployment evidence |
@@ -52,8 +53,8 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 
 ## Security and honesty requirements
 
-- The initial deployment receipt was captured in the deployment record. On 20 October, the configured RPC still served the contract code and correct signer, but returned `null` for the historical deployment transaction and receipt and failed to serve the old block state. Do not interpret that RPC retention limitation as a failed deployment, and do not claim a new public end-to-end transfer until its receipt is observed.
+- The initial deployment receipt was captured in the deployment record. On 20 October, the configured RPC still served the contract code and correct signer, but returned `null` for the historical deployment transaction and receipt and failed to serve the old block state. Do not interpret that RPC retention limitation as a failed deployment, a minimal public transfer receipt is now recorded in the 21 October evidence; do not represent the one-base-unit call as a meaningful-value payment.
 - The exact H160-to-SS58 mapping for the wallet-displayed EVM address remains unverified.
-- Do not claim an independent RPC authentication, public PortalDot transfer, security audit, or production readiness.
+- Do not claim independent RPC authentication, a meaningful-value transfer based only on the one-base-unit receipt, a security audit, or production readiness.
 - Never commit `.env`, `.env.save`, mnemonics, private keys, wallet exports, or sensitive signed authorizations.
 - The project uses pre-existing Verigate components and third-party dependencies. Clearly distinguish reused code from the PortalDot-specific work performed during the event.
