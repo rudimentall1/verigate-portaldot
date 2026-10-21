@@ -1,6 +1,6 @@
 # DoraHacks submission draft: Verigate PortalDot
 
-**Status:** the public repository, testnet guard and live read-only Web3 DApp preview are available. The presentation PDF is in the repository; a short recorded demo and public end-to-end PortalDot payment remain outstanding. A short recorded product demo and a publicly verified end-to-end PortalDot payment remain outstanding. The DoraHacks build entry is [50065](https://dorahacks.io/build/50065); confirm the final saved/published state in the DoraHacks UI.
+**Status:** the public repository, testnet guard and live read-only Web3 DApp are available at https://rudimentall1.github.io/verigate-portaldot/. The presentation PDF is in the repository; a short recorded demo and public end-to-end PortalDot payment remain outstanding. A short recorded product demo and a publicly verified end-to-end PortalDot payment remain outstanding. The DoraHacks build entry is [50065](https://dorahacks.io/build/50065); confirm the final saved/published state in the DoraHacks UI.
 
 ## Submission fields
 
@@ -24,7 +24,7 @@ The project makes use of PortalDot V3's EVM-compatible execution environment for
 
 - **Public repository:** https://github.com/rudimentall1/verigate-portaldot
 - **Implementation branch:** https://github.com/rudimentall1/verigate-portaldot/tree/main
-- **Live Web3 DApp:** https://htmlpreview.github.io/?https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
+- **Live Web3 DApp:** https://rudimentall1.github.io/verigate-portaldot/
 - **DApp source:** https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
 - **Architecture:** [docs/architecture.md](architecture.md)
 - **Presentation PDF:** [Verigate-PortalDot-Presentation.pdf](Verigate-PortalDot-Presentation.pdf)
