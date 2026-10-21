@@ -11,3 +11,7 @@ types/ethers-contracts/
 
 # Local signing secrets; never commit
 .secrets/
+
+# Authorization responses and signed transaction payloads; never commit replayable artifacts
+authorization-response*.json
+signed-transfer*.json

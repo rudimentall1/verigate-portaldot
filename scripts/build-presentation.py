@@ -155,20 +155,21 @@ paragraph(d,(1080,632),"A deployed multi-chain asset bridge, verified wallet map
 slides.append(im)
 
 # 5. Deployment
-im,d=base("PortalDot V3 testnet deployment evidence","The contract deployment is a real testnet interaction; the full transfer workflow has not yet been shown on the public network.",5)
+im,d=base("PortalDot V3 deployment and transfer evidence","The public testnet now confirms a Verigate-authorized PortalDotAgentGuard call and its TransferExecuted receipt.",5)
 rounded(d,(80,320,1160,835),28,fill=PANEL,outline="#2C4968")
 labels=[
     ("Network","PortalDot V3 EVM testnet"),
     ("Chain ID","420420777"),
     ("Contract","0x3f2f4844...F09655b"),
     ("Deployment tx","0xb1cf9cca...1fcdce3c"),
-    ("Receipt","Success • block 116872"),
     ("Runtime code hash","0xb3d71ff8...f7f7671"),
+    ("Transfer tx","0xbe3ade2b...9914cc14"),
+    ("Transfer receipt","Success • block 130741"),
 ]
 y=350
 for label,value in labels:
     d.text((118,y),label.upper(),font=font(17,True),fill=MUTED)
-    y=paragraph(d,(118,y+30),value,font(21,True if label in ("Contract","Deployment tx") else False),WHITE,max_width=960,leading=1.2)+17
+    y=paragraph(d,(118,y+30),value,font(21,True if label in ("Contract","Deployment tx") else False),WHITE,max_width=960,leading=1.2)+12
 rounded(d,(1210,320,1815,835),28,fill="#102E45",outline=BLUE,width=2)
 d.text((1254,365),"READ-BACK",font=font(21,True),fill=CYAN)
 paragraph(d,(1254,425),"2,153 bytes",font(36,True),WHITE,max_width=490)
@@ -181,7 +182,7 @@ paragraph(d,(1254,744),"node-console.portaldot.dev",font(19),BODY,max_width=470)
 slides.append(im)
 
 # 6. Tests
-im,d=base("What has been verified — and what has not","Tests and local execution evidence are labelled separately from public testnet deployment evidence.",6)
+im,d=base("What has been verified — and what has not","Local tests remain separate from the newly confirmed PortalDot public testnet transfer.",6)
 stats=[("156","local tests passed",BLUE),("ALLOW","valid signed artifacts",GREEN),("BLOCK","execution refused",RED)]
 x=82
 for val,desc,col in stats:
@@ -189,24 +190,24 @@ for val,desc,col in stats:
     d.text((x+28,360),val,font=font(42,True),fill=col)
     d.text((x+28,430),desc,font=font(21),fill=BODY)
     x+=575
-bullet(d,100,565,"Dry-run did not change state","The executor simulated the exact authorized transfer before execution.",790,BLUE)
-bullet(d,100,730,"Local EVM transfer matched authorization","TransferExecuted was confirmed and recipient balance delta matched 1,000,000 base units.",790,GREEN)
+bullet(d,100,565,"Pre-broadcast checks passed","The executor re-simulated the exact signed authorization and refreshed the fee budget before sending.",790,BLUE)
+bullet(d,100,730,"Public PortalDot transfer confirmed","Receipt status 1 at block 130741; TransferExecuted matched the action ID, recipient and amount.",790,GREEN)
 rounded(d,(1030,580,1800,845),24,fill="#301C2A",outline=RED,width=2)
 d.text((1070,620),"IMPORTANT DISTINCTION",font=font(20,True),fill=RED)
-paragraph(d,(1070,680),"The end-to-end transfer executed only on a temporary loopback Hardhat EVM configured with the target chain ID. No public PortalDot transfer was sent.",font(24),WHITE,max_width=660,leading=1.4)
+paragraph(d,(1070,680),"A public PortalDot receipt and matching TransferExecuted event are confirmed. The authorized amount was only 1 base unit (1e-18 EVM POT), so this proves the call path, not a meaningful-value payment.",font(24),WHITE,max_width=660,leading=1.4)
 slides.append(im)
 
 # 7. Roadmap and limitations
-im,d=base("Next steps and ecosystem value","A public read-only Web3 console now exposes live PortalDot state; public end-to-end payment evidence remains the final proof gap.",7)
+im,d=base("Next steps and ecosystem value","A public testnet transfer is confirmed at 1 base unit; the next proof is a fresh authorization for a non-dust amount.",7)
 bullet(d,95,310,"Open the live Web3 guard console","Inspect the current chain, contract code, guard balance and authority signer; connect a wallet in read-only mode.",800,BLUE)
-bullet(d,95,475,"Verify a public authorized payment","Capture a PortalDot receipt and TransferExecuted event for the full Verigate ALLOW path; keep local simulation evidence separate.",800,CYAN)
-bullet(d,95,640,"Record the product demo","Show the live console, ALLOW/BLOCK behavior and deployment evidence, clearly labelling which transfer ran on a local EVM.",800,GREEN)
+bullet(d,95,475,"Repeat with a non-dust amount","Use a fresh signed ALLOW; verify the intended recipient, receipt, TransferExecuted fields and balance delta.",800,CYAN)
+bullet(d,95,640,"Record demo and negative cases","Show live receipt evidence and prove denied, altered or expired authorizations are rejected.",800,GREEN)
 rounded(d,(1035,325,1800,800),28,fill=PANEL,outline="#2C4968")
 d.text((1080,375),"ECOSYSTEM VALUE",font=font(22,True),fill=CYAN)
 paragraph(d,(1080,435),"A reusable spending-control component, a minimal guard contract, deployment evidence, fail-closed network tooling, an operations runbook and a live read-only Web3 console.",font(22,True),WHITE,max_width=620,leading=1.25)
 d.line((1080,580,1745,580),fill="#2C4968",width=2)
 d.text((1080,610),"LIMITATIONS",font=font(20,True),fill=AMBER)
-paragraph(d,(1080,655),"Testnet prototype. No independent security audit. Specific EVM/SS58 mapping unverified. Public ALLOW-to-transfer proof and video still pending.",font(18),BODY,max_width=620,leading=1.28)
+paragraph(d,(1080,655),"Testnet prototype. No independent audit. EVM/SS58 mapping remains unverified. A non-dust transfer and the demo video remain pending.",font(18),BODY,max_width=620,leading=1.28)
 slides.append(im)
 
 # Save previews and multipage PDF.

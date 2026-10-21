@@ -31,6 +31,13 @@ npm run verify:deployer-address
 
 `verify:deployer-address` uses the locally configured address and `.env`; do not print or paste `.env` output into issues, chat, CI logs or commits. Review the deployment evidence before considering a new deployment. `npm run deploy:portaldot` can submit a new deployment transaction and should not be run casually just to verify the existing contract.
 
+
+## Confirmed authorized transfer (21 October 2026)
+
+A test transfer has now been broadcast and verified on the configured PortalDot V3 EVM RPC. The successful receipt is in block 130741, transaction 0xbe3ade2ba3209cf0df3647cea50fb6608a77bb837213a25b8ec419fa9914cc14; one matching TransferExecuted event was decoded from PortalDotAgentGuard. Full fields, fee observation, limitations and a read-only verification command are recorded in [authorized-transfer evidence](authorized-transfer-evidence-2026-10-21.md).
+
+This was only **1 EVM base unit** (1e-18 EVM POT). For the next demo-quality proof, create a fresh Verigate authorization for a non-dust amount, independently review recipient/amount/fees, then verify the new receipt, event fields and guard/recipient balance delta. Never replay this signed payload or modify a signed payload after signing. The signed JSON is intentionally ignored by Git.
+
 ## Create and simulate a Verigate-authorized token transfer
 
 The bridge path transfers EVM-denominated POT held by `PortalDotAgentGuard`. It is not the same as transferring native Substrate tPOT from a SubWallet account.

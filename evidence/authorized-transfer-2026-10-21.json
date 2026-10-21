@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-10-21T11:10:26.935Z",
+  "mode": "read-only",
+  "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev",
+  "chainId": "420420777",
+  "transactionHash": "0xbe3ade2ba3209cf0df3647cea50fb6608a77bb837213a25b8ec419fa9914cc14",
+  "receiptStatus": 1,
+  "blockNumber": 130741,
+  "blockHash": "0xd5890a5836d50bff7ee49dd6a3b4434d4ff9f9cab0fe814679d881fafe9e7d90",
+  "blockTimestamp": 1792580418,
+  "from": "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
+  "to": "0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b",
+  "gasUsed": "107785833941356",
+  "effectiveGasPriceWei": "36055",
+  "actualFeeWei": "3886218242755590580",
+  "actualFeeEvmPOT": "3.88621824275559058",
+  "logsCount": 1,
+  "transferExecutedEventConfirmed": true,
+  "transferExecutedEvents": [
+    {
+      "address": "0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b",
+      "actionId": "0xac0dabee1df3352f9d4ba7cb7420f337b55597443a4a1567006dc9f9275d0b97",
+      "recipient": "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
+      "amountBaseUnits": "1",
+      "amountEvmPOT": "0.000000000000000001",
+      "nonce": "68320477847831498543980743852656061612705358230770696640031442177773302563216",
+      "logIndex": 5
+    }
+  ],
+  "checks": {
+    "chainIdMatches": true,
+    "transactionAndReceiptAvailable": true,
+    "receiptSucceeded": true,
+    "receiptBlockHashMatchesBlock": true,
+    "transactionTargetsConfiguredGuard": true,
+    "exactlyOneTransferExecutedEventFromGuard": true
+  },
+  "limitations": [
+    "The transaction, receipt, block and event were read from the configured RPC; this is not independent authentication of the RPC operator.",
+    "The event confirms the guard call and its emitted fields; it does not establish production readiness or an independent security audit."
+  ],
+  "ok": true
+}
