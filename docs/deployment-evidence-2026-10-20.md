@@ -70,4 +70,10 @@ Read-only re-check performed on 21 October 2026 at 09:22 UTC using `npm run veri
 
 A subsequent `npm run preflight` observed EVM block `129767` and confirmed the EVM chain ID and configured Substrate genesis pin `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd`. The preflight is endpoint-consistency evidence, not independent authentication of the RPC operator.
 
-The project test suite was run on 21 October 2026: `156 passing (6s)`. These are local contract/bridge tests and are not evidence of a public testnet transfer. As of this check, the missing reward-critical evidence remains a fresh Verigate-signed `ALLOW`, a corresponding successful PortalDot execution receipt, and a matching `TransferExecuted` event.
+The project test suite was run on 21 October 2026: `156 passing (6s)`. These are local contract/bridge tests and are not evidence of a public testnet transfer.
+
+A further read-only re-check on 21 October 2026 at 09:32 UTC observed block `129864`. Chain ID, deployed bytecode hash, and `authoritySigner()` still match the configured values; guard balance remains `1.0` EVM POT. The historical deployment transaction lookup still returned `null` for the transaction and receipt.
+
+A separate read-only RPC balance query at block `129849` reported `269596771507351972250` wei for the deployer address `0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB`. That is a balance observation only; it is not a fee estimate or proof of execution readiness.
+
+No new authorization or public transfer was produced in this session. A temporary test identity and narrowly scoped capability were registered for preparation, but the authorization request did not complete; both were revoked and the temporary agent signing key was deleted. No wallet private key or mnemonic was accessed. The missing reward-critical evidence remains a fresh Verigate-signed `ALLOW`, a corresponding successful PortalDot execution receipt, and a matching `TransferExecuted` event.
