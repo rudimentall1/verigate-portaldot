@@ -12,6 +12,7 @@
     "test": "hardhat test",
     "preflight": "node scripts/preflight.js",
     "deploy:portaldot": "npm run preflight && hardhat run scripts/deploy.mjs --network portaldot",
+    "deploy:v2:portaldot": "npm run preflight && hardhat run scripts/deploy-v2.mjs --network portaldot",
     "bridge:sign": "node adapter/verigate-bridge.js",
     "execute:authorization": "node scripts/execute-authorized-transfer.mjs",
     "monitor:rpc": "node scripts/monitor-rpc.js",
