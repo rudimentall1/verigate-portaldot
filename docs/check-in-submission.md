@@ -6,7 +6,7 @@
 
 **Project name:** Verigate PortalDot
 
-**Recommended track:** Modular Cloud Solutions and Middleware
+**Recommended track:** Modular Cloud & Middleware
 
 This is the closest fit because the project provides a reusable authorization and execution middleware layer. It is not a node monitoring dashboard, nor does it yet implement a bridge between independent chains.
 
