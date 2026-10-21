@@ -22,7 +22,7 @@ Public Web3 DApp: https://rudimentall1.github.io/verigate-portaldot/
 
 GitHub Pages serves the static frontend directly from the repository. Source: [web3-dapp/index.html](web3-dapp/index.html). The dashboard makes read-only JSON-RPC calls to PortalDot V3 and is designed to work without a wallet extension. It does not sign or send transactions. The public deployment payment still requires separate live transaction evidence.
 
-The read-only frontend is in [web3-dapp/index.html](web3-dapp/index.html) and is deployed at https://rudimentall1.github.io/verigate-portaldot/. It reads the live PortalDot V3 chain ID, latest block, deployed contract code presence, guard balance, and on-chain `authoritySigner()`. The public dashboard does not access browser wallets, request signatures, switch networks, or submit transactions. This is a live state viewer, not a claim that a public end-to-end payment has already been demonstrated.
+The read-only frontend is in [web3-dapp/index.html](web3-dapp/index.html) and is deployed at https://rudimentall1.github.io/verigate-portaldot/. It reads live PortalDot V3 state and includes an explicit wallet-gated execution panel for a signed Verigate authorization. Account access, network switching and transaction broadcast are user-triggered; a valid EIP-712 authorization must pass on-chain simulation before the wallet is asked to submit the exact call. The DApp never asks for private keys or seed phrases. This is not a claim that a public end-to-end payment has already been demonstrated.
 
 ## Hacker House submission package
 
