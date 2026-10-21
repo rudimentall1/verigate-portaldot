@@ -172,6 +172,25 @@ describe("PortalDotAgentGuardV2", function () {
       .to.be.revertedWithCustomError(guard, "InvalidSignature");
   });
 
+  it("blocks a reentrant replay from an allowlisted recipient contract", async function () {
+    const recipientFactory = await ethers.getContractFactory("ReentrantRecipient");
+    const reentrantRecipient = await recipientFactory.deploy(await guard.getAddress());
+    await reentrantRecipient.waitForDeployment();
+    const target = await reentrantRecipient.getAddress();
+    await guard.connect(admin).setRecipientAllowed(target, true);
+    const a = await auth({ recipient: target, nonce: 14n });
+    const signature = await sign(authority, a);
+    await reentrantRecipient.configure(
+      a.recipient, a.amount, a.nonce, a.deadline, a.actionId, signature
+    );
+    await expect(guard.connect(relayer).executeTransfer(
+      a.recipient, a.amount, a.nonce, a.deadline, a.actionId, signature
+    )).to.emit(guard, "TransferExecuted").withArgs(a.actionId, a.recipient, a.amount, a.nonce);
+    expect(await reentrantRecipient.reentryBlocked()).to.equal(true);
+    expect(await guard.usedNonces(a.nonce)).to.equal(true);
+    expect(await ethers.provider.getBalance(target)).to.equal(a.amount);
+  });
+
   it("rejects invalid policy settings", async function () {
     await expect(guard.connect(admin).setSpendingPolicy(0, windowLimit, windowSeconds))
       .to.be.revertedWithCustomError(guard, "InvalidPolicy");
