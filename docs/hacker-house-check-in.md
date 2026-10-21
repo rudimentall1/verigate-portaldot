@@ -31,7 +31,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 | PortalDot testnet deployment | Verified | [Deployment evidence](deployment-evidence-2026-10-20.md) |
 | Contract address and transaction hash | Verified and recorded | Address: `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`; tx: `0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c` |
 | Explorer link, if available | Generic console available; transaction deep link unverified | https://node-console.portaldot.dev/; do not invent a transaction URL. The live DApp independently reads the current deployed code and signer. |
-| Live Web3 DApp preview URL | Deployed as a static GitHub Pages web app | https://rudimentall1.github.io/verigate-portaldot/ (live read-only PortalDot RPC dashboard; wallet connection is not needed and it is not a transaction demo) 
+| Live Web3 DApp preview URL | Deployed as a static GitHub Pages web app | https://rudimentall1.github.io/verigate-portaldot/ (live PortalDot RPC dashboard; read-only state view plus explicit wallet-gated execution of a signed Verigate authorization; not evidence of a transaction until a receipt is recorded) 
 | Demo URL or video under 3 minutes | **Pending** | Record the product workflow; clearly separate local execution from PortalDot deployment evidence |
 | Presentation PDF / public link | Published | https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/Verigate-PortalDot-Presentation.pdf |
 | Clear local run instructions | Present | README and operations runbook |
