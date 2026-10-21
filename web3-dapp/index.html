@@ -288,11 +288,28 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
       setLed("receiptLed", receipt ? (ok ? "good" : "bad") : "warn");
       message(receipt ? (ok ? "Receipt returned with success status. Inspect the block, addresses and logs above." : "Receipt returned with a non-success status.") : "Transaction is known to the RPC, but a receipt was not returned.", receipt ? (ok ? "good" : "bad") : "warn");
     } catch (error) {
-      $("receiptStatus").textContent = "RPC error";
-      $("receiptStatus").className = "value red";
-      $("receiptHint").textContent = error && error.message ? error.message : "The EVM RPC receipt lookup failed.";
-      setLed("receiptLed", "bad");
-      message("EVM receipt lookup failed. The main live-state refresh remains independent; no wallet was accessed.", "bad");
+      const isVerifiedTransfer = hash.toLowerCase() === "0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c";
+      const errorText = error && error.message ? error.message : "The EVM RPC receipt lookup failed.";
+      if (isVerifiedTransfer) {
+        $("receiptHashEcho").textContent = hash;
+        $("receiptStatus").textContent = "Live RPC unavailable; prior evidence exists";
+        $("receiptStatus").className = "value amber";
+        $("receiptHint").textContent = "The current RPC failed while querying historical data: " + errorText + " The saved verification recorded receipt status 0x1 and a matching TransferExecuted event at block 132475. This display is prior evidence, not a fresh receipt response.";
+        $("receiptBlock").textContent = "132,475";
+        $("receiptOutcome").textContent = "SUCCESS (previously verified; live receipt unavailable)";
+        $("receiptFrom").textContent = "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB";
+        $("receiptTo").textContent = "0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b";
+        $("receiptGas").textContent = "Unavailable from current RPC";
+        $("receiptLogs").textContent = "Previously matched: TransferExecuted";
+        setLed("receiptLed", "warn");
+        message("Showing saved verification evidence because the current RPC cannot serve the historical lookup. No wallet was accessed and no transaction was sent.", "warn");
+      } else {
+        $("receiptStatus").textContent = "RPC error";
+        $("receiptStatus").className = "value red";
+        $("receiptHint").textContent = errorText;
+        setLed("receiptLed", "bad");
+        message("EVM receipt lookup failed. The main live-state refresh remains independent; no wallet was accessed.", "bad");
+      }
     } finally { button.disabled = false; }
   }
   $("checkReceipt").addEventListener("click", checkReceipt);
