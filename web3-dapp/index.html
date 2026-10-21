@@ -33,6 +33,7 @@ button.primary{background:var(--cyan);color:#071521;border-color:var(--cyan)}but
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .checks{display:grid;grid-template-columns:1fr 1fr;gap:10px}.check{border:1px solid var(--line);border-radius:11px;background:#0d1729;padding:13px;min-width:0}.check-top{display:flex;align-items:center;gap:8px;font-weight:750;font-size:12px}.check p{font-size:11px;color:var(--muted);margin:6px 0 0}
 .notice{padding:13px 15px;border:1px solid #61502d;background:#241f16;color:#e9d5a2;border-radius:11px;font-size:12px;margin-top:13px}
+input:focus{outline:2px solid var(--cyan);outline-offset:1px}
 footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;font-size:11px;color:var(--muted)}
 @media(max-width:850px){.span3,.span4,.span5,.span7,.span8{grid-column:span 6}.hero{align-items:flex-start;flex-direction:column}}
 @media(max-width:560px){main,.topbar,footer{width:calc(100% - 24px)}.span3,.span4,.span5,.span7,.span8,.span12{grid-column:span 12}.checks,.dual{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}.hero{padding-top:25px}.value{font-size:22px}}
@@ -56,13 +57,35 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
     <article class="card span3"><h2>Guard balance</h2><div class="value" id="guardBalance">—</div><div class="small">Native testnet balance · POT</div><div class="label">Read method</div><div class="mono">eth_getBalance</div></article>
   </section>
   <section class="grid">
-    <article class="card span7"><h2>Deployed contract</h2><div class="label" style="margin-top:0">PortalDotAgentGuard · EVM</div><div class="mono" id="contractAddress">0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b</div><div class="actions"><button id="copyContract2">Copy address</button><a href="https://node-console.portaldot.dev/" target="_blank" rel="noopener noreferrer">PortalDot node console ↗</a></div><div class="rule"></div><div class="label">Recorded deployed bytecode Keccak-256</div><div class="mono">0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671</div><div class="small">The fingerprint above is the project’s recorded value. This page checks live bytecode presence and size; it does not independently recompute Keccak-256 in the browser.</div><div class="label">Authority signer returned by contract</div><div class="mono" id="signer">Reading authoritySigner()…</div><div class="small" id="signerHint">Expected project-recorded signer is checked below.</div><div class="label">Expected signer</div><div class="mono">0x48F9B07d37b5AF744BA8195c4d6740145b593ea6</div><div class="label">Signer comparison</div><div class="value" id="signerStatus">Checking</div></article>
+    <article class="card span7"><h2>Deployed contract</h2><div class="label" style="margin-top:0">PortalDotAgentGuard · EVM</div><div class="mono" id="contractAddress">0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b</div><div class="actions"><button id="copyContract2">Copy address</button><a href="https://node-console.portaldot.dev/" target="_blank" rel="noopener noreferrer">PortalDot node console ↗</a></div><div class="rule"></div><div class="label">Recorded deployed bytecode Keccak-256</div><div class="mono">0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671</div><div class="small">The fingerprint above is the project’s recorded value. This page checks live bytecode presence and size; it does not independently recompute Keccak-256 in the browser.</div>
+      <div class="notice">Explorer compatibility: the PortalDot Node Console Explorer does not currently provide a dedicated EVM contract-detail page for this H160 address. The address is checked directly against the PortalDot EVM RPC here. Use the transaction lookup below for EVM transaction/receipt data; a missing historical receipt from this RPC is inconclusive.</div><div class="label">Authority signer returned by contract</div><div class="mono" id="signer">Reading authoritySigner()…</div><div class="small" id="signerHint">Expected project-recorded signer is checked below.</div><div class="label">Expected signer</div><div class="mono">0x48F9B07d37b5AF744BA8195c4d6740145b593ea6</div><div class="label">Signer comparison</div><div class="value" id="signerStatus">Checking</div></article>
     <article class="card span5"><h2>Live verification checks</h2><div class="checks">
       <div class="check"><div class="check-top"><span class="led" id="cRpc"></span><span>Public RPC responds</span></div><p id="cRpcText">Pending live check</p></div>
       <div class="check"><div class="check-top"><span class="led" id="cChain"></span><span>Expected chain</span></div><p id="cChainText">Pending live check</p></div>
       <div class="check"><div class="check-top"><span class="led" id="cCode"></span><span>Contract has code</span></div><p id="cCodeText">Pending live check</p></div>
       <div class="check"><div class="check-top"><span class="led" id="cSigner"></span><span>Signer matches</span></div><p id="cSignerText">Pending live check</p></div>
     </div><div class="notice">Read-only by design. No wallet provider access, account discovery, network switching, message signing, or transaction submission is used on this page.</div></article>
+  </section>
+  <section class="grid">
+    <article class="card span12">
+      <h2>EVM transaction lookup · RPC-native</h2>
+      <p class="small" style="margin-top:-5px">Read-only lookup via <span class="mono">eth_getTransactionByHash</span> and <span class="mono">eth_getTransactionReceipt</span>. This is an EVM RPC receipt reader, not a wallet or a transaction sender.</p>
+      <div class="label" for="receiptHash" style="margin-top:0">EVM transaction hash</div>
+      <input id="receiptHash" type="text" spellcheck="false" autocomplete="off" value="0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c" style="display:block;width:100%;border:1px solid var(--line);border-radius:10px;background:#0b1526;color:var(--text);padding:12px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">
+      <div class="actions"><button class="primary" id="checkReceipt">Check EVM receipt</button></div>
+      <div class="rule"></div>
+      <div class="statusline"><span class="led" id="receiptLed"></span><div class="value" id="receiptStatus">Not checked</div></div>
+      <div class="small" id="receiptHint">Enter an EVM transaction hash and query the RPC. The default deployment hash is historical and may no longer be retained by the node.</div>
+      <div class="dual" style="margin-top:13px">
+        <div class="stat"><div class="label" style="margin-top:0">Block</div><div class="value" id="receiptBlock">—</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">Receipt status</div><div class="value" id="receiptOutcome">—</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">From</div><div class="mono" id="receiptFrom">—</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">To</div><div class="mono" id="receiptTo">—</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">Gas used</div><div class="mono" id="receiptGas">—</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">Event logs</div><div class="value" id="receiptLogs">—</div></div>
+      </div>
+      <div class="small" id="receiptHashEcho" style="overflow-wrap:anywhere"></div>
+    </article>
   </section>
   <section class="grid">
     <article class="card span5"><h2>Deployment record</h2><div class="label" style="margin-top:0">Deployment transaction hash</div><div class="mono" id="txHash">0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c</div><div class="actions"><button id="copyTx">Copy transaction hash</button></div><div class="small">The deployment record is historical evidence. The current RPC may no longer serve the old transaction receipt; this page does not present the receipt as a fresh live lookup.</div></article>
@@ -134,6 +157,64 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
       $("rpcStatus").textContent = "Unavailable"; $("rpcStatus").className = "value red"; $("rpcHint").textContent = error && error.message ? error.message : "RPC request failed"; setLed("rpcLed","bad"); check("cRpc","bad",error && error.message ? error.message : "RPC request failed"); message("Could not complete the live RPC check. Use Refresh to retry. No wallet was accessed.","bad");
     } finally { button.disabled = false; }
   }
+  async function checkReceipt() {
+    const button = $("checkReceipt");
+    const hash = $("receiptHash").value.trim();
+    if (!/^0x[0-9a-f]{64}$/i.test(hash)) {
+      $("receiptStatus").textContent = "Invalid hash";
+      $("receiptStatus").className = "value red";
+      $("receiptHint").textContent = "Enter a 0x-prefixed 32-byte EVM transaction hash.";
+      setLed("receiptLed", "bad");
+      return;
+    }
+    button.disabled = true;
+    $("receiptStatus").textContent = "Checking RPC…";
+    $("receiptStatus").className = "value";
+    $("receiptHashEcho").textContent = "";
+    setLed("receiptLed", "");
+    try {
+      const [tx, receipt] = await Promise.all([
+        rpc("eth_getTransactionByHash", [hash]),
+        rpc("eth_getTransactionReceipt", [hash])
+      ]);
+      $("receiptHashEcho").textContent = hash;
+      if (!tx && !receipt) {
+        $("receiptStatus").textContent = "Not returned by RPC";
+        $("receiptStatus").className = "value amber";
+        $("receiptHint").textContent = "The endpoint returned null for both lookups. This does not prove the transaction failed; historical data may be pruned or unavailable from this RPC.";
+        $("receiptBlock").textContent = "—";
+        $("receiptOutcome").textContent = "Unknown";
+        $("receiptFrom").textContent = "—";
+        $("receiptTo").textContent = "—";
+        $("receiptGas").textContent = "—";
+        $("receiptLogs").textContent = "—";
+        setLed("receiptLed", "warn");
+        message("RPC did not return this transaction or its receipt. No wallet was accessed and no transaction was sent.", "warn");
+        return;
+      }
+      const status = receipt ? receipt.status : null;
+      const ok = status === "0x1" || status === "0x01";
+      $("receiptStatus").textContent = receipt ? (ok ? "Receipt confirmed" : "Receipt returned") : "Transaction only";
+      $("receiptStatus").className = "value " + (receipt ? (ok ? "green" : "red") : "amber");
+      $("receiptHint").textContent = receipt ? "The current RPC returned a transaction receipt." : "The RPC returned a transaction but no receipt yet; it may be pending or receipt indexing may lag.";
+      const blockValue = receipt?.blockNumber || tx?.blockNumber;
+      $("receiptBlock").textContent = blockValue ? BigInt(blockValue).toLocaleString("en-US") : "Pending";
+      $("receiptOutcome").textContent = receipt ? (ok ? "SUCCESS (0x1)" : "REVERTED / FAILED") : "Not available";
+      $("receiptFrom").textContent = tx?.from || receipt?.from || "—";
+      $("receiptTo").textContent = tx?.to || receipt?.to || "Contract creation / unavailable";
+      $("receiptGas").textContent = receipt?.gasUsed ? BigInt(receipt.gasUsed).toLocaleString("en-US") : "—";
+      $("receiptLogs").textContent = receipt ? String((receipt.logs || []).length) : "—";
+      setLed("receiptLed", receipt ? (ok ? "good" : "bad") : "warn");
+      message(receipt ? (ok ? "Receipt returned with success status. Inspect the block, addresses and logs above." : "Receipt returned with a non-success status.") : "Transaction is known to the RPC, but a receipt was not returned.", receipt ? (ok ? "good" : "bad") : "warn");
+    } catch (error) {
+      $("receiptStatus").textContent = "RPC error";
+      $("receiptStatus").className = "value red";
+      $("receiptHint").textContent = error && error.message ? error.message : "The EVM RPC receipt lookup failed.";
+      setLed("receiptLed", "bad");
+      message("EVM receipt lookup failed. The main live-state refresh remains independent; no wallet was accessed.", "bad");
+    } finally { button.disabled = false; }
+  }
+  $("checkReceipt").addEventListener("click", checkReceipt);
   $("refresh").addEventListener("click",refresh);
   $("copyContract").addEventListener("click",() => copy(CONTRACT,"Contract address"));
   $("copyContract2").addEventListener("click",() => copy(CONTRACT,"Contract address"));
