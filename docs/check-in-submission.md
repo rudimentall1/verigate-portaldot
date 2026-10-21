@@ -1,6 +1,6 @@
 # DoraHacks submission draft: Verigate PortalDot
 
-**Status:** the public repository, deployed testnet guard, live read-only Web3 DApp, local test suite, deployment runbook and presentation PDF are available. The under-three-minute recorded product demo and a publicly verified end-to-end Verigate-authorized PortalDot payment remain outstanding. The DoraHacks build entry is [50065](https://dorahacks.io/build/50065); confirm the final saved/published state in the DoraHacks UI.
+**Status:** the public repository, deployed testnet guard, live Web3 DApp with wallet-gated signed execution, local test suite, deployment runbook and presentation PDF are available. The under-three-minute recorded product demo and a publicly verified end-to-end Verigate-authorized PortalDot payment remain outstanding. The DoraHacks build entry is [50065](https://dorahacks.io/build/50065); confirm the final saved/published state in the DoraHacks UI.
 
 ## Submission fields
 
@@ -55,7 +55,7 @@ PortalDot V3 offers an EVM-compatible deployment target for a narrow, reusable s
 ## Remaining before submitting
 
 - [x] Publish the implementation on `main`; verify the repository and current CI runs are publicly accessible.
-- [x] Add a public Web3 guard console with live PortalDot RPC reads and wallet connection (read-only; no transaction is sent by the page).
+- [x] Add a public Web3 DApp with live PortalDot RPC reads and explicit wallet-gated execution of bridge-signed authorizations; transaction evidence is recorded separately.
 - [ ] Add the short live/demo recording (under 3 minutes) showing the real product behavior and clearly separating local simulation from testnet deployment evidence.
 - [x] Presentation PDF is published in the repository. (This is not the demo video.)
 - [ ] Enter the final repository, deployment address, transaction hash, demo link, and PDF/public presentation link in DoraHacks.
@@ -67,4 +67,4 @@ The submission should distinguish existing Verigate components from work specifi
 
 ## Suggested build update
 
-Verigate PortalDot has a deployed PortalDot V3 testnet guard, a public read-only Web3 console, documented deployment evidence and a passing automated suite. The off-chain bridge and execution path have been exercised in an isolated integration environment: signed ALLOW can execute the exact transfer on a local test EVM, while BLOCK is refused. The key remaining proof is a successful public PortalDot transfer through the full Verigate authorization path and its receipt/event evidence, followed by a concise demo recording.
+Verigate PortalDot has a deployed PortalDot V3 testnet guard, a public Web3 DApp with live RPC reads and an explicit wallet-gated execution panel, documented deployment evidence and a passing automated suite. The off-chain bridge and execution path have been exercised in an isolated integration environment: signed ALLOW can execute the exact transfer on a local test EVM, while BLOCK is refused. The key remaining proof is a successful public PortalDot transfer through the full Verigate authorization path and its receipt/event evidence, followed by a concise demo recording.
