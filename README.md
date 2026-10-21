@@ -18,11 +18,11 @@ See [architecture and trust boundaries](docs/architecture.md), the [verified tes
 
 ## Live Web3 DApp
 
-Public Web3 DApp preview: https://htmlpreview.github.io/?https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
+Public Web3 DApp: https://rudimentall1.github.io/verigate-portaldot/
 
-The preview host renders the static file in the browser. Source: [web3-dapp/index.html](web3-dapp/index.html). The UI reads public PortalDot state and optionally connects an EVM wallet. It does not sign or send transactions. The public deployment payment still requires separate live transaction evidence.
+GitHub Pages serves the static frontend directly from the repository. Source: [web3-dapp/index.html](web3-dapp/index.html). The dashboard makes read-only JSON-RPC calls to PortalDot V3 and is designed to work without a wallet extension. It does not sign or send transactions. The public deployment payment still requires separate live transaction evidence.
 
-The read-only frontend is in [web3-dapp/index.html](web3-dapp/index.html). It reads the live PortalDot V3 chain ID, latest block, deployed contract code presence, guard balance, and on-chain `authoritySigner()`. It can connect an injected EVM wallet and add the testnet network. It never asks for private keys, signs messages, or submits transactions. This is a live state viewer, not a claim that a public end-to-end payment has already been demonstrated.
+The read-only frontend is in [web3-dapp/index.html](web3-dapp/index.html) and is deployed at https://rudimentall1.github.io/verigate-portaldot/. It reads the live PortalDot V3 chain ID, latest block, deployed contract code presence, guard balance, and on-chain `authoritySigner()`. The public dashboard does not access browser wallets, request signatures, switch networks, or submit transactions. This is a live state viewer, not a claim that a public end-to-end payment has already been demonstrated.
 
 ## Hacker House submission package
 
@@ -30,7 +30,7 @@ The read-only frontend is in [web3-dapp/index.html](web3-dapp/index.html). It re
 - [Submission text draft](docs/check-in-submission.md)
 - [Requirements and readiness checklist](docs/hacker-house-check-in.md)
 - [Presentation PDF](docs/Verigate-PortalDot-Presentation.pdf)
-- [Live Web3 DApp](https://htmlpreview.github.io/?https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html)
+- [Live Web3 DApp](https://rudimentall1.github.io/verigate-portaldot/)
 - [Verified testnet deployment evidence](docs/deployment-evidence-2026-10-20.md)
 - Demo recording: pending. The live Web3 console is available now, but it is read-only and does not replace the required short product demo.
 
