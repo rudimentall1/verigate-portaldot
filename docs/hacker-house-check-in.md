@@ -54,7 +54,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 
 ## Security and honesty requirements
 
-- The initial deployment receipt is captured in the deployment record. The configured RPC has returned `null` for some historical transaction/receipt lookups. Do not interpret that RPC retention limitation as a failed transaction or as grounds to resubmit it. A 0.1 EVM POT transfer is now recorded in executor output, which reports `TransferExecuted` and the expected guard-balance decrease; an independent receipt re-query and recipient post-balance snapshot remain outstanding.
+- The initial deployment receipt is captured in the deployment record. The configured RPC has returned `null` for some historical transaction/receipt lookups. Do not interpret that RPC retention limitation as a failed transaction or as grounds to resubmit it. A 0.1 EVM POT transfer is recorded with a successful receipt re-queried from the configured RPC, a matching `TransferExecuted` event, and recipient/relayer block-balance reconciliation. The EVM genesis pin was not configured, and no second RPC provider was used.
 - The exact H160-to-SS58 mapping for the wallet-displayed EVM address remains unverified.
 - Do not claim independent RPC authentication, a second-provider cross-check, a security audit, or production readiness. The receipt and recipient/relayer balance snapshots were queried from the configured RPC.
 - Never commit `.env`, `.env.save`, mnemonics, private keys, wallet exports, or sensitive signed authorizations.
