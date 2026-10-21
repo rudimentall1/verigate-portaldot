@@ -1,0 +1,60 @@
+{
+  "recordType": "executor_report",
+  "date": "2026-10-21",
+  "status": "transfer_executed",
+  "network": {
+    "label": "Configured PortalDot V3 EVM RPC",
+    "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev",
+    "chainId": "420420777",
+    "evmGenesisHashPinConfigured": false,
+    "substrateGenesisHashPinConfigured": true
+  },
+  "guardAddress": "0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b",
+  "runtimeCodeHash": "0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671",
+  "authoritySigner": "0x48F9B07d37b5AF744BA8195c4d6740145b593ea6",
+  "relayerAddress": "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
+  "transaction": {
+    "hash": "0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c",
+    "blockNumber": 132475,
+    "intentId": "portaldot-live-7c3744c34a694e20b36eb0c2cf063b50",
+    "authorizationId": "0a9960bf04896ac727cabd5cb4b54c7c636ba6852f9a15518e3b23d743f41f6b",
+    "actionId": "0x18e1fdaa167208a805dc022b8f66a7839ced261e76805cbf4cf4bc2052f8ab54",
+    "nonce": "4794123804220641289369393308621136588966379660902047142331650140638601813867",
+    "deadlineUnix": "1792590956"
+  },
+  "transfer": {
+    "recipient": "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
+    "amountBaseUnits": "100000000000000000",
+    "amountEvmPOT": "0.1",
+    "decimals": 18,
+    "transferExecutedEventConfirmedByExecutor": true
+  },
+  "guardBalance": {
+    "beforeWei": "999999999999999999",
+    "afterWei": "899999999999999999",
+    "differenceWei": "100000000000000000",
+    "differenceEvmPOT": "0.1",
+    "afterReadSucceeded": true
+  },
+  "fees": {
+    "gasUsed": "108251197667575",
+    "effectiveGasPriceWei": "35900",
+    "actualFeeWeiCalculatedFromExecutorFields": "3886217996265942500",
+    "actualFeeEvmPOTCalculatedFromExecutorFields": "3.8862179962659425",
+    "relayerBalanceBeforeWei": "265710553264596381671",
+    "note": "Fee is calculated as gasUsed × effectiveGasPriceWei from executor output."
+  },
+  "executorChecks": {
+    "preBroadcastResimulationPassed": true,
+    "preBroadcastGasQuoteRefreshed": true,
+    "preBroadcastFeeBudgetPassed": true,
+    "transactionBroadcast": true,
+    "transactionBroadcastReported": true,
+    "transferExecutedEventConfirmed": true
+  },
+  "limitations": [
+    "Values are recorded from the successful executor terminal output; this file is not an independent RPC re-query of the transaction receipt.",
+    "The EVM genesis hash pin was not configured. Substrate genesis hash pin was configured.",
+    "The guard balance delta matches the emitted transfer amount. A separate post-transaction recipient-account balance snapshot is not included."
+  ]
+}
