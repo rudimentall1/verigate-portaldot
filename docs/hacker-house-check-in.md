@@ -25,7 +25,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 | Requirement | Current status | Evidence / action |
 |---|---|---|
 | Public GitHub repository | Present | `main` is published and current CI runs succeeded |
-| Full README and architecture | Present, being reconciled | README, [architecture](architecture.md), [operations runbook](testnet-operations-2026-10-20.md) |
+| Full README and architecture | Present | [README](../README.md), [architecture](architecture.md), [operations runbook](testnet-operations-2026-10-20.md) |
 | Ongoing development history | Present | Preserve dated commits and CI evidence from the event period |
 | Product prototype / core workflow | Partially demonstrated | Public read-only DApp shows live contract state; full Verigate ALLOW/BLOCK path verified on isolated loopback EVM |
 | PortalDot testnet deployment | Verified | [Deployment evidence](deployment-evidence-2026-10-20.md) |
@@ -38,7 +38,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 | Clear local run instructions | Present | README and operations runbook |
 | Third-party sources/licenses disclosed | Review before final submission | MIT project license; retain dependency licenses and disclose pre-existing Verigate components |
 | At least three event-period commits | Strong history exists | Keep the original chronology; do not squash away event-period evidence |
-| Latest published-main CI | Passed | [Test](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673209), [audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673259), [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673280), [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673277), and [Substrate runtime metadata](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673332) all succeeded on `f5aee87` |
+| Last recorded full CI set | Passed on prior commit `f5aee87`; refresh required | [Test](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673209), [audit](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673259), [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673280), [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673277), and [Substrate runtime metadata](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39436673332) passed on that revision. They do not prove the latest README/dashboard/Pages workflow commits passed; re-run before final submission. |
 | DoraHacks build entry | Created; final publish state not independently verified here | https://dorahacks.io/build/50065. Confirm saved fields and public visibility in DoraHacks UI |
 
 ## Verified deployment facts
@@ -50,7 +50,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 - Receipt status: `0x1`; block: 116872.
 - Runtime bytecode Keccak-256: `0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671`.
 - Configured authority signer matches the on-chain `authoritySigner()` readback.
-- 156 local tests passed on the deployment workspace. The published `main` also has successful CI jobs; those CI results are separate from the local live RPC re-check.
+- The deployment workspace recorded 156 local tests passing. The last documented successful GitHub Actions set is for the earlier `f5aee87` revision; the latest README and dashboard/Pages workflow changes need a fresh CI confirmation. CI success is separate from live RPC and historical receipt availability.
 
 ## Security and honesty requirements
 
