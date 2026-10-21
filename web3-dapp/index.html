@@ -225,12 +225,42 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
       ]);
       $("receiptHashEcho").textContent = hash;
       if (!tx && !receipt) {
+        // This publicly verified transfer has a known block. If the RPC's hash index
+        // misses it, inspect that block and its guard logs without claiming a receipt.
+        const isVerifiedTransfer = hash.toLowerCase() === "0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c";
+        if (isVerifiedTransfer) {
+          const [block, logs] = await Promise.all([
+            rpc("eth_getBlockByNumber", ["0x2057b", true]),
+            rpc("eth_getLogs", [{address: CONTRACT, fromBlock: "0x2057b", toBlock: "0x2057b"}])
+          ]);
+          const blockTx = block && Array.isArray(block.transactions)
+            ? block.transactions.find(item => (typeof item === "string" ? item : item.hash).toLowerCase() === hash.toLowerCase())
+            : null;
+          const matchingLogs = Array.isArray(logs)
+            ? logs.filter(log => (log.transactionHash || "").toLowerCase() === hash.toLowerCase())
+            : [];
+          if (blockTx && matchingLogs.length) {
+            const txData = typeof blockTx === "string" ? null : blockTx;
+            $("receiptStatus").textContent = "Block + event found; receipt unavailable";
+            $("receiptStatus").className = "value amber";
+            $("receiptHint").textContent = "The RPC hash lookups returned null, but block 132475 contains this transaction and the guard has matching logs. This supports execution; receipt status and gas usage are unavailable from this endpoint.";
+            $("receiptBlock").textContent = "132,475";
+            $("receiptOutcome").textContent = "Event observed; receipt status unavailable";
+            $("receiptFrom").textContent = txData?.from || "—";
+            $("receiptTo").textContent = txData?.to || "—";
+            $("receiptGas").textContent = "—";
+            $("receiptLogs").textContent = String(matchingLogs.length);
+            setLed("receiptLed", "warn");
+            message("Transaction located in its known block with matching guard logs, but the RPC did not return its receipt. No wallet was accessed and no transaction was sent.", "warn");
+            return;
+          }
+        }
         $("receiptStatus").textContent = "Not returned by RPC";
         $("receiptStatus").className = "value amber";
         const isDeploymentTx = hash.toLowerCase() === TX.toLowerCase();
         $("receiptHint").textContent = isDeploymentTx
           ? "This is the historical deployment hash. The project deployment record documents a successful receipt (status 0x1) at block 116872, but the current RPC no longer returns this old transaction. This live lookup is unavailable; it is not evidence of a new payment. See docs/deployment-evidence-2026-10-20.md."
-          : "The endpoint returned null for both lookups. This does not prove the transaction failed; historical data may be pruned or unavailable from this RPC.";
+          : "The endpoint returned null for both hash lookups. The dashboard also attempted the known-block fallback for the verified 0.1 POT transfer. A null result does not prove failure; historical data may be unavailable from this RPC.";
         $("receiptBlock").textContent = "—";
         $("receiptOutcome").textContent = "Unknown";
         $("receiptFrom").textContent = "—";
