@@ -1,6 +1,6 @@
 # Three-minute Hacker House demo plan
 
-**Recording status:** pending. Public Web3 DApp preview: https://htmlpreview.github.io/?https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
+**Recording status:** pending. Public Web3 DApp: https://rudimentall1.github.io/verigate-portaldot/ . The public transaction evidence is historical; the configured RPC may not return the old receipt on a new lookup.
 
 The console performs live read-only RPC calls and wallet connection; it is not a transaction demo. The presentation PDF is not a substitute for the required product video.
 
