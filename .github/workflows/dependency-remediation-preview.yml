@@ -37,7 +37,8 @@ jobs:
         run: |
           set +e
           mkdir -p "$RUNNER_TEMP/dependency-remediation"
-          cp package.json package-lock.json "$RUNNER_TEMP/dependency-remediation/baseline-"
+          cp package.json "$RUNNER_TEMP/dependency-remediation/baseline-package.json"
+          cp package-lock.json "$RUNNER_TEMP/dependency-remediation/baseline-package-lock.json"
           npm audit --json > "$RUNNER_TEMP/dependency-remediation/baseline-audit.json"
           status=$?
           echo "$status" > "$RUNNER_TEMP/dependency-remediation/baseline-audit.exit-code"
