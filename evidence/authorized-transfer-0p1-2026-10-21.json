@@ -1,7 +1,7 @@
 {
-  "recordType": "executor_report",
+  "recordType": "executor_report_with_independent_rpc_requery",
   "date": "2026-10-21",
-  "status": "transfer_executed",
+  "status": "confirmed_on_configured_rpc",
   "network": {
     "label": "Configured PortalDot V3 EVM RPC",
     "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev",
@@ -16,6 +16,12 @@
   "transaction": {
     "hash": "0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c",
     "blockNumber": 132475,
+    "blockHash": "0xb69fed56636e93b5fb78dbbbcf98ace0ec450d3ed228f7530717099725799c09",
+    "receiptStatus": 1,
+    "transactionFoundByIndependentReadOnlyRpcQuery": true,
+    "receiptFoundByIndependentReadOnlyRpcQuery": true,
+    "receiptBlockHashMatchesFetchedBlock": true,
+    "blockTransactionCount": 1,
     "intentId": "portaldot-live-7c3744c34a694e20b36eb0c2cf063b50",
     "authorizationId": "0a9960bf04896ac727cabd5cb4b54c7c636ba6852f9a15518e3b23d743f41f6b",
     "actionId": "0x18e1fdaa167208a805dc022b8f66a7839ced261e76805cbf4cf4bc2052f8ab54",
@@ -27,22 +33,39 @@
     "amountBaseUnits": "100000000000000000",
     "amountEvmPOT": "0.1",
     "decimals": 18,
-    "transferExecutedEventConfirmedByExecutor": true
+    "transferExecutedEventConfirmedByIndependentReceiptParse": true,
+    "eventActionIdMatchesExpected": true,
+    "eventRecipientMatchesExpected": true,
+    "eventAmountMatchesExpected": true
   },
   "guardBalance": {
     "beforeWei": "999999999999999999",
     "afterWei": "899999999999999999",
     "differenceWei": "100000000000000000",
     "differenceEvmPOT": "0.1",
-    "afterReadSucceeded": true
+    "afterReadSucceeded": true,
+    "source": "executor output"
   },
   "fees": {
     "gasUsed": "108251197667575",
     "effectiveGasPriceWei": "35900",
-    "actualFeeWeiCalculatedFromExecutorFields": "3886217996265942500",
-    "actualFeeEvmPOTCalculatedFromExecutorFields": "3.8862179962659425",
-    "relayerBalanceBeforeWei": "265710553264596381671",
-    "note": "Fee is calculated as gasUsed × effectiveGasPriceWei from executor output."
+    "actualFeeWei": "3886217996265942500",
+    "actualFeeEvmPOT": "3.8862179962659425"
+  },
+  "recipientRelayerBalance": {
+    "sameAddressAsTransactionSender": true,
+    "blockBefore": 132474,
+    "balanceBeforeWei": "265710553264596381671",
+    "balanceBeforeEvmPOT": "265.710553264596381671",
+    "blockAfter": 132475,
+    "balanceAfterWei": "261924335268330439171",
+    "balanceAfterEvmPOT": "261.924335268330439171",
+    "observedNetDeltaWei": "-3786217996265942500",
+    "observedNetDeltaEvmPOT": "-3.7862179962659425",
+    "expectedNetDeltaWei": "-3786217996265942500",
+    "expectedNetDeltaEvmPOT": "-3.7862179962659425",
+    "matchesTransferMinusFee": true,
+    "latestBalanceMatchesBlockAfter": true
   },
   "executorChecks": {
     "preBroadcastResimulationPassed": true,
@@ -53,8 +76,8 @@
     "transferExecutedEventConfirmed": true
   },
   "limitations": [
-    "Values are recorded from the successful executor terminal output; this file is not an independent RPC re-query of the transaction receipt.",
-    "The EVM genesis hash pin was not configured. Substrate genesis hash pin was configured.",
-    "The guard balance delta matches the emitted transfer amount. A separate post-transaction recipient-account balance snapshot is not included."
+    "Independent transaction, receipt, block, event, and balance queries were made against the configured PortalDot V3 RPC, not a second independent provider.",
+    "The EVM genesis hash pin was not configured. The Substrate genesis hash pin was configured.",
+    "The recipient and relayer are the same address, so its net balance decreases by the gas fee minus the 0.1 POT received from the guard; this is expected."
   ]
 }
