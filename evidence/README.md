@@ -8,7 +8,7 @@ The runtime metadata shows Revive.OriginalAccount keyed by H160 and storing Acco
 
 ## Deployment and authorized-transfer evidence
 
-- [authorized-transfer-2026-10-21.json](authorized-transfer-2026-10-21.json) records a read-only re-verification of a public PortalDot V3 receipt and its TransferExecuted event. The amount is one EVM base unit, so it proves the call path but not a meaningful-value transfer. The reproducible verifier is npm run verify:authorized-transfer -- <transaction-hash>.
+- [authorized-transfer-2026-10-21.json](authorized-transfer-2026-10-21.json) records a read-only re-verification of a public PortalDot V3 receipt and its TransferExecuted event. [authorized-transfer-rpc-lookup-2026-10-21.json](authorized-transfer-rpc-lookup-2026-10-21.json) records the subsequent endpoint's historical-lookup limitation while the matching event log remained available. The amount is one EVM base unit, so it proves the call path but not a meaningful-value transfer. The reproducible verifier is npm run verify:authorized-transfer -- <transaction-hash>.
 - Keep deployment evidence and further authorized transfer evidence here:
 - preflight output with timestamp, actual chain ID and latest block;
 - deployment address and transaction hash;

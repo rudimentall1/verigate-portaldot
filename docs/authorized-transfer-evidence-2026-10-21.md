@@ -39,6 +39,13 @@ On the configured project machine, with local .env present, run:
 
 The structured result is preserved in [authorized-transfer-2026-10-21.json](../evidence/authorized-transfer-2026-10-21.json). The verifier is read-only: it does not sign, broadcast, or retry any transaction.
 
+
+## Subsequent RPC history lookup
+
+A later read-only query of the same endpoint returned null from eth_getTransactionByHash, eth_getTransactionReceipt, and eth_getBlockByNumber for this historical transaction/block, while eth_getLogs still returned the matching TransferExecuted log at block 130741. The latest block was already past 131000. The raw result and decoded event are captured in [authorized-transfer-rpc-lookup-2026-10-21.json](../evidence/authorized-transfer-rpc-lookup-2026-10-21.json).
+
+The verifier intentionally fails closed when it cannot obtain both transaction and receipt. This later lookup limitation does not establish that the transfer failed, and it is not a reason to resubmit it. It does mean the configured RPC alone no longer provides a reproducible full-receipt check at the time of this later query. Before the next broadcast, arrange an explorer or RPC endpoint that can return transaction receipts consistently, then verify new receipts promptly after inclusion.
+
 ## Network identity caveat
 
 PORTALDOT_SUBSTRATE_GENESIS_HASH is configured in the local environment and is checked during the Substrate preflight / bridge signing flow. The executor's output now reports this separately from the optional EVM genesis pin, PORTALDOT_GENESIS_HASH.

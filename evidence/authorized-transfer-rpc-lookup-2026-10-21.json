@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-10-21T11:43:46.370Z",
+  "mode": "read-only historical RPC availability check",
+  "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev",
+  "chainId": "420420777",
+  "latestBlock": "0x20065",
+  "latestBlockNumber": 131173,
+  "queriedTransactionHash": "0xbe3ade2ba3209cf0df3647cea50fb6608a77bb837213a25b8ec419fa9914cc14",
+  "queriedBlockNumber": 130741,
+  "queriedBlockHex": "0x1feb5",
+  "transactionLookup": "null",
+  "receiptLookup": "null",
+  "blockLookup": {
+    "error": "could not coalesce error",
+    "code": "UNKNOWN_ERROR"
+  },
+  "logLookup": {
+    "count": 1,
+    "matchingTransactionCount": 1
+  },
+  "transferExecutedEvents": [
+    {
+      "address": "0x3f2f484484fbe6e224d058fdfdb6b5a14f09655b",
+      "transactionHash": "0xbe3ade2ba3209cf0df3647cea50fb6608a77bb837213a25b8ec419fa9914cc14",
+      "blockNumber": 130741,
+      "blockHash": "0xd5890a5836d50bff7ee49dd6a3b4434d4ff9f9cab0fe814679d881fafe9e7d90",
+      "logIndex": 5,
+      "transactionIndex": 1,
+      "actionId": "0xac0dabee1df3352f9d4ba7cb7420f337b55597443a4a1567006dc9f9275d0b97",
+      "recipient": "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
+      "amountBaseUnits": "1",
+      "nonce": "68320477847831498543980743852656061612705358230770696640031442177773302563216"
+    }
+  ],
+  "verificationLevel": "event_log_only",
+  "notes": [
+    "This file records RPC lookup availability at checkedAt, not a new transaction attempt.",
+    "An indexed TransferExecuted event is not a substitute for a receipt status when the configured RPC cannot return the transaction and receipt.",
+    "Do not rebroadcast the transaction merely because historical lookup returns null."
+  ]
+}
