@@ -45,6 +45,9 @@ async function main() {
   if (deployerAddress === authoritySigner || deployerAddress === admin) {
     throw new Error("Deployer must be distinct from both admin and authority signer.");
   }
+  if (initialRecipient === deployerAddress || initialRecipient === admin || initialRecipient === authoritySigner) {
+    throw new Error("Initial recipient must be a separate address from deployer, admin and authority signer.");
+  }
 
   const factory = await ethers.getContractFactory("PortalDotAgentGuardV2", deployer);
   const deploymentTx = await factory.getDeployTransaction(
