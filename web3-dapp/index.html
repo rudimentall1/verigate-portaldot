@@ -127,6 +127,9 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
   "use strict";
   const RPC = "https://test-evm-rpc-v3.portaldot.dev";
   const EXPECTED_CHAIN = 420420777n;
+  // Single source of truth for EIP-1193 wallet network checks and switch/add requests.
+  const CHAIN_DEC = EXPECTED_CHAIN;
+  const CHAIN_HEX = "0x" + EXPECTED_CHAIN.toString(16);
   const CONTRACT = "0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b";
   const TX = "0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c";
   const EXPECTED_SIGNER = "0x48F9B07d37b5AF744BA8195c4d6740145b593ea6";
