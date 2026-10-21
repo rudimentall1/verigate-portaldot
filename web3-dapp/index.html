@@ -79,6 +79,20 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
       <div class="notice">Inspect the recipient, exact amount and network before approval. The wallet transaction calls only PortalDotAgentGuard.executeTransfer with the signed fields above. Never enter a seed phrase or private key.</div>
     </article>
   </section>
+  <section class="grid" aria-label="Latest verified PortalDot transfer">
+    <article class="card span12">
+      <h2>Latest verified Verigate-authorized transfer</h2>
+      <div class="dual">
+        <div class="stat"><div class="label" style="margin-top:0">Result</div><div class="value green">SUCCESS · block 132475</div><div class="small">Receipt status 1; receipt block hash matches the fetched block.</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">Authorized amount</div><div class="value">0.1 POT</div><div class="small">Guard balance decreased by exactly 0.1 POT.</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">TransferExecuted</div><div class="value green">Event matched</div><div class="small">Action ID, recipient and amount match the expected authorization.</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">Transaction fee</div><div class="value">3.8862179963 POT</div><div class="small">Gas used × effective gas price from the receipt.</div></div>
+      </div>
+      <div class="label">Transaction hash</div><div class="mono">0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c</div>
+      <div class="actions"><button class="primary" id="checkVerifiedTransfer">Inspect receipt in live RPC</button><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/authorized-transfer-evidence-2026-10-21-nondust.md" target="_blank" rel="noopener noreferrer">Evidence record ↗</a></div>
+      <div class="notice">The recipient is also the relayer/sender. Its net balance decreased by 3.7862179962659425 POT because the 3.8862179962659425 POT gas fee exceeded the 0.1 POT received. This is consistent with the before/after block snapshots. Verification used the configured RPC; the EVM genesis hash pin was not configured, and no second RPC provider was used.</div>
+    </article>
+  </section>
   <section class="grid" aria-label="Live network state">
     <article class="card span3"><h2>Network</h2><div class="statusline"><span class="led" id="rpcLed"></span><div class="value" id="rpcStatus">Checking</div></div><div class="small" id="rpcHint">Waiting for public RPC response</div><div class="label">Chain ID</div><div class="value" id="chainId">—</div><div class="small" id="chainHint">Expected 420420777</div></article>
     <article class="card span3"><h2>Latest block</h2><div class="value" id="block">—</div><div class="small">Read live using eth_blockNumber</div><div class="label">Last successful refresh</div><div class="mono" id="updated">Not yet refreshed</div></article>
@@ -100,7 +114,7 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
       <h2>EVM transaction lookup · RPC-native</h2>
       <p class="small" style="margin-top:-5px">Read-only lookup via <span class="mono">eth_getTransactionByHash</span> and <span class="mono">eth_getTransactionReceipt</span>. This is an EVM RPC receipt reader, not a wallet or a transaction sender.</p>
       <div class="label" for="receiptHash" style="margin-top:0">EVM transaction hash</div>
-      <input id="receiptHash" type="text" spellcheck="false" autocomplete="off" value="0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c" style="display:block;width:100%;border:1px solid var(--line);border-radius:10px;background:#0b1526;color:var(--text);padding:12px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">
+      <input id="receiptHash" type="text" spellcheck="false" autocomplete="off" value="0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c" style="display:block;width:100%;border:1px solid var(--line);border-radius:10px;background:#0b1526;color:var(--text);padding:12px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">
       <div class="actions"><button class="primary" id="checkReceipt">Check EVM receipt</button></div>
       <div class="rule"></div>
       <div class="statusline"><span class="led" id="receiptLed"></span><div class="value" id="receiptStatus">Not checked</div></div>
@@ -118,7 +132,7 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
   </section>
   <section class="grid">
     <article class="card span5"><h2>Deployment record</h2><div class="label" style="margin-top:0">Deployment transaction hash</div><div class="mono" id="txHash">0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c</div><div class="actions"><button id="copyTx">Copy transaction hash</button></div><div class="small">The deployment record is historical evidence. The current RPC may no longer serve the old transaction receipt; this page does not present the receipt as a fresh live lookup.</div></article>
-    <article class="card span7"><h2>What this dashboard demonstrates</h2><div class="dual"><div class="stat"><div class="cyan" style="font-weight:800">On-chain guard</div><div class="small">Current network, block, runtime code presence, balance and authority signer are read from the public RPC.</div></div><div class="stat"><div class="cyan" style="font-weight:800">Execution constraints</div><div class="small">The contract is designed to bind authorizations to chain, guard, recipient, exact amount, nonce, deadline and action ID.</div></div></div><div class="notice">Evidence boundary: ALLOW/BLOCK integration was exercised on an isolated local EVM. A full Verigate-authorized payment has not been demonstrated on public PortalDot V3. This prototype is not independently audited and is not a mainnet deployment.</div></article>
+    <article class="card span7"><h2>What this dashboard demonstrates</h2><div class="dual"><div class="stat"><div class="cyan" style="font-weight:800">On-chain guard</div><div class="small">Current network, block, runtime code presence, balance and authority signer are read from the public RPC.</div></div><div class="stat"><div class="cyan" style="font-weight:800">Execution constraints</div><div class="small">The contract is designed to bind authorizations to chain, guard, recipient, exact amount, nonce, deadline and action ID.</div></div></div><div class="notice">Evidence boundary: a Verigate-authorized 0.1 POT payment was executed on public PortalDot V3. The receipt was re-queried from the configured RPC and its exact TransferExecuted event was matched. This prototype is not independently audited or a mainnet deployment; the EVM genesis hash pin is not configured and the RPC was not cross-checked with a second provider.</div></article>
   </section>
 </main>
 <footer><span>VERIGATE · PortalDot V3 testnet prototype</span><span><a href="https://github.com/rudimentall1/verigate-portaldot" target="_blank" rel="noopener noreferrer">Source repository ↗</a> · <a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/deployment-evidence-2026-10-20.md" target="_blank" rel="noopener noreferrer">Deployment evidence ↗</a></span></footer>
@@ -365,6 +379,7 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
   $("authorizationInput").addEventListener("input",clearReview);
   $("authorizationFile").addEventListener("change",async e=>{const file=e.target.files&&e.target.files[0];if(!file)return;try{$("authorizationInput").value=await file.text();clearReview();$("authorizationStatus").textContent="Loaded "+file.name+". Validate and simulate before execution.";}catch(_){$("authorizationStatus").textContent="Could not read selected JSON file.";}});
   discoverWallets();
+  $("checkVerifiedTransfer").addEventListener("click",()=>{$("receiptHash").value="0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c";checkReceipt();document.getElementById("receiptHash").scrollIntoView({behavior:"smooth",block:"center"});});
   $("refresh").addEventListener("click",refresh);
   $("copyContract").addEventListener("click",() => copy(CONTRACT,"Contract address"));
   $("copyContract2").addEventListener("click",() => copy(CONTRACT,"Contract address"));
