@@ -20,7 +20,7 @@ See [architecture and trust boundaries](docs/architecture.md), the [verified tes
 
 Public Web3 DApp: https://rudimentall1.github.io/verigate-portaldot/
 
-GitHub Pages serves the static frontend directly from the repository. Source: [web3-dapp/index.html](web3-dapp/index.html). The dashboard makes read-only JSON-RPC calls to PortalDot V3 and is designed to work without a wallet extension. It does not sign or send transactions. The public deployment payment still requires separate live transaction evidence.
+GitHub Pages serves the static frontend directly from the repository. Source: [web3-dapp/index.html](web3-dapp/index.html). The live-state view works without a wallet; its separate executor supports opt-in wallet connection, exact bridge-signed authorization import, on-chain simulation, and a user-confirmed transaction relay. It never asks for private keys or seed phrases. Public end-to-end payment evidence remains a separate requirement.
 
 The read-only frontend is in [web3-dapp/index.html](web3-dapp/index.html) and is deployed at https://rudimentall1.github.io/verigate-portaldot/. It reads live PortalDot V3 state and includes an explicit wallet-gated execution panel for a signed Verigate authorization. Account access, network switching and transaction broadcast are user-triggered; a valid EIP-712 authorization must pass on-chain simulation before the wallet is asked to submit the exact call. The DApp never asks for private keys or seed phrases. This is not a claim that a public end-to-end payment has already been demonstrated.
 
@@ -32,7 +32,7 @@ The read-only frontend is in [web3-dapp/index.html](web3-dapp/index.html) and is
 - [Presentation PDF](docs/Verigate-PortalDot-Presentation.pdf)
 - [Live Web3 DApp](https://rudimentall1.github.io/verigate-portaldot/)
 - [Verified testnet deployment evidence](docs/deployment-evidence-2026-10-20.md)
-- Demo recording: pending. The live Web3 console is available now, but it is read-only and does not replace the required short product demo.
+- Demo recording: pending. The live Web3 DApp is available; record its live-state view and, once the authorized public transaction is confirmed, the signed-authorization execution and receipt.
 
 The public testnet deployment is real, but the complete Verigate-authorized transfer was exercised only on a temporary loopback Hardhat EVM. The specific H160-to-SS58 mapping remains unverified.
 
