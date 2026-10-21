@@ -18,7 +18,7 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
 </style>
 </head>
 <body>
-<header class="topbar"><div class="brand">VERIGATE / PortalDot V3</div><div class="tag">PUBLIC TESTNET · READ ONLY</div></header>
+<header class="topbar"><div class="brand">VERIGATE / PortalDot V3</div><div class="tag" id="deploymentBadge">V1 LIVE · NO CAPS</div></header>
 <main>
 <section class="hero"><div class="eyebrow">Agent authorization infrastructure</div><h1>A proposal is not authority.</h1><p class="lead">This dashboard only reads the public PortalDot V3 EVM RPC. It does not connect wallets, request signatures, upload authorization files, simulate transfers, or send transactions. Verigate's Ed25519 authorization is verified off-chain by the bridge; the Solidity guard verifies the bridge's EIP-712 signature.</p><div class="actions"><button id="refresh">Refresh live state</button><button id="copyAddress">Copy guard address</button></div></section>
 <div id="message" role="status" aria-live="polite">Reading public PortalDot V3 RPC…</div>
@@ -29,14 +29,14 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
 <article class="card span3"><h2>Guard balance</h2><div class="value" id="balance">—</div><div class="small">Native POT · eth_getBalance</div></article>
 </section>
 <section class="grid">
-<article class="card span8"><h2>Guard currently inspected</h2><div class="label">Contract address</div><div class="mono" id="contractAddress">0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b</div><div class="actions"><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/contracts/PortalDotAgentGuard.sol" target="_blank" rel="noopener noreferrer">V1 Solidity source ↗</a><a href="https://github.com/rudimentall1/verigate-portaldot/tree/work/portal-hacker-house-final-pass/contracts" target="_blank" rel="noopener noreferrer">V2 source (proposed branch) ↗</a></div><div class="rule"></div><div class="label">Authority signer returned by contract</div><div class="mono" id="signer">Reading authoritySigner()…</div><div class="label">Recorded expected V1 signer</div><div class="mono">0x48F9B07d37b5AF744BA8195c4d6740145b593ea6</div><div class="label">Signer comparison</div><div class="value" id="signerStatus">Checking</div><div class="notice" id="policyNotice">The default address is the historical V1 deployment. V1 has no recipient allowlist or spending caps. After V2 is deployed, inspect it with ?guard=0xYOUR_V2_ADDRESS. A query parameter changes only which address is read; this page cannot send transactions.</div></article>
-<article class="card span4"><h2>V2 policy readback</h2><div class="label">Admin</div><div class="mono" id="admin">Not available on V1</div><div class="label">Maximum per transfer</div><div class="value" id="maxTransfer">—</div><div class="label">Spending window cap</div><div class="value" id="windowLimit">—</div><div class="label">Window duration</div><div class="value" id="windowSeconds">—</div><div class="small" id="policyStatus">V2 policy methods are probed read-only.</div></article>
+<article class="card span8"><h2>Guard currently inspected</h2><div class="label">Contract address</div><div class="mono" id="contractAddress">0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b</div><div class="actions"><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/contracts/PortalDotAgentGuard.sol" target="_blank" rel="noopener noreferrer">V1 Solidity source ↗</a><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/contracts/PortalDotAgentGuardV2.sol" target="_blank" rel="noopener noreferrer">V2 Solidity source ↗</a></div><div class="rule"></div><div class="label">Authority signer returned by contract</div><div class="mono" id="signer">Reading authoritySigner()…</div><div class="label">Recorded expected V1 signer</div><div class="mono">0x48F9B07d37b5AF744BA8195c4d6740145b593ea6</div><div class="label">Signer comparison</div><div class="value" id="signerStatus">Checking</div><div class="notice" id="policyNotice">The default address is the historical V1 deployment. V1 has no recipient allowlist or spending caps. After V2 is deployed, inspect it with ?guard=0xYOUR_V2_ADDRESS. A query parameter changes only which address is read; this page cannot send transactions.</div></article>
+<article class="card span4"><h2>V2 policy</h2><div class="small" id="policyStatus">V2 не задеплоен, читать нечего.</div></article>
 </section>
 <section class="grid" aria-label="Historical transaction record">
 <article class="card span12"><h2>Saved historical evidence · not a live result</h2><div class="two">
 <div class="stat"><div class="label" style="margin-top:0">Previously recorded result</div><div class="value green">Receipt status 1 · block 132475</div><div class="small">Historical run reported a matching TransferExecuted event.</div></div>
 <div class="stat"><div class="label" style="margin-top:0">Recorded transfer</div><div class="value">0.1 POT</div><div class="small">Recorded fee: 3.8862179963 POT. Recipient was also the sender/relayer, so this was not a meaningful third-party payment.</div></div>
-</div><div class="label">Historical transaction hash</div><div class="mono" id="historicalHash">0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c</div><div class="actions"><button id="checkReceipt">Check this hash in current RPC</button><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/authorized-transfer-evidence-2026-10-21-nondust.md" target="_blank" rel="noopener noreferrer">Evidence record ↗</a></div><div id="receiptResult" class="small">No current lookup has been run. Historical success is not presented as current RPC confirmation.</div><div class="notice">Testnet prototype, not an audit. One RPC provider was used; the EVM genesis pin was not configured for the historical transfer, and H160-to-SS58 account mapping remains unconfirmed. No cross-chain mapping support is claimed.</div></article>
+</div><div class="label">Historical transaction hash</div><div class="mono" id="historicalHash">0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c</div><div class="actions"><button id="checkReceipt">Check receipt only</button><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/authorized-transfer-evidence-2026-10-21-nondust.md" target="_blank" rel="noopener noreferrer">Evidence record ↗</a></div><div id="receiptResult" class="small">No current lookup has been run. Historical success is not presented as current RPC confirmation.</div><div class="notice">Testnet prototype, not an audit. One RPC provider was used; the EVM genesis pin was not configured for the historical transfer, and H160-to-SS58 account mapping remains unconfirmed. No cross-chain mapping support is claimed.</div></article>
 </section>
 </main>
 <footer><span>Verigate PortalDot · read-only testnet dashboard</span><span><a href="https://github.com/rudimentall1/verigate-portaldot">Source repository ↗</a> · <a href="https://node-console.portaldot.dev/">PortalDot node console ↗</a></span></footer>
@@ -110,25 +110,18 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
       el("balance").textContent = pot(quantity(balance));
       el("contractAddress").textContent = ADDRESS;
       el("signer").textContent = signer;
+      const isV1 = ADDRESS.toLowerCase() === DEFAULT_V1.toLowerCase();
       const signerMatches = signer.toLowerCase() === EXPECTED_SIGNER.toLowerCase();
-      el("signerStatus").textContent = signerMatches ? "Matches recorded V1 signer" : "Differs from recorded V1 signer";
-      el("signerStatus").className = "value " + (signerMatches ? "green" : "amber");
+      el("signerStatus").textContent = isV1 ? (signerMatches ? "Matches recorded V1 signer" : "V1 signer differs from recorded value") : "V2 signer, not compared with V1";
+      el("signerStatus").className = "value " + (isV1 && signerMatches ? "green" : "amber");
       try {
         const [admin, max, limit, seconds] = await Promise.all([
           readMethod("admin"), readMethod("maxPerTransfer"),
           readMethod("windowLimit"), readMethod("windowSeconds")
         ]);
-        el("admin").textContent = admin;
-        el("maxTransfer").textContent = pot(max);
-        el("windowLimit").textContent = pot(limit);
-        el("windowSeconds").textContent = BigInt(seconds).toString() + " seconds";
-        el("policyStatus").textContent = "Policy values read from the selected contract using ABI-derived selectors.";
+        el("policyStatus").textContent = "V2 policy methods respond on the selected contract.";
       } catch (_) {
-        el("admin").textContent = "Not available on this contract";
-        el("maxTransfer").textContent = "V2 only";
-        el("windowLimit").textContent = "V2 only";
-        el("windowSeconds").textContent = "V2 only";
-        el("policyStatus").textContent = "V1 does not expose V2 policy methods.";
+        el("policyStatus").textContent = "V2 не задеплоен, читать нечего.";
       }
       setMessage(chainNumber === 420420777n && bytes ? "Live RPC responds. Expected chain ID and runtime code are present." : "RPC responds, but chain ID or contract code did not match expectations.", chainNumber === 420420777n && bytes ? "good" : "warn");
     } catch (error) {
@@ -147,7 +140,7 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
       if (!receipt || !tx) {
         el("receiptResult").textContent = "Current RPC returned null for transaction or receipt. This is not current live confirmation; saved historical evidence remains separately labelled.";
       } else {
-        el("receiptResult").textContent = "Current RPC returned transaction and receipt. Receipt status: " + receipt.status + "; block: " + quantity(receipt.blockNumber).toString() + ". This lookup does not independently validate the event.";
+        el("receiptResult").textContent = "Current RPC returned transaction and receipt only. Receipt status: " + receipt.status + "; block: " + quantity(receipt.blockNumber).toString() + ". TransferExecuted is not decoded or validated by this check.";
       }
     } catch (error) { el("receiptResult").textContent = "Live receipt lookup failed: " + error.message; }
   }
