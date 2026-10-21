@@ -1,6 +1,6 @@
 # DoraHacks submission draft: Verigate PortalDot
 
-**Status:** the public repository, deployed testnet guard, live Web3 DApp with wallet-gated signed execution, local test suite and presentation PDF are available. A 0.1 EVM POT Verigate-authorized transfer was reported as executed by the executor; its output confirms `TransferExecuted` and a matching decrease in guard balance. Independent receipt re-query and a separate recipient post-balance snapshot remain outstanding. The under-three-minute demo video is still pending. The DoraHacks build entry is [50065](https://dorahacks.io/build/50065); confirm the final saved/published state in the DoraHacks UI.
+**Status:** the public repository, deployed testnet guard, live Web3 DApp with wallet-gated signed execution, local test suite and presentation PDF are available. A 0.1 EVM POT Verigate-authorized transfer was reported as executed by the executor; its output confirms `TransferExecuted` and a matching decrease in guard balance. A read-only RPC re-query confirmed receipt status 1, matching block hash and exact `TransferExecuted` event. Recipient/relayer balances at blocks 132474 and 132475 reconcile exactly with the 0.1 POT transfer minus the 3.8862179962659425 POT fee. The EVM genesis pin was not configured and no second RPC provider was used. The under-three-minute demo video is still pending. The DoraHacks build entry is [50065](https://dorahacks.io/build/50065); confirm the final saved/published state in the DoraHacks UI.
 
 ## Submission fields
 
@@ -39,7 +39,7 @@ The project makes use of PortalDot V3's EVM-compatible execution environment for
 - **Deployment transaction:** `0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c`
 - **Receipt:** success (`0x1`), block `116872`
 - **Initial minimal authorized transfer:** transaction 0xbe3ade2ba3209cf0df3647cea50fb6608a77bb837213a25b8ec419fa9914cc14 at block 130741; the original record documents the one-base-unit `TransferExecuted` event.
-- **Non-dust authorized transfer:** transaction 0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c at block 132475; executor reports `transfer_executed`, `TransferExecuted` confirmed, and guard balance decreased exactly 0.1 EVM POT. This is recorded from terminal output; independent receipt re-query and a separate recipient post-balance snapshot remain outstanding.
+- **Non-dust authorized transfer:** transaction 0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c at block 132475; executor reports `transfer_executed`, `TransferExecuted` confirmed, and guard balance decreased exactly 0.1 EVM POT. This is recorded from terminal output; read-only receipt/event re-query and recipient/relayer balance reconciliation are complete against the configured RPC; the EVM genesis pin is not configured and no second provider was used.
 - **Runtime bytecode Keccak-256:** `0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671`
 - **Local validation:** 156 tests passed on the server workspace; network preflight and RPC monitor passed on 20 October 2026. GitHub Actions test, integration, audit, RPC health, PortalDot CI and runtime metadata jobs passed on published `main`.
 - **Isolated end-to-end test:** Verigate returned ALLOW for the permitted case and BLOCK for the denied case. Signatures were verified; the guard's real Solidity source executed the exact authorized transfer on a temporary loopback Hardhat EVM. This is local integration evidence, not a public PortalDot transfer.
@@ -50,7 +50,7 @@ PortalDot V3 offers an EVM-compatible deployment target for a narrow, reusable s
 
 ## Current limitations (disclose, do not hide)
 
-1. The contract is deployed on PortalDot V3 testnet and its runtime code hash and authority signer are recorded. A minimal one-base-unit call and a non-dust 0.1 EVM POT transfer are documented. The executor output for the non-dust transfer reports the expected guard-balance delta and `TransferExecuted`; independent receipt re-query and recipient post-balance evidence remain outstanding.
+1. The contract is deployed on PortalDot V3 testnet and its runtime code hash and authority signer are recorded. A minimal one-base-unit call and a non-dust 0.1 EVM POT transfer are documented. The executor output for the non-dust transfer reports the expected guard-balance delta and `TransferExecuted`; receipt/event re-query and recipient/relayer balance reconciliation are complete against the configured RPC; the EVM genesis pin is not configured and no second provider was used.
 2. The specific H160-to-SS58 mapping for the wallet-displayed address has not been confirmed by the runtime storage lookup. The deployment evidence explicitly records this limitation.
 3. The public RPC's reported chain/genesis values are consistency checks, not independent authentication of the RPC operator.
 4. This is a testnet prototype, not a production deployment or independent security audit.
@@ -71,4 +71,4 @@ The submission should distinguish existing Verigate components from work specifi
 
 ## Suggested build update
 
-Verigate PortalDot has a deployed PortalDot V3 testnet guard, a public Web3 DApp with live RPC reads and an explicit wallet-gated execution panel, documented deployment evidence and passing GitHub Actions checks. Both a minimal call and a 0.1 EVM POT transfer are recorded; the non-dust executor output reports `TransferExecuted` and the expected guard-balance decrease. Remaining live evidence includes an independent receipt re-query, a separate post-transaction recipient-balance snapshot, and negative-path testing. The under-three-minute demo video remains pending.
+Verigate PortalDot has a deployed PortalDot V3 testnet guard, a public Web3 DApp with live RPC reads and an explicit wallet-gated execution panel, documented deployment evidence and passing GitHub Actions checks. Both a minimal call and a 0.1 EVM POT transfer are recorded; the non-dust executor output reports `TransferExecuted` and the expected guard-balance decrease. Remaining work includes negative-path testing and a second-provider cross-check if one becomes available. The under-three-minute demo video remains pending.
