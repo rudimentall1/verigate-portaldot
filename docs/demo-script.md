@@ -4,7 +4,7 @@
 
 The console performs live read-only RPC calls and wallet connection; it is not a transaction demo. The presentation PDF is not a substitute for the required product video.
 
-**Latest reproducible integration result (20 October 2026):** [`evidence/local-e2e-2026-10-20.json`](../evidence/local-e2e-2026-10-20.json) records a successful isolated run against Verigate HTTP authorization routes and a temporary loopback Hardhat EVM. ALLOW and BLOCK decisions, Ed25519 receipts, bridge refusal of BLOCK, executor dry-run, and exact local transfer execution passed. The run used Verigate revision `de24e7a02911b5803bac60f799bc1ab37891fec2`; all local transaction hashes are explicitly non-PortalDot evidence. The repository test suite also passed: 156 tests.
+**Recorded local integration result (20 October 2026):** [`evidence/local-e2e-2026-10-20.json`](../evidence/local-e2e-2026-10-20.json) records an isolated run against Verigate HTTP authorization routes and a temporary loopback Hardhat EVM. ALLOW and BLOCK decisions, Ed25519 receipt checks, refusal of BLOCK, executor dry-run, and an exact local transfer were exercised. The run used Verigate revision `de24e7a02911b5803bac60f799bc1ab37891fec2`; its transaction hashes are local simulator evidence, not public PortalDot transactions. The recorded repository test result is 156 passing; rerun the suite for the exact current main revision before claiming current CI/test status.
 
 **Goal:** show the product's actual authorization decision path, then distinguish that local end-to-end evidence from the contract's separately verified PortalDot V3 testnet deployment.
 
@@ -37,10 +37,10 @@ Show contracts/PortalDotAgentGuard.sol and the test names covering replay, amoun
 
 Say: The contract has no generic arbitrary-call interface and only pays from its own balance. The bridge signer is a separate trust boundary; the contract itself does not verify Verigate's Ed25519 signatures.
 
-### 2:10–2:40 — Public transaction and limitations
-Show the verified receipt for transaction 0xbe3ade2ba3209cf0df3647cea50fb6608a77bb837213a25b8ec419fa9914cc14 and the matching TransferExecuted fields: action ID, recipient, amount and nonce. Say explicitly that this one-base-unit transaction proves the authorization call path but is not a meaningful-value payment.
+### 2:10–2:40 — Public testnet transfer and limitations
+Show the evidence report for the 0.1 EVM POT transfer: `0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c`, block `132475`, recorded receipt status `1`, and matching `TransferExecuted` action ID, recipient and amount. The configured RPC may not return this historical receipt on a fresh query, so show the saved evidence report as a dated record; do not portray it as a fresh explorer response. The node console is not confirmed to provide a dedicated EVM transaction page; do not invent a transaction URL.
 
-Say: PortalDot V3's EVM compatibility allows the Solidity/EIP-712 guard to run on this network. Substrate genesis/runtime checks are separate operational checks. The specific EVM-to-SS58 account mapping remains unverified, a non-dust transfer and recipient balance-delta check remain open, and this testnet prototype is not an independent audit.
+Say: PortalDot V3's EVM execution environment runs the Solidity/EIP-712 guard. Substrate genesis/runtime checks are separate operational checks. The specific H160-to-SS58 mapping remains unverified, the EVM genesis pin was not configured, and a second-provider cross-check was not done. This is testnet evidence, not an independent audit or a mainnet deployment.
 
 ## Do not claim
 - Do not present the local EVM transfer hash as a PortalDot transaction.
@@ -50,7 +50,8 @@ Say: PortalDot V3's EVM compatibility allows the Solidity/EIP-712 guard to run o
 
 ## Final recording checklist
 - [ ] Keep the video below three minutes.
-- [ ] Include the live Web3 console and actual ALLOW/BLOCK behavior, not slides alone.
-- [ ] Show the testnet deployment address and transaction separately from the local transfer.
+- [ ] Include the live Web3 console and the actual ALLOW/BLOCK integration behavior, not slides alone.
+- [ ] Label the local Hardhat transfer as simulated; show the PortalDot deployment address and saved public-transfer evidence separately.
+- [ ] Do not promise to show a live transaction page unless the node console can open it successfully.
 - [ ] Upload to YouTube, Vimeo, Loom, or another public/accessible URL supported by DoraHacks.
 - [ ] Paste the final public link into the DoraHacks Build entry and README/submission record.
