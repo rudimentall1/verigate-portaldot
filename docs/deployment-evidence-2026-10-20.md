@@ -55,4 +55,19 @@ Read-only re-check performed on 20 October 2026 at 15:57 UTC using the project's
 
 This is a limitation of the historical data currently available from the queried RPC, not proof that deployment failed. The historical successful receipt, block hash and fee observations above were recorded at deployment time. The current live read confirms bytecode and signer configuration but does not replace historical receipt evidence. The new read-only verifier intentionally keeps these checks separate and exits successfully only when current chain, code and signer agree.
 
-The guard currently has no funds. A public end-to-end transfer must not be claimed unless funding and execution each have their own successful PortalDot receipt and the guard emits `TransferExecuted`.
+At the 20 October 2026 re-check above, the guard had no funds. This observation was superseded by a read-only re-check on 21 October 2026, recorded below. A public end-to-end transfer must not be claimed unless an authorized execution has a successful PortalDot receipt and the guard emits `TransferExecuted`.
+
+## Independent live-state re-check
+
+Read-only re-check performed on 21 October 2026 at 09:22 UTC using `npm run verify:deployment`:
+
+- Observed EVM chain ID: `420420777`; latest block observed: `129759`.
+- Contract bytecode length: `2,153` bytes.
+- Observed runtime code hash: `0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671`, matching the configured hash.
+- Live `authoritySigner()`: `0x48F9B07d37b5AF744BA8195c4d6740145b593ea6`, matching the configured signer.
+- Guard balance: `1.0` EVM POT (`1000000000000000000` wei).
+- The RPC again returned `null` for both the historical deployment transaction and its receipt. This check does not newly prove the historical deployment receipt.
+
+A subsequent `npm run preflight` observed EVM block `129767` and confirmed the EVM chain ID and configured Substrate genesis pin `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd`. The preflight is endpoint-consistency evidence, not independent authentication of the RPC operator.
+
+The project test suite was run on 21 October 2026: `156 passing (6s)`. These are local contract/bridge tests and are not evidence of a public testnet transfer. As of this check, the missing reward-critical evidence remains a fresh Verigate-signed `ALLOW`, a corresponding successful PortalDot execution receipt, and a matching `TransferExecuted` event.
