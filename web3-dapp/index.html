@@ -237,7 +237,9 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
             ? block.transactions.find(item => (typeof item === "string" ? item : item.hash).toLowerCase() === hash.toLowerCase())
             : null;
           const matchingLogs = Array.isArray(logs)
-            ? logs.filter(log => (log.transactionHash || "").toLowerCase() === hash.toLowerCase())
+            ? logs.filter(log => (log.transactionHash || "").toLowerCase() === hash.toLowerCase()
+              && Array.isArray(log.topics)
+              && (log.topics[0] || "").toLowerCase() === TRANSFER_EVENT_TOPIC.toLowerCase())
             : [];
           if (blockTx && matchingLogs.length) {
             const txData = typeof blockTx === "string" ? null : blockTx;
