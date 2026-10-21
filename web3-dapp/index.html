@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0a1020">
-<meta name="description" content="Read-only PortalDot V3 testnet dashboard. Live RPC checks for the deployed Verigate PortalDotAgentGuard contract. No wallet connection or transaction signing.">
+<meta name="description" content="Verigate PortalDot V3 DApp. Read live testnet state, inspect a signed Verigate payment authorization, simulate it, and execute it through an EVM wallet after explicit approval.">
 <title>Verigate | PortalDot V3 Live Dashboard</title>
 <style>
 :root{color-scheme:dark;--bg:#0a1020;--panel:#111a2e;--panel2:#151f36;--line:#263653;--cyan:#65d8ec;--text:#f1f5ff;--muted:#9baccc;--green:#63dfab;--amber:#f5c86b;--red:#ff7e88}
@@ -46,10 +46,39 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
 </header>
 <main>
   <section class="hero">
-    <div><div class="eyebrow">Agent authorization infrastructure</div><h1>A proposal is not authority.</h1><p class="lead">Live, read-only inspection of the deployed PortalDotAgentGuard contract. Data is fetched from the public PortalDot RPC. This dashboard does not connect to a browser wallet, request signatures, or submit transactions.</p></div>
+    <div><div class="eyebrow">Agent authorization infrastructure</div><h1>A proposal is not authority.</h1><p class="lead">Inspect live PortalDot V3 state, connect an EVM wallet, and execute a signed Verigate payment authorization. The DApp never asks for private keys or seed phrases. It cannot create a Verigate authorization itself: each transfer must carry the bridge signer’s exact EIP-712 signature, pass simulation, and receive your explicit wallet approval.</p></div>
     <div class="hero-actions"><button class="primary" id="refresh">Refresh live state</button><button id="copyContract">Copy contract address</button></div>
   </section>
   <div id="message" role="status" aria-live="polite">Connecting to the public PortalDot V3 RPC…</div>
+  <section class="grid" aria-label="Authorized payment execution">
+    <article class="card span12">
+      <h2>Verigate-authorized payment · explicit wallet approval</h2>
+      <p class="small" style="margin-top:-5px">Load the complete JSON artifact produced by the Verigate API and adapter/verigate-bridge.js. This panel does not create or change recipient/amount. It simulates the exact contract call first; broadcast occurs only after you press Execute and approve the transaction in your wallet.</p>
+      <div class="dual">
+        <div class="stat">
+          <div class="label" style="margin-top:0">EVM wallet provider</div>
+          <select id="walletChoice" aria-label="Select browser wallet" style="width:100%;border:1px solid var(--line);border-radius:9px;background:#0b1526;color:var(--text);padding:11px;font:inherit"><option value="0">Looking for injected wallet…</option></select>
+          <div class="actions"><button class="primary" id="connectWallet">Connect wallet</button><button id="switchNetwork">Add / switch to PortalDot V3</button></div>
+          <div class="label">Connection</div><div class="value" id="walletStatus">Not connected</div><div class="small" id="walletHint">No wallet permission is requested until you press Connect wallet.</div>
+          <div class="label">Account</div><div class="mono" id="walletAddress">—</div><div class="label">Wallet chain ID</div><div class="mono" id="walletChain">—</div>
+        </div>
+        <div class="stat">
+          <div class="label" style="margin-top:0">Signed authorization JSON</div>
+          <input type="file" id="authorizationFile" accept=".json,application/json" aria-label="Load signed authorization JSON" style="max-width:100%;color:var(--muted);font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">
+          <textarea id="authorizationInput" rows="7" spellcheck="false" autocomplete="off" placeholder="Paste signed-authorization.json created by the Verigate bridge CLI…" style="display:block;width:100%;margin-top:10px;border:1px solid var(--line);border-radius:10px;background:#0b1526;color:var(--text);padding:12px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical"></textarea>
+          <div class="actions"><button id="simulateAuthorization">Validate &amp; simulate</button><button class="primary" id="executeAuthorization" disabled>Execute authorized transfer</button></div>
+          <div class="small" id="authorizationStatus">No authorization loaded. Connect the wallet and load signed JSON.</div>
+        </div>
+      </div>
+      <div class="rule"></div><div class="dual">
+        <div class="stat"><div class="label" style="margin-top:0">Authorized recipient</div><div class="mono" id="authRecipient">—</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">Exact amount</div><div class="value" id="authAmount">—</div><div class="small">EVM native POT, computed from wei</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">Authorization deadline</div><div class="mono" id="authDeadline">—</div></div>
+        <div class="stat"><div class="label" style="margin-top:0">Authorization nonce</div><div class="mono" id="authNonce">—</div></div>
+      </div>
+      <div class="notice">Inspect the recipient, exact amount and network before approval. The wallet transaction calls only PortalDotAgentGuard.executeTransfer with the signed fields above. Never enter a seed phrase or private key.</div>
+    </article>
+  </section>
   <section class="grid" aria-label="Live network state">
     <article class="card span3"><h2>Network</h2><div class="statusline"><span class="led" id="rpcLed"></span><div class="value" id="rpcStatus">Checking</div></div><div class="small" id="rpcHint">Waiting for public RPC response</div><div class="label">Chain ID</div><div class="value" id="chainId">—</div><div class="small" id="chainHint">Expected 420420777</div></article>
     <article class="card span3"><h2>Latest block</h2><div class="value" id="block">—</div><div class="small">Read live using eth_blockNumber</div><div class="label">Last successful refresh</div><div class="mono" id="updated">Not yet refreshed</div></article>
@@ -64,7 +93,7 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
       <div class="check"><div class="check-top"><span class="led" id="cChain"></span><span>Expected chain</span></div><p id="cChainText">Pending live check</p></div>
       <div class="check"><div class="check-top"><span class="led" id="cCode"></span><span>Contract has code</span></div><p id="cCodeText">Pending live check</p></div>
       <div class="check"><div class="check-top"><span class="led" id="cSigner"></span><span>Signer matches</span></div><p id="cSignerText">Pending live check</p></div>
-    </div><div class="notice">Read-only by design. No wallet provider access, account discovery, network switching, message signing, or transaction submission is used on this page.</div></article>
+    </div><div class="notice">Public RPC checks above are read-only. Wallet access is opt-in and starts only when you press Connect wallet. The executor below only accepts a signed PortalDotAgentGuard authorization; there is no arbitrary contract-call UI or private-key input.</div></article>
   </section>
   <section class="grid">
     <article class="card span12">
@@ -215,6 +244,121 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
     } finally { button.disabled = false; }
   }
   $("checkReceipt").addEventListener("click", checkReceipt);
+  // Opt-in EIP-1193 wallet controls; page load never requests accounts.
+  let walletProvider=null,walletAccount=null,reviewedAuthorization=null,reviewedCalldata=null,transactionSubmitted=false;
+  const EXECUTE_SELECTOR="0x00603e4a";
+  const TRANSFER_EVENT_TOPIC="0x706d19a0419829f5b040af42eceaa508d974f5d02cd30b93ec3d2c9a02b95815";
+  function providers(){
+    const p=window.ethereum;
+    if(p&&Array.isArray(p.providers))return p.providers.filter(x=>x&&typeof x.request==="function");
+    return p&&typeof p.request==="function"?[p]:[];
+  }
+  function providerName(p,i){return p.isMetaMask?"MetaMask":p.isSubWallet?"SubWallet":p.isCoinbaseWallet?"Coinbase Wallet":p.isBraveWallet?"Brave Wallet":p.isRabby?"Rabby":"Injected EVM wallet "+(i+1);}
+  function discoverWallets(){
+    const select=$("walletChoice"),ps=providers();select.replaceChildren();
+    if(!ps.length){const op=document.createElement("option");op.value="-1";op.textContent="No injected EVM wallet found";select.appendChild(op);return;}
+    ps.forEach((p,i)=>{const op=document.createElement("option");op.value=String(i);op.textContent=providerName(p,i);select.appendChild(op);});
+  }
+  function selectedWallet(){const ps=providers(),i=Number($("walletChoice").value);return Number.isInteger(i)&&i>=0?ps[i]||null:null;}
+  function clearReview(){reviewedAuthorization=null;reviewedCalldata=null;$("executeAuthorization").disabled=true;}
+  function parseAuthorization(raw){
+    let obj;try{obj=JSON.parse(raw);}catch(_){throw Error("Authorization must be valid JSON.");}
+    if(!obj||typeof obj!=="object"||Array.isArray(obj)||!obj.domain||!obj.transfer||typeof obj.signature!=="string")throw Error("Expected signed-authorization.json with domain, transfer and signature.");
+    const d=obj.domain,t=obj.transfer;
+    if(d.name!=="PortalDotAgentGuard"||d.version!=="1")throw Error("EIP-712 domain does not match PortalDotAgentGuard v1.");
+    if(BigInt(d.chainId)!==BigInt(CHAIN_DEC))throw Error("Authorization is for a different chain ID.");
+    if(typeof d.verifyingContract!=="string"||d.verifyingContract.toLowerCase()!==CONTRACT.toLowerCase())throw Error("Authorization targets a different contract.");
+    if(typeof obj.authoritySigner!=="string"||obj.authoritySigner.toLowerCase()!==EXPECTED_SIGNER.toLowerCase())throw Error("Authorization signer does not match recorded authoritySigner().");
+    if(typeof t.recipient!=="string"||!/^0x[0-9a-f]{40}$/i.test(t.recipient))throw Error("Recipient is not a valid EVM address.");
+    if(typeof t.amount!=="string"||!/^[1-9][0-9]*$/.test(t.amount))throw Error("Amount must be a canonical positive base-unit integer string.");
+    if(typeof t.nonce!=="string"||!/^(0|[1-9][0-9]*)$/.test(t.nonce))throw Error("Nonce is invalid.");
+    if(typeof t.deadline!=="string"||!/^[1-9][0-9]*$/.test(t.deadline))throw Error("Deadline is invalid.");
+    if(typeof t.actionId!=="string"||!/^0x[0-9a-f]{64}$/i.test(t.actionId))throw Error("Action ID must be 32 bytes.");
+    if(!/^0x[0-9a-f]{130}$/i.test(obj.signature))throw Error("Bridge EIP-712 signature must be 65 bytes.");
+    const now=BigInt(Math.floor(Date.now()/1000)),deadline=BigInt(t.deadline);
+    if(deadline<=now)throw Error("Authorization expired. Generate a fresh authorization.");
+    if(deadline>now+300n)throw Error("Authorization exceeds the guard's five-minute deadline.");
+    if(transactionSubmitted)throw Error("A transaction was already submitted during this page session. Check its hash before retrying.");
+    const sigHex=obj.signature.slice(2),amount=BigInt(t.amount),nonce=BigInt(t.nonce);
+    const words=[t.recipient.slice(2).toLowerCase().padStart(64,"0"),amount.toString(16).padStart(64,"0"),nonce.toString(16).padStart(64,"0"),deadline.toString(16).padStart(64,"0"),t.actionId.slice(2).toLowerCase(),(6n*32n).toString(16).padStart(64,"0")];
+    const tail=(sigHex.length/2).toString(16).padStart(64,"0")+sigHex.padEnd(Math.ceil(sigHex.length/64)*64,"0");
+    return {transfer:{recipient:t.recipient,amount,nonce,deadline,actionId:t.actionId},calldata:EXECUTE_SELECTOR+words.join("")+tail};
+  }
+  async function walletState(){
+    if(!walletProvider)throw Error("Connect an EVM wallet first.");
+    const [accounts,chainHex]=await Promise.all([walletProvider.request({method:"eth_accounts"}),walletProvider.request({method:"eth_chainId"})]);
+    walletAccount=Array.isArray(accounts)&&accounts.length?accounts[0]:null;
+    $("walletAddress").textContent=walletAccount||"—";
+    const chain=BigInt(chainHex);$("walletChain").textContent=chain.toString()+(chain===BigInt(CHAIN_DEC)?" · PortalDot V3":" · wrong network");
+    $("walletStatus").textContent=walletAccount?"Connected":"Not connected";$("walletStatus").className="value "+(walletAccount?"green":"amber");
+    $("walletHint").textContent=walletAccount?"The connected account can relay only the approved bridge-signed transfer.":"Press Connect wallet to grant account access.";
+    return {chain,account:walletAccount};
+  }
+  async function connectWallet(){
+    const b=$("connectWallet");b.disabled=true;
+    try{walletProvider=selectedWallet();if(!walletProvider)throw Error("No injected EVM wallet found in this browser.");
+      const accts=await walletProvider.request({method:"eth_requestAccounts"});if(!Array.isArray(accts)||!accts.length)throw Error("Wallet returned no account.");
+      await walletState();clearReview();message("Wallet connected. No transaction or message signature was requested.","good");
+      if(typeof walletProvider.on==="function"){walletProvider.on("accountsChanged",async()=>{try{await walletState();clearReview();}catch(_){}});walletProvider.on("chainChanged",async()=>{try{await walletState();clearReview();}catch(_){}});}
+    }catch(e){message(e.message||"Wallet connection rejected.","warn");$("walletHint").textContent=e.message||"Wallet connection rejected.";}finally{b.disabled=false;}
+  }
+  async function switchNetwork(){
+    if(!walletProvider)walletProvider=selectedWallet();if(!walletProvider){message("Choose an injected EVM wallet first.","warn");return;}
+    const b=$("switchNetwork");b.disabled=true;
+    try{try{await walletProvider.request({method:"wallet_switchEthereumChain",params:[{chainId:CHAIN_HEX}]});}
+      catch(e){if(e&&e.code===4902)await walletProvider.request({method:"wallet_addEthereumChain",params:[{chainId:CHAIN_HEX,chainName:"PortalDot V3 Testnet",nativeCurrency:{name:"PortalDot EVM POT",symbol:"POT",decimals:18},rpcUrls:[RPC]}]});else throw e;}
+      const s=await walletState();if(s.chain!==BigInt(CHAIN_DEC))throw Error("Wallet did not switch to PortalDot V3.");clearReview();message("Wallet network set to PortalDot V3; no transaction sent.","good");
+    }catch(e){message(e.message||"Network change rejected.","warn");}finally{b.disabled=false;}
+  }
+  async function simulateAuthorization(){
+    const b=$("simulateAuthorization");b.disabled=true;clearReview();
+    try{if(!walletProvider||!walletAccount)throw Error("Connect your wallet first.");const s=await walletState();if(s.chain!==BigInt(CHAIN_DEC))throw Error("Switch wallet to PortalDot V3 before simulation.");
+      const auth=parseAuthorization($("authorizationInput").value);
+      const [code,signerWord,balance]=await Promise.all([rpc("eth_getCode",[CONTRACT,"latest"]),rpc("eth_call",[{to:CONTRACT,data:SIGNER_SELECTOR},"latest"]),rpc("eth_getBalance",[CONTRACT,"latest"])]);
+      if(!code||code==="0x")throw Error("No runtime bytecode at the guard address.");
+      if(("0x"+signerWord.slice(-40)).toLowerCase()!==EXPECTED_SIGNER.toLowerCase())throw Error("Live authoritySigner() mismatch.");
+      if(BigInt(balance)<auth.transfer.amount)throw Error("Guard balance is below the authorized amount.");
+      await walletProvider.request({method:"eth_call",params:[{from:walletAccount,to:CONTRACT,data:auth.calldata},"latest"]});
+      let estimate="Contract eth_call simulation passed.";
+      try{const g=await walletProvider.request({method:"eth_estimateGas",params:[{from:walletAccount,to:CONTRACT,data:auth.calldata}]});estimate+=" Estimated gas: "+BigInt(g).toLocaleString("en-US")+".";}catch(_){}
+      reviewedAuthorization=auth;reviewedCalldata=auth.calldata;
+      $("authRecipient").textContent=auth.transfer.recipient;$("authAmount").textContent=fmtNative("0x"+auth.transfer.amount.toString(16));
+      $("authDeadline").textContent=new Date(Number(auth.transfer.deadline)*1000).toLocaleString();$("authNonce").textContent=auth.transfer.nonce.toString();
+      $("authorizationStatus").textContent=estimate+" No transaction has been sent.";$("authorizationStatus").className="small green";$("executeAuthorization").disabled=false;
+      message("Authorization validated and simulated. Review the exact recipient and amount before executing.","good");
+    }catch(e){$("authorizationStatus").textContent=e.message||"Authorization failed."; $("authorizationStatus").className="small red";message("Authorization rejected or simulation failed. No transaction was sent.","bad");}
+    finally{b.disabled=false;}
+  }
+  async function executeAuthorizedTransfer(){
+    const b=$("executeAuthorization");b.disabled=true;
+    try{if(!walletProvider||!walletAccount||!reviewedAuthorization||!reviewedCalldata)throw Error("Connect a wallet and simulate the authorization first.");
+      const state=await walletState();if(state.chain!==BigInt(CHAIN_DEC))throw Error("Wrong wallet network. No transaction sent.");
+      await walletProvider.request({method:"eth_call",params:[{from:walletAccount,to:CONTRACT,data:reviewedCalldata},"latest"]});
+      const hash=await walletProvider.request({method:"eth_sendTransaction",params:[{from:walletAccount,to:CONTRACT,data:reviewedCalldata}]});
+      transactionSubmitted=true;$("executeAuthorization").disabled=true;$("receiptHash").value=hash;$("receiptHashEcho").textContent=hash;
+      $("receiptStatus").textContent="Submitted; awaiting receipt";$("receiptStatus").className="value amber";setLed("receiptLed","warn");
+      $("authorizationStatus").textContent="Submitted: "+hash+". Do not retry while receipt status is unknown.";$("authorizationStatus").className="small amber";message("Transaction broadcast by your wallet. Checking PortalDot receipt…","warn");
+      let receipt=null;for(let i=0;i<25;i++){await new Promise(resolve=>setTimeout(resolve,2000));receipt=await rpc("eth_getTransactionReceipt",[hash]);if(receipt)break;}
+      if(!receipt){$("receiptStatus").textContent="Submitted; receipt unavailable";$("receiptOutcome").textContent="Unknown";$("receiptHint").textContent="No receipt returned yet. Preserve the transaction hash and query it before any retry.";message("Transaction submitted but no receipt available yet. Do not send it again.","warn");return;}
+      const success=receipt.status==="0x1"||receipt.status==="0x01";let matched=false;
+      if(success)for(const l of receipt.logs||[]){if(String(l.address).toLowerCase()!==CONTRACT.toLowerCase()||l.topics?.[0]?.toLowerCase()!==TRANSFER_EVENT_TOPIC||l.topics?.[1]?.toLowerCase()!==reviewedAuthorization.transfer.actionId.toLowerCase())continue;
+        const dest="0x"+String(l.topics[2]||"").slice(-40),data=String(l.data||"").replace(/^0x/,"");
+        if(dest.toLowerCase()===reviewedAuthorization.transfer.recipient.toLowerCase()&&data.length>=128&&BigInt("0x"+data.slice(0,64))===reviewedAuthorization.transfer.amount&&BigInt("0x"+data.slice(64,128))===reviewedAuthorization.transfer.nonce){matched=true;break;}}
+      $("receiptBlock").textContent=BigInt(receipt.blockNumber).toLocaleString("en-US");$("receiptOutcome").textContent=success?"SUCCESS (0x1)":"REVERTED / FAILED";
+      $("receiptFrom").textContent=receipt.from||walletAccount;$("receiptTo").textContent=receipt.to||CONTRACT;$("receiptGas").textContent=receipt.gasUsed?BigInt(receipt.gasUsed).toLocaleString("en-US"):"—";$("receiptLogs").textContent=String((receipt.logs||[]).length);
+      $("receiptStatus").textContent=success?(matched?"TransferExecuted confirmed":"Successful receipt; matching event missing"):"Transaction reverted";$("receiptStatus").className="value "+(success&&matched?"green":"red");setLed("receiptLed",success&&matched?"good":"bad");
+      $("receiptHint").textContent=matched?"Receipt event matches action ID, recipient, exact amount and nonce.":"Receipt was returned, but the expected TransferExecuted event was not verified.";
+      $("authorizationStatus").textContent=matched?"Execution confirmed. TransferExecuted event matches the signed authorization.":"Receipt returned, but execution event was not verified.";$("authorizationStatus").className="small "+(matched?"green":"red");
+      message(matched?"PUBLIC TESTNET PAYMENT CONFIRMED: receipt and exact TransferExecuted event verified.":"Receipt returned without a verified matching event. Preserve the hash.",matched?"good":"bad");
+    }catch(e){$("authorizationStatus").textContent=e.message||"Transaction error."; $("authorizationStatus").className="small red";message(e.message||"Transaction error. Check status before retrying.","bad");}
+    finally{if(!transactionSubmitted)b.disabled=!reviewedAuthorization;}
+  }
+  $("walletChoice").addEventListener("change",()=>{walletProvider=null;walletAccount=null;$("walletStatus").textContent="Not connected";$("walletAddress").textContent="—";$("walletChain").textContent="—";clearReview();});
+  $("connectWallet").addEventListener("click",connectWallet);$("switchNetwork").addEventListener("click",switchNetwork);
+  $("simulateAuthorization").addEventListener("click",simulateAuthorization);$("executeAuthorization").addEventListener("click",executeAuthorizedTransfer);
+  $("authorizationInput").addEventListener("input",clearReview);
+  $("authorizationFile").addEventListener("change",async e=>{const file=e.target.files&&e.target.files[0];if(!file)return;try{$("authorizationInput").value=await file.text();clearReview();$("authorizationStatus").textContent="Loaded "+file.name+". Validate and simulate before execution.";}catch(_){$("authorizationStatus").textContent="Could not read selected JSON file.";}});
+  discoverWallets();
   $("refresh").addEventListener("click",refresh);
   $("copyContract").addEventListener("click",() => copy(CONTRACT,"Contract address"));
   $("copyContract2").addEventListener("click",() => copy(CONTRACT,"Contract address"));
