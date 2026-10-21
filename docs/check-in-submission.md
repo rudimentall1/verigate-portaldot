@@ -1,6 +1,6 @@
 # DoraHacks submission draft: Verigate PortalDot
 
-**Status:** the public repository, testnet guard and live read-only Web3 DApp are available at https://rudimentall1.github.io/verigate-portaldot/. The presentation PDF is in the repository; a short recorded demo and public end-to-end PortalDot payment remain outstanding. A short recorded product demo and a publicly verified end-to-end PortalDot payment remain outstanding. The DoraHacks build entry is [50065](https://dorahacks.io/build/50065); confirm the final saved/published state in the DoraHacks UI.
+**Status:** the public repository, deployed testnet guard, live read-only Web3 DApp, local test suite, deployment runbook and presentation PDF are available. The under-three-minute recorded product demo and a publicly verified end-to-end Verigate-authorized PortalDot payment remain outstanding. The DoraHacks build entry is [50065](https://dorahacks.io/build/50065); confirm the final saved/published state in the DoraHacks UI.
 
 ## Submission fields
 
