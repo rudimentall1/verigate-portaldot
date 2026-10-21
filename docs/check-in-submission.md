@@ -1,6 +1,6 @@
 # DoraHacks submission draft: Verigate PortalDot
 
-**Status:** the repository, testnet guard, live Web3 DApp, local integration harness and presentation PDF are published. The evidence report records a Verigate-authorized 0.1 EVM POT transfer in block `132475`, receipt status `1`, the matching `TransferExecuted` event, and recipient/relayer balance reconciliation. **Historical lookup limitation:** a later query found that the configured RPC no longer served that old transaction/receipt and returned discarded historical state. The earlier verification remains recorded in [the transfer evidence report](authorized-transfer-evidence-2026-10-21-nondust.md); the live dashboard now reports unavailable data rather than substituting saved success. The EVM genesis pin was not configured and no second RPC provider was used. The under-three-minute demo video is still pending. DoraHacks build entry: [50065](https://dorahacks.io/build/50065); check saved/published status in the DoraHacks UI.
+**Status:** V1 is deployed on PortalDot V3 testnet. The 0.1 EVM POT transfer is preserved as historical evidence from block `132475`, with recorded receipt status `1` and a matching `TransferExecuted` event. A later RPC lookup did not return that historical receipt, so do not describe it as currently live-verified. The current working branch adds V2 source/tests, a guarded deployment script, a runbook, and a read-only dashboard source; V2 has not been deployed, and the GitHub Pages site does not reflect this branch until it is merged and published. The EVM genesis pin was not configured for the historical transfer and no second EVM RPC provider was used. The under-three-minute demo video is still pending. DoraHacks build entry: [50065](https://dorahacks.io/build/50065); confirm saved/published state in the DoraHacks UI.
 
 ## Submission fields
 
@@ -16,16 +16,18 @@ Verigate PortalDot is open-source authorization middleware that turns a signed V
 
 **Project description**
 
-AI agents can propose payments, but a proposal should not grant spending authority. Verigate PortalDot checks signed decision and execution-authorization artifacts off-chain, binds the approved action to one recipient and exact base-unit amount, and creates a short-lived EIP-712 authorization for a minimal PortalDot EVM contract. The guard rejects invalid signatures, altered recipients or amounts, expired authorizations, and replayed nonces. The executor validates the configured network and deployed code, simulates before broadcast, and requires explicit opt-in to send a transaction.
+AI agents can propose payments, but a proposal should not grant spending authority. In V1, the bridge checks Verigate authorization off-chain and creates a short-lived EIP-712 authorization bound to one recipient, exact amount, nonce, deadline, action ID, chain and contract. The deployed V1 guard verifies the EIP-712 signer, rejects altered fields, expired authorizations and replayed nonces, and transfers only native POT from its own balance. V1 does not enforce a recipient allowlist or spending caps. V2 source on the working branch adds an admin-controlled allowlist, maximum per-transfer amount and spending-window cap, but those controls must not be described as deployed until V2 is deployed and verified on PortalDot.
 
-The project makes use of PortalDot V3's EVM-compatible execution environment for the Solidity guard and records separate Substrate runtime/genesis checks for network-configuration hardening. It does not claim that the contract itself verifies Verigate's Ed25519 signatures: that trust boundary remains in the off-chain bridge.
+The project uses PortalDot V3's EVM-compatible execution environment for the Solidity guard and records separate Substrate runtime/genesis checks for network configuration. Verigate Ed25519 is verified off-chain by the bridge; the contract itself does not verify Ed25519. The proposed dashboard is read-only and cannot connect a wallet, request signatures, or send transactions.
 
 ## Status and evidence
 
 - **Public repository:** https://github.com/rudimentall1/verigate-portaldot
-- **Implementation branch:** https://github.com/rudimentall1/verigate-portaldot/tree/main
+- **Implementation branch:** https://github.com/rudimentall1/verigate-portaldot/tree/work/portal-hacker-house-final-pass
 - **Live Web3 DApp:** https://rudimentall1.github.io/verigate-portaldot/
-- **DApp source:** https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
+- **Read-only DApp source (working branch):** https://github.com/rudimentall1/verigate-portaldot/blob/work/portal-hacker-house-final-pass/web3-dapp/index.html
+- **V2 deployment runbook:** [docs/v2-deployment-runbook.md](v2-deployment-runbook.md)
+- **V2 deployment script:** [scripts/deploy-v2.mjs](../scripts/deploy-v2.mjs)
 - **Architecture:** [docs/architecture.md](architecture.md)
 - **Presentation PDF:** [Verigate-PortalDot-Presentation.pdf](Verigate-PortalDot-Presentation.pdf)
 - **Testnet deployment evidence:** [docs/deployment-evidence-2026-10-20.md](deployment-evidence-2026-10-20.md)
@@ -41,7 +43,7 @@ The project makes use of PortalDot V3's EVM-compatible execution environment for
 - **Initial minimal authorized transfer:** transaction 0xbe3ade2ba3209cf0df3647cea50fb6608a77bb837213a25b8ec419fa9914cc14 at block 130741; the original record documents the one-base-unit `TransferExecuted` event.
 - **Non-dust authorized transfer:** transaction 0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c at block 132475; executor reports `transfer_executed`, `TransferExecuted` confirmed, and guard balance decreased exactly 0.1 EVM POT. This is recorded from terminal output; read-only receipt/event re-query and recipient/relayer balance reconciliation are complete against the configured RPC; the EVM genesis pin is not configured and no second provider was used.
 - **Runtime bytecode Keccak-256:** `0xb3d71ff82b4b654c7bafe855ce13b0dc277627a046e3190f6f6e0ee5eb7f7671`
-- **Recorded validation:** the repository's saved run record reports `156 passing` on the deployment workspace. The last documented successful GitHub Actions set was on commit `f5aee87126a87c3ca02a72ba7e7896c40d09ee55`; the later README and dashboard commits have not been confirmed by a fresh successful CI result in this review.
+- **Recorded validation:** the deployment workspace previously reported `156 passing` local Hardhat tests. That is not a test result for the new V2 source. V2 tests and compilation must be run on this branch before merging; the branch has not been executed in a local build environment in this session.
 - **Isolated end-to-end test:** Verigate returned ALLOW for the permitted case and BLOCK for the denied case. Signatures were verified; the guard's real Solidity source executed the exact authorized transfer on a temporary loopback Hardhat EVM. This is local integration evidence, not a public PortalDot transfer.
 
 ## Why PortalDot
@@ -54,12 +56,12 @@ PortalDot V3 offers an EVM-compatible deployment target for a narrow, reusable s
 2. The specific H160-to-SS58 mapping for the wallet-displayed address has not been confirmed by the runtime storage lookup. The deployment evidence explicitly records this limitation.
 3. The public RPC's reported chain/genesis values are consistency checks, not independent authentication of the RPC operator.
 4. This is a testnet prototype, not a production deployment or independent security audit.
-5. The end-user demo recording has not yet been added. Do not submit a placeholder or present the static slide preview as a live demo.
+5. V2 is not deployed yet. The read-only dashboard and V2 deployment script are on a working branch and need local tests, review, merge and Pages publication. The end-user demo recording has not yet been added; do not submit a placeholder or present the static slide preview as a live demo.
 
 ## Remaining before submitting
 
 - [x] Publish the implementation on `main`; verify the repository and current CI runs are publicly accessible.
-- [x] Add a public Web3 DApp with live PortalDot RPC reads and explicit wallet-gated execution of bridge-signed authorizations; transaction evidence is recorded separately.
+- [ ] Merge and publish the read-only dashboard source; verify clean-browser live RPC reads and confirm the published page contains no wallet-connect, signing, authorization-upload or transaction-execution flow.
 - [ ] Add the short live/demo recording (under 3 minutes) showing the real product behavior and clearly separating local simulation from testnet deployment evidence. **Still pending.**
 - [x] Presentation PDF is published in the repository. (This is not the demo video.)
 - [ ] Enter the final repository, deployment address, transaction hash, demo link, and PDF/public presentation link in DoraHacks.
