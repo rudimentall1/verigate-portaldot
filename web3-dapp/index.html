@@ -213,7 +213,10 @@ footer{padding:21px 0 32px;margin-top:13px;border-top:1px solid var(--line);disp
       if (!tx && !receipt) {
         $("receiptStatus").textContent = "Not returned by RPC";
         $("receiptStatus").className = "value amber";
-        $("receiptHint").textContent = "The endpoint returned null for both lookups. This does not prove the transaction failed; historical data may be pruned or unavailable from this RPC.";
+        const isDeploymentTx = hash.toLowerCase() === TX.toLowerCase();
+        $("receiptHint").textContent = isDeploymentTx
+          ? "This is the historical deployment hash. The project deployment record documents a successful receipt (status 0x1) at block 116872, but the current RPC no longer returns this old transaction. This live lookup is unavailable; it is not evidence of a new payment. See docs/deployment-evidence-2026-10-20.md."
+          : "The endpoint returned null for both lookups. This does not prove the transaction failed; historical data may be pruned or unavailable from this RPC.";
         $("receiptBlock").textContent = "—";
         $("receiptOutcome").textContent = "Unknown";
         $("receiptFrom").textContent = "—";
