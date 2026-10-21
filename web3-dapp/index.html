@@ -48,17 +48,24 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
   const HISTORICAL_TX = "0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c";
   const candidate = new URLSearchParams(location.search).get("guard");
   const ADDRESS = candidate && /^0x[0-9a-fA-F]{40}$/.test(candidate) ? candidate : DEFAULT_V1;
-  const V2_SELECTORS = {
-    admin: "0xf851a440",
-    maxPerTransfer: "0x9b7c6e5a",
-    windowLimit: "0x7c5e9f5a",
-    windowSeconds: "0xb8c6d8e9"
-  };
   const el = (id) => document.getElementById(id);
+  let provider, contract, iface;
+  const abi = [
+    "function authoritySigner() view returns (address)",
+    "function admin() view returns (address)",
+    "function maxPerTransfer() view returns (uint256)",
+    "function windowLimit() view returns (uint256)",
+    "function windowSeconds() view returns (uint256)"
+  ];
+  async function initEthers() {
+    const { ethers } = await import("https://cdn.jsdelivr.net/npm/ethers@6.13.4/+esm");
+    provider = new ethers.JsonRpcProvider(RPC, 420420777, { staticNetwork: true });
+    iface = new ethers.Interface(abi);
+    contract = new ethers.Contract(ADDRESS, abi, provider);
+  }
   async function rpc(method, params = []) {
     const response = await fetch(RPC, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
+      method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params })
     });
     if (!response.ok) throw new Error("RPC HTTP " + response.status);
@@ -66,15 +73,11 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
     if (body.error) throw new Error(body.error.message || "RPC error");
     return body.result;
   }
-  function wordAddress(value) {
-    return "0x" + value.slice(-40);
+  async function readMethod(name) {
+    const data = iface.encodeFunctionData(name);
+    const result = await rpc("eth_call", [{ to: ADDRESS, data }, "latest"]);
+    return iface.decodeFunctionResult(name, result)[0];
   }
-  async function call(signature) {
-    const selector = (await crypto.subtle.digest("SHA-256", new TextEncoder().encode(signature)));
-    return rpc("eth_call", [{to: ADDRESS, data: "0x" + Array.from(new Uint8Array(selector)).map(x=>x.toString(16).padStart(2,"0")).join("").slice(0,8)}, "latest"]);
-  }
-  // Fixed selectors are derived from the ABI and kept explicit to avoid wallet libraries or injected providers.
-  async function readSelector(selector) { return rpc("eth_call", [{to: ADDRESS, data: selector}, "latest"]); }
   function quantity(hex) { return BigInt(hex || "0"); }
   function pot(wei) {
     const value = BigInt(wei);
@@ -87,9 +90,10 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
     el("refresh").disabled = true;
     setMessage("Querying current public RPC…");
     try {
+      if (!contract) await initEthers();
       const [chain, block, code, balance, signer] = await Promise.all([
         rpc("eth_chainId"), rpc("eth_blockNumber"), rpc("eth_getCode", [ADDRESS, "latest"]),
-        rpc("eth_getBalance", [ADDRESS, "latest"]), readSelector("0x7dc0d1d0")
+        rpc("eth_getBalance", [ADDRESS, "latest"]), readMethod("authoritySigner")
       ]);
       el("rpcStatus").textContent = "Responding";
       el("rpcStatus").className = "value green";
@@ -105,21 +109,20 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
       el("codeStatus").className = "small " + (bytes ? "green" : "red");
       el("balance").textContent = pot(quantity(balance));
       el("contractAddress").textContent = ADDRESS;
-      const liveSigner = wordAddress(signer);
-      el("signer").textContent = liveSigner;
-      const signerMatches = liveSigner.toLowerCase() === EXPECTED_SIGNER.toLowerCase();
+      el("signer").textContent = signer;
+      const signerMatches = signer.toLowerCase() === EXPECTED_SIGNER.toLowerCase();
       el("signerStatus").textContent = signerMatches ? "Matches recorded V1 signer" : "Differs from recorded V1 signer";
       el("signerStatus").className = "value " + (signerMatches ? "green" : "amber");
       try {
         const [admin, max, limit, seconds] = await Promise.all([
-          readSelector("0xf851a440"), readSelector("0x9b7c6e5a"),
-          readSelector("0x7c5e9f5a"), readSelector("0xb8c6d8e9")
+          readMethod("admin"), readMethod("maxPerTransfer"),
+          readMethod("windowLimit"), readMethod("windowSeconds")
         ]);
-        el("admin").textContent = wordAddress(admin);
-        el("maxTransfer").textContent = pot(quantity(max));
-        el("windowLimit").textContent = pot(quantity(limit));
-        el("windowSeconds").textContent = quantity(seconds).toString() + " seconds";
-        el("policyStatus").textContent = "Read-only calls returned values; verify selectors against deployed V2 ABI before relying on them.";
+        el("admin").textContent = admin;
+        el("maxTransfer").textContent = pot(max);
+        el("windowLimit").textContent = pot(limit);
+        el("windowSeconds").textContent = BigInt(seconds).toString() + " seconds";
+        el("policyStatus").textContent = "Policy values read from the selected contract using ABI-derived selectors.";
       } catch (_) {
         el("admin").textContent = "Not available on this contract";
         el("maxTransfer").textContent = "V2 only";
@@ -132,9 +135,7 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
       el("rpcStatus").textContent = "Unavailable";
       el("rpcStatus").className = "value red";
       setMessage("Live RPC check failed: " + error.message, "bad");
-    } finally {
-      el("refresh").disabled = false;
-    }
+    } finally { el("refresh").disabled = false; }
   }
   async function checkReceipt() {
     el("receiptResult").textContent = "Querying eth_getTransactionReceipt and eth_getTransactionByHash…";
@@ -148,9 +149,7 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
       } else {
         el("receiptResult").textContent = "Current RPC returned transaction and receipt. Receipt status: " + receipt.status + "; block: " + quantity(receipt.blockNumber).toString() + ". This lookup does not independently validate the event.";
       }
-    } catch (error) {
-      el("receiptResult").textContent = "Live receipt lookup failed: " + error.message;
-    }
+    } catch (error) { el("receiptResult").textContent = "Live receipt lookup failed: " + error.message; }
   }
   el("refresh").addEventListener("click", refresh);
   el("checkReceipt").addEventListener("click", checkReceipt);
