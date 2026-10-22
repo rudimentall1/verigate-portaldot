@@ -909,6 +909,258 @@ async function resolveAddress(db, address) {
   };
 }
 
+function safeAbiValue(value, param = null) {
+  if (typeof value === "bigint") return value.toString();
+  if (value == null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(param?.components) && value && typeof value.length === "number") {
+    return Object.fromEntries(param.components.map((component, index) => [
+      component.name || String(index),
+      safeAbiValue(value[index], component)
+    ]));
+  }
+  if (Array.isArray(value)) return value.map((item, index) => safeAbiValue(item, param?.arrayChildren || null));
+  if (typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, safeAbiValue(item)]));
+  }
+  return String(value);
+}
+
+function parseContractAbi(input) {
+  const abi = Array.isArray(input) ? input : input && Array.isArray(input.abi) ? input.abi : null;
+  if (!abi || abi.length === 0 || abi.length > 1000) {
+    const error = new Error("abi must be a non-empty Solidity ABI array (max 1000 entries) or artifact with an abi array.");
+    error.statusCode = 400;
+    throw error;
+  }
+  let abiJson;
+  try { abiJson = JSON.stringify(abi); }
+  catch {
+    const error = new Error("abi must be valid JSON data.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (Buffer.byteLength(abiJson, "utf8") > 256 * 1024) {
+    const error = new Error("abi exceeds the 256 KiB size limit.");
+    error.statusCode = 413;
+    throw error;
+  }
+  let iface;
+  try { iface = new Interface(abi); }
+  catch (error) {
+    const failure = new Error("Invalid Solidity ABI: " + (error?.message || String(error)));
+    failure.statusCode = 400;
+    throw failure;
+  }
+  const eventFragments = iface.fragments.filter((fragment) => fragment.type === "event");
+  if (eventFragments.length === 0) {
+    const error = new Error("The ABI must contain at least one event fragment.");
+    error.statusCode = 400;
+    throw error;
+  }
+  return { abi, abiJson, iface, eventCount: eventFragments.length };
+}
+
+function makeContractSlug(name) {
+  const base = String(name || "contract").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 36) || "contract";
+  return base + "-" + randomBytes(4).toString("hex");
+}
+
+function hashManagerToken(token) {
+  return createHash("sha256").update(token, "utf8").digest("hex");
+}
+
+function hasManagerAccess(req, storedHash) {
+  const header = String(req.headers.authorization || "");
+  const match = /^Bearer ([a-fA-F0-9]{64})$/.exec(header);
+  if (!match || !storedHash) return false;
+  const provided = Buffer.from(hashManagerToken(match[1]), "hex");
+  const expected = Buffer.from(storedHash, "hex");
+  return provided.length === expected.length && timingSafeEqual(provided, expected);
+}
+
+async function readJsonBody(req, maxBytes = 1024 * 1024) {
+  const contentType = String(req.headers["content-type"] || "").toLowerCase();
+  if (!contentType.startsWith("application/json")) {
+    const error = new Error("Content-Type must be application/json.");
+    error.statusCode = 415;
+    throw error;
+  }
+  const declaredLength = Number(req.headers["content-length"] || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    const error = new Error("Request body exceeds the size limit.");
+    error.statusCode = 413;
+    throw error;
+  }
+  const chunks = [];
+  let length = 0;
+  for await (const chunk of req) {
+    length += chunk.length;
+    if (length > maxBytes) {
+      const error = new Error("Request body exceeds the size limit.");
+      error.statusCode = 413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
+  if (length === 0) {
+    const error = new Error("Request body must contain a JSON object.");
+    error.statusCode = 400;
+    throw error;
+  }
+  let body;
+  try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); }
+  catch {
+    const error = new Error("Malformed JSON request body.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    const error = new Error("Request body must be a JSON object.");
+    error.statusCode = 400;
+    throw error;
+  }
+  return body;
+}
+
+function decodeOneContractLog(iface, rawLog) {
+  try {
+    const topics = Array.isArray(rawLog.topics) ? rawLog.topics : [];
+    const parsed = iface.parseLog({ topics, data: rawLog.data || "0x" });
+    if (!parsed) return null;
+    const args = {};
+    parsed.fragment.inputs.forEach((input, index) => {
+      args[input.name || String(index)] = safeAbiValue(parsed.args[index], input);
+    });
+    return {
+      eventName: parsed.name,
+      eventSignature: parsed.signature || parsed.fragment.format(),
+      args
+    };
+  } catch {
+    // A registered ABI can describe only a subset of logs for an address.
+    return null;
+  }
+}
+
+export function decodeContractLogsForSlug(db, slug, startBlock, endBlock) {
+  const contract = db.prepare("SELECT slug,address,abi_json FROM registered_contracts WHERE slug=?").get(slug);
+  if (!contract) return 0;
+  if (!Number.isSafeInteger(startBlock) || !Number.isSafeInteger(endBlock) || endBlock < startBlock) return 0;
+  const iface = new Interface(JSON.parse(contract.abi_json));
+  const rows = db.prepare(
+    "SELECT block_number,log_index,tx_hash,raw_json FROM logs WHERE contract_address=? AND block_number BETWEEN ? AND ? ORDER BY block_number,log_index"
+  ).all(contract.address, startBlock, endBlock);
+  const insert = db.prepare(
+    "INSERT INTO decoded_contract_events(slug,block_number,log_index,tx_hash,event_name,event_signature,args_json,raw_json,decoded_at) VALUES(?,?,?,?,?,?,?,?,?) " +
+    "ON CONFLICT(slug,block_number,log_index) DO UPDATE SET tx_hash=excluded.tx_hash,event_name=excluded.event_name,event_signature=excluded.event_signature,args_json=excluded.args_json,raw_json=excluded.raw_json,decoded_at=excluded.decoded_at"
+  );
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    // Re-decode this exact range to keep the projection consistent after log replacement or a resync.
+    db.prepare("DELETE FROM decoded_contract_events WHERE slug=? AND block_number BETWEEN ? AND ?").run(slug, startBlock, endBlock);
+    let decoded = 0;
+    for (const row of rows) {
+      const rawLog = JSON.parse(row.raw_json);
+      const parsed = decodeOneContractLog(iface, rawLog);
+      if (!parsed) continue;
+      insert.run(
+        slug, row.block_number, row.log_index, row.tx_hash,
+        parsed.eventName, parsed.eventSignature, JSON.stringify(parsed.args),
+        JSON.stringify(rawLog), new Date().toISOString()
+      );
+      decoded++;
+    }
+    const count = db.prepare("SELECT COUNT(*) AS count FROM decoded_contract_events WHERE slug=?").get(slug).count;
+    const last = db.prepare("SELECT MAX(block_number) AS n FROM logs WHERE contract_address=? AND block_number<=?").get(contract.address, endBlock).n;
+    const first = db.prepare("SELECT MIN(block_number) AS n FROM logs WHERE contract_address=?").get(contract.address).n;
+    const currentFrom = db.prepare("SELECT indexed_from_block FROM registered_contracts WHERE slug=?").get(slug)?.indexed_from_block;
+    db.prepare(
+      "UPDATE registered_contracts SET event_count=?,last_decoded_block=?,indexed_from_block=COALESCE(indexed_from_block,?),decode_error=NULL WHERE slug=?"
+    ).run(count, last ?? null, first ?? (currentFrom ?? null), slug);
+    db.exec("COMMIT");
+    return decoded;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    db.prepare("UPDATE registered_contracts SET decode_error=? WHERE slug=?").run(String(error?.message || error).slice(0, 800), slug);
+    throw error;
+  }
+}
+
+export function decodeRegisteredContractLogs(db, startBlock, endBlock) {
+  const contracts = db.prepare("SELECT slug FROM registered_contracts ORDER BY registered_at").all();
+  let decoded = 0;
+  for (const contract of contracts) {
+    try { decoded += decodeContractLogsForSlug(db, contract.slug, startBlock, endBlock); }
+    catch (error) {
+      console.error("Contract event decoding failed for " + contract.slug + ":", error?.message || String(error));
+    }
+  }
+  return decoded;
+}
+
+function registerContract(db, address, name, parsedAbi) {
+  const total = db.prepare("SELECT COUNT(*) AS count FROM registered_contracts").get().count;
+  if (total >= 200) {
+    const error = new Error("The contract registry is full (200 contracts).");
+    error.statusCode = 429;
+    throw error;
+  }
+  const existing = db.prepare("SELECT slug FROM registered_contracts WHERE address=?").get(address);
+  if (existing) {
+    const error = new Error("This address is already registered as slug " + existing.slug + ". Use its manage token to resync or delete it.");
+    error.statusCode = 409;
+    throw error;
+  }
+  const slug = makeContractSlug(name || ("contract-" + address.slice(2, 8)));
+  const manageToken = randomBytes(32).toString("hex");
+  const cursor = readState(db, "cursor");
+  const firstExistingLog = db.prepare("SELECT MIN(block_number) AS n FROM logs WHERE contract_address=?").get(address).n;
+  const indexedFrom = firstExistingLog ?? (cursor == null ? null : Number(cursor) + 1);
+  db.prepare(
+    "INSERT INTO registered_contracts(slug,address,name,abi_json,manager_token_hash,registered_at,indexed_from_block,last_decoded_block,event_count,decode_error) VALUES(?,?,?,?,?,?,?,?,0,NULL)"
+  ).run(slug, address, name || null, parsedAbi.abiJson, hashManagerToken(manageToken), new Date().toISOString(), indexedFrom, cursor == null ? null : Number(cursor));
+  if (cursor != null && Number(cursor) >= 0) {
+    try { decodeContractLogsForSlug(db, slug, 0, Number(cursor)); }
+    catch (error) {
+      db.prepare("UPDATE registered_contracts SET decode_error=? WHERE slug=?").run(String(error?.message || error).slice(0, 800), slug);
+    }
+  }
+  const record = db.prepare(
+    "SELECT slug,address,name,registered_at,indexed_from_block,last_decoded_block,event_count,decode_error FROM registered_contracts WHERE slug=?"
+  ).get(slug);
+  return {
+    slug: record.slug,
+    address: record.address,
+    name: record.name,
+    url: "/api/contracts/" + record.slug,
+    events_url: "/api/contracts/" + record.slug + "/events",
+    manage_token: manageToken,
+    indexed_from_block: record.indexed_from_block,
+    event_count: record.event_count,
+    note: "Save manage_token now. It is shown only once and is required for resync or delete."
+  };
+}
+
+function getRegisteredContract(db, slug) {
+  return db.prepare(
+    "SELECT slug,address,name,abi_json,manager_token_hash,registered_at,indexed_from_block,last_decoded_block,event_count,decode_error FROM registered_contracts WHERE slug=?"
+  ).get(slug);
+}
+
+function publicContractRecord(row) {
+  if (!row) return null;
+  return {
+    slug: row.slug,
+    address: row.address,
+    name: row.name,
+    registered_at: row.registered_at,
+    indexed_from_block: row.indexed_from_block,
+    last_decoded_block: row.last_decoded_block,
+    event_count: row.event_count,
+    decode_error: row.decode_error || null
+  };
+}
+
 function boundedLimit(value, fallback = 30, max = 100) {
   if (value == null || value === "") return fallback;
   if (!/^[0-9]+$/.test(String(value))) throw new Error("limit must be an integer.");
