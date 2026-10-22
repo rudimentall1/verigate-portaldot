@@ -1967,6 +1967,12 @@ async function apiRoute(req, res, url, db, runtime) {
       if (!normaliseHash(hash)) return jsonResponse(res, 400, { error: "Extrinsic hash must be 32 bytes." }, origin);
       return jsonResponse(res, 200, readSubstrateExtrinsic(db, hash) || { source: "not_found" }, origin);
     }
+    if (path === "/api/substrate/mapping") {
+      const query = (url.searchParams.get("q") || "").trim();
+      if (!query || query.length > 128) return jsonResponse(res, 400, { error: "Supply q with an EVM or SS58 address (max 128 characters)." }, origin);
+      try { return jsonResponse(res, 200, await resolveSubstrateMapping(runtime, query), origin); }
+      catch (error) { return jsonResponse(res, 502, { source: "runtime_mapping", status: "rpc_error", error: error.message || "Substrate runtime API error." }, origin); }
+    }
     if (path.startsWith("/api/substrate/address/")) {
       const address = decodeURIComponent(path.slice("/api/substrate/address/".length));
       if (!cleanSubstrateAccount(address)) return jsonResponse(res, 400, { error: "Address must be an SS58 address." }, origin);
