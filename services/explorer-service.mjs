@@ -2073,7 +2073,8 @@ async function main() {
   const runtime = {
     lastRpcError: null, lastHead: null, stopping: false,
     substrateApi: null, substrateConnected: false, substrateGenesisHash: null,
-    substrateLatestFinalized: null, substrateError: null
+    substrateLatestFinalized: null, substrateError: null,
+    substrateSnapshotError: null, substrateSnapshotCompletedAt: null
   };
   const { server } = await createExplorerServer({ db, runtime });
   server.listen(PORT, "0.0.0.0", () => {
@@ -2083,6 +2084,7 @@ async function main() {
     console.log("SQLite database: " + DB_PATH);
     console.log("EVM indexer: start block " + (START_BLOCK_ENV || ("latest - " + BACKFILL_BLOCKS)) + ", batch " + BATCH_BLOCKS + ", confirmations " + CONFIRMATIONS);
     console.log("Substrate indexer: start block " + (SUBSTRATE_START_BLOCK_ENV || ("finalized - " + SUBSTRATE_BACKFILL_BLOCKS)) + ", batch " + SUBSTRATE_BATCH_BLOCKS);
+    console.log("Substrate state snapshots: every " + Math.round(SUBSTRATE_SNAPSHOT_INTERVAL_MS / 60000) + " minutes, page " + SUBSTRATE_SNAPSHOT_PAGE_SIZE + ", max " + SUBSTRATE_SNAPSHOT_MAX_ROWS + " rows");
   });
   runIndexer(db, runtime).catch((error) => {
     runtime.lastRpcError = error.message || String(error);
@@ -2091,6 +2093,10 @@ async function main() {
   runSubstrateIndexer(db, runtime).catch((error) => {
     runtime.substrateError = error.message || String(error);
     console.error("Substrate indexer stopped unexpectedly:", runtime.substrateError);
+  });
+  runSubstrateStateSnapshots(db, runtime).catch((error) => {
+    runtime.substrateSnapshotError = error.message || String(error);
+    console.error("Substrate state snapshot worker stopped unexpectedly:", runtime.substrateSnapshotError);
   });
   const shutdown = () => {
     runtime.stopping = true;
