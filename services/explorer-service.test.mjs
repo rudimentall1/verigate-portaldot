@@ -233,6 +233,7 @@ test("records missing Substrate history as a gap and does not claim full coverag
   const db = new DatabaseSync(":memory:");
   try {
     initializeDatabase(db);
+    db.prepare("INSERT INTO indexer_state(state_key,state_value,updated_at) VALUES(?,?,?)").run("substrate_started_from", "110002", new Date().toISOString());
     persistSubstrateBatch(db, {
       blocks: [], startBlock: 110002, endBlock: 110002,
       blockErrors: [{ block: 110002, error: "state pruned" }], eventErrors: [], advanceCursor: true
