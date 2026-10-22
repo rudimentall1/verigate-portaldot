@@ -275,9 +275,13 @@ function getCount(db, table) {
 function getIndexerStatus(db) {
   const cursor = readState(db, "cursor");
   const started = readState(db, "started_from");
+  const cursorNumber = cursor == null ? null : Number(cursor);
+  const startedNumber = started == null ? null : Number(started);
+  const gapCount = db.prepare("SELECT COUNT(*) AS count FROM indexer_gaps").get().count;
   return {
-    indexedThrough: cursor == null ? null : Number(cursor),
-    startedFrom: started == null ? null : Number(started),
+    indexedThrough: cursorNumber == null || (startedNumber != null && cursorNumber < startedNumber) ? null : cursorNumber,
+    startedFrom: startedNumber,
+    gapCount,
     lastBatchAt: readState(db, "last_batch_at"),
     lastBatchStart: readState(db, "last_batch_start") == null ? null : Number(readState(db, "last_batch_start")),
     lastBatchEnd: readState(db, "last_batch_end") == null ? null : Number(readState(db, "last_batch_end")),
