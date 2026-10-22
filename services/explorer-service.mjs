@@ -388,6 +388,256 @@ export function getSubstrateIndexerStatus(db, runtime = {}) {
   };
 }
 
+function codecText(value) {
+  if (value == null) return null;
+  try {
+    if (typeof value.toUtf8 === "function") return value.toUtf8();
+    if (typeof value.toHuman === "function") {
+      const human = value.toHuman();
+      if (typeof human === "string") return human;
+    }
+    return value.toString();
+  } catch {
+    return String(value);
+  }
+}
+
+function codecRaw(value) {
+  if (value == null) return "0";
+  try { return value.toString(); } catch { return String(value); }
+}
+
+function keyText(key, index) {
+  try { return key.args[index].toString(); } catch { return null; }
+}
+
+function isOptionNone(value) {
+  try { return value.isNone === true; } catch { return false; }
+}
+
+async function collectPagedEntries(entry, args = [], maxRows = SUBSTRATE_SNAPSHOT_MAX_ROWS) {
+  if (!entry || typeof entry.entriesPaged !== "function") throw new Error("This runtime storage item does not expose paged entries.");
+  const output = [];
+  const seen = new Set();
+  let startKey;
+  for (;;) {
+    const options = { pageSize: SUBSTRATE_SNAPSHOT_PAGE_SIZE, args };
+    if (startKey) options.startKey = startKey;
+    const page = await entry.entriesPaged(options);
+    if (!Array.isArray(page)) throw new Error("The runtime returned an invalid storage page.");
+    if (page.length === 0) break;
+    let added = 0;
+    for (const row of page) {
+      if (!Array.isArray(row) || row.length !== 2) throw new Error("The runtime returned a malformed storage entry.");
+      const key = row[0];
+      const keyHex = typeof key?.toHex === "function" ? key.toHex() : String(key);
+      if (seen.has(keyHex)) continue;
+      seen.add(keyHex);
+      output.push(row);
+      added++;
+      if (output.length > maxRows) throw new Error("Storage snapshot exceeded the configured row limit (" + maxRows + ").");
+    }
+    if (page.length < SUBSTRATE_SNAPSHOT_PAGE_SIZE) break;
+    const nextKey = page[page.length - 1][0];
+    const nextHex = typeof nextKey?.toHex === "function" ? nextKey.toHex() : String(nextKey);
+    const currentHex = startKey ? (typeof startKey.toHex === "function" ? startKey.toHex() : String(startKey)) : null;
+    if (nextHex === currentHex || added === 0) throw new Error("Storage pagination did not make progress; snapshot cancelled.");
+    startKey = nextKey;
+  }
+  return output;
+}
+
+export function getLatestStateSnapshot(db) {
+  const block = db.prepare("SELECT MAX(snapshot_block) AS n FROM state_snapshot_runs WHERE status='complete'").get().n;
+  if (block == null) return null;
+  return db.prepare(
+    "SELECT snapshot_block AS block,status,started_at AS startedAt,completed_at AS completedAt,native_symbol AS nativeSymbol,native_decimals AS nativeDecimals,native_accounts AS nativeAccounts,asset_count AS assetCount,asset_holder_count AS assetHolderCount,nft_count AS nftCount,error_message AS error FROM state_snapshot_runs WHERE snapshot_block=?"
+  ).get(block) || null;
+}
+
+function persistStateSnapshot(db, snapshot) {
+  const {
+    block, capturedAt, startedAt, nativeSymbol, nativeDecimals,
+    nativeBalances, assets, assetHolders, nftOwners
+  } = snapshot;
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    for (const table of ["native_balance_snapshots", "asset_metadata_snapshots", "asset_holder_snapshots", "nft_owner_snapshots"]) {
+      db.prepare("DELETE FROM " + table + " WHERE snapshot_block=?").run(block);
+    }
+    const insertBalance = db.prepare(
+      "INSERT INTO native_balance_snapshots(snapshot_block,address,free,reserved,frozen,nonce,raw_json,captured_at) VALUES(?,?,?,?,?,?,?,?)"
+    );
+    for (const item of nativeBalances) {
+      insertBalance.run(block, item.address, item.free, item.reserved, item.frozen, item.nonce, JSON.stringify(item.raw), capturedAt);
+    }
+    const insertAsset = db.prepare(
+      "INSERT INTO asset_metadata_snapshots(snapshot_block,asset_id,name,symbol,decimals,supply,owner,raw_json,captured_at) VALUES(?,?,?,?,?,?,?,?,?)"
+    );
+    for (const item of assets) {
+      insertAsset.run(block, item.assetId, item.name, item.symbol, item.decimals, item.supply, item.owner, JSON.stringify(item.raw), capturedAt);
+    }
+    const insertHolder = db.prepare(
+      "INSERT INTO asset_holder_snapshots(snapshot_block,asset_id,address,balance,status,raw_json,captured_at) VALUES(?,?,?,?,?,?,?)"
+    );
+    for (const item of assetHolders) {
+      insertHolder.run(block, item.assetId, item.address, item.balance, item.status, JSON.stringify(item.raw), capturedAt);
+    }
+    const insertNft = db.prepare(
+      "INSERT INTO nft_owner_snapshots(snapshot_block,pallet,collection_id,item_id,owner,raw_json,captured_at) VALUES(?,?,?,?,?,?,?)"
+    );
+    for (const item of nftOwners) {
+      insertNft.run(block, item.pallet, item.collectionId, item.itemId, item.owner, JSON.stringify(item.raw), capturedAt);
+    }
+    db.prepare(
+      "INSERT INTO state_snapshot_runs(snapshot_block,status,started_at,completed_at,native_symbol,native_decimals,native_accounts,asset_count,asset_holder_count,nft_count,error_message) " +
+      "VALUES(?,'complete',?,?,?,?,?,?,?,?,NULL) ON CONFLICT(snapshot_block) DO UPDATE SET status='complete',started_at=excluded.started_at,completed_at=excluded.completed_at,native_symbol=excluded.native_symbol,native_decimals=excluded.native_decimals,native_accounts=excluded.native_accounts,asset_count=excluded.asset_count,asset_holder_count=excluded.asset_holder_count,nft_count=excluded.nft_count,error_message=NULL"
+    ).run(block, startedAt, capturedAt, nativeSymbol, nativeDecimals, nativeBalances.length, assets.length, assetHolders.length, nftOwners.length);
+    // Retain three complete state snapshots; this is state history, not a full historical replay.
+    const keep = db.prepare("SELECT snapshot_block FROM state_snapshot_runs WHERE status='complete' ORDER BY snapshot_block DESC LIMIT 3").all().map((row) => row.snapshot_block);
+    if (keep.length) {
+      const placeholders = keep.map(() => "?").join(",");
+      for (const table of ["native_balance_snapshots", "asset_metadata_snapshots", "asset_holder_snapshots", "nft_owner_snapshots"]) {
+        db.prepare("DELETE FROM " + table + " WHERE snapshot_block NOT IN (" + placeholders + ")").run(...keep);
+      }
+      db.prepare("DELETE FROM state_snapshot_runs WHERE status='complete' AND snapshot_block NOT IN (" + placeholders + ")").run(...keep);
+    }
+    db.prepare("DELETE FROM state_snapshot_runs WHERE status='failed' AND snapshot_block NOT IN (SELECT snapshot_block FROM state_snapshot_runs WHERE status='failed' ORDER BY started_at DESC LIMIT 20)").run();
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
+function recordStateSnapshotFailure(db, block, startedAt, error) {
+  const now = new Date().toISOString();
+  db.prepare(
+    "INSERT INTO state_snapshot_runs(snapshot_block,status,started_at,completed_at,error_message) VALUES(?,'failed',?,?,?) " +
+    "ON CONFLICT(snapshot_block) DO UPDATE SET status='failed',started_at=excluded.started_at,completed_at=excluded.completed_at,error_message=excluded.error_message"
+  ).run(block, startedAt, now, String(error?.message || error).slice(0, 1000));
+}
+
+export async function collectNativeStateSnapshot(api, block, startedAt = new Date().toISOString()) {
+  const capturedAt = new Date().toISOString();
+  const finalizedHash = await api.rpc.chain.getBlockHash(block);
+  if (!finalizedHash || finalizedHash.isEmpty) throw new Error("Could not resolve finalized hash for the state snapshot.");
+  const at = await api.at(finalizedHash);
+  const nativeSymbol = Array.isArray(api.registry.chainTokens) ? String(api.registry.chainTokens[0] || "native") : "native";
+  const nativeDecimals = Number(Array.isArray(api.registry.chainDecimals) ? api.registry.chainDecimals[0]?.toString() : 0);
+  if (!Number.isSafeInteger(nativeDecimals) || nativeDecimals < 0 || nativeDecimals > 38) throw new Error("Chain native token decimals are missing or invalid.");
+
+  const accountEntries = await collectPagedEntries(at.query.system.account);
+  const nativeBalances = [];
+  for (const [key, value] of accountEntries) {
+    const address = cleanSubstrateAccount(keyText(key, 0));
+    if (!address || isOptionNone(value)) continue;
+    const human = value.toJSON() || {};
+    const data = human.data || {};
+    const free = codecRaw(value.data?.free ?? data.free);
+    const reserved = codecRaw(value.data?.reserved ?? data.reserved);
+    const frozen = codecRaw(value.data?.frozen ?? value.data?.miscFrozen ?? data.frozen ?? data.miscFrozen);
+    const nonce = codecRaw(value.nonce ?? human.nonce);
+    if (BigInt(free || "0") === 0n && BigInt(reserved || "0") === 0n && BigInt(frozen || "0") === 0n) continue;
+    nativeBalances.push({ address, free, reserved, frozen, nonce, raw: human });
+  }
+
+  const assets = [];
+  const assetHolders = [];
+  const nftOwners = [];
+  const query = at.query;
+  let totalRows = nativeBalances.length;
+
+  if (query.assets?.asset?.entriesPaged && query.assets?.account?.entriesPaged) {
+    const assetEntries = await collectPagedEntries(query.assets.asset, [], SUBSTRATE_SNAPSHOT_MAX_ROWS);
+    for (const [key, details] of assetEntries) {
+      if (isOptionNone(details)) continue;
+      const assetId = keyText(key, 0);
+      if (assetId == null) continue;
+      const rawDetails = details.toJSON() || {};
+      let metadata = null;
+      try { metadata = await query.assets.metadata(assetId); } catch {}
+      const rawMetadata = metadata?.toJSON?.() || {};
+      const asset = {
+        assetId,
+        name: codecText(metadata?.name) || rawMetadata.name || null,
+        symbol: codecText(metadata?.symbol) || rawMetadata.symbol || null,
+        decimals: Number(rawMetadata.decimals ?? 0),
+        supply: codecRaw(details.supply ?? rawDetails.supply),
+        owner: cleanSubstrateAccount(codecText(details.owner) || rawDetails.owner),
+        raw: { details: rawDetails, metadata: rawMetadata }
+      };
+      assets.push(asset);
+      const holderEntries = await collectPagedEntries(query.assets.account, [assetId], Math.max(1, SUBSTRATE_SNAPSHOT_MAX_ROWS - totalRows));
+      for (const [holderKey, account] of holderEntries) {
+        if (isOptionNone(account)) continue;
+        const owner = cleanSubstrateAccount(keyText(holderKey, 1));
+        if (!owner) continue;
+        const rawAccount = account.toJSON() || {};
+        const balance = codecRaw(account.balance ?? rawAccount.balance);
+        if (BigInt(balance || "0") === 0n) continue;
+        assetHolders.push({ assetId, address: owner, balance, status: rawAccount.status ?? null, raw: rawAccount });
+      }
+      totalRows += holderEntries.length;
+      if (totalRows > SUBSTRATE_SNAPSHOT_MAX_ROWS) throw new Error("Asset/native snapshot exceeded the configured total row limit.");
+    }
+  }
+
+  for (const pallet of ["nfts", "uniques"]) {
+    const ownerEntries = query[pallet]?.account?.entriesPaged ? await collectPagedEntries(query[pallet].account) : [];
+    for (const [key, value] of ownerEntries) {
+      if (isOptionNone(value)) continue;
+      const owner = cleanSubstrateAccount(keyText(key, 0));
+      const collectionId = keyText(key, 1);
+      const itemId = keyText(key, 2);
+      if (!owner || collectionId == null || itemId == null) continue;
+      nftOwners.push({ pallet, collectionId, itemId, owner, raw: value.toJSON?.() ?? null });
+    }
+    totalRows += ownerEntries.length;
+    if (totalRows > SUBSTRATE_SNAPSHOT_MAX_ROWS) throw new Error("Asset/native/NFT snapshot exceeded the configured total row limit.");
+  }
+
+  return {
+    block, capturedAt, startedAt, nativeSymbol, nativeDecimals,
+    nativeBalances, assets, assetHolders, nftOwners
+  };
+}
+
+async function runSubstrateStateSnapshot(db, runtime) {
+  const api = await ensureSubstrateApi(runtime);
+  const finalizedHash = await api.rpc.chain.getFinalizedHead();
+  const finalizedHeader = await api.rpc.chain.getHeader(finalizedHash);
+  const blockValue = BigInt(finalizedHeader.number.toString());
+  if (blockValue > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error("Finalized snapshot height exceeds the safe integer range.");
+  const block = Number(blockValue);
+  const existing = db.prepare("SELECT status FROM state_snapshot_runs WHERE snapshot_block=?").get(block);
+  if (existing?.status === "complete") return getLatestStateSnapshot(db);
+  const startedAt = new Date().toISOString();
+  try {
+    const snapshot = await collectNativeStateSnapshot(api, block, startedAt);
+    persistStateSnapshot(db, snapshot);
+    runtime.substrateSnapshotError = null;
+    runtime.substrateSnapshotCompletedAt = snapshot.capturedAt;
+    return getLatestStateSnapshot(db);
+  } catch (error) {
+    recordStateSnapshotFailure(db, block, startedAt, error);
+    runtime.substrateSnapshotError = error?.message || String(error);
+    throw error;
+  }
+}
+
+async function runSubstrateStateSnapshots(db, runtime) {
+  while (!runtime.stopping) {
+    try {
+      await runSubstrateStateSnapshot(db, runtime);
+    } catch (error) {
+      runtime.substrateSnapshotError = error?.message || String(error);
+      console.error("Substrate state snapshot failed:", runtime.substrateSnapshotError);
+    }
+    await sleep(SUBSTRATE_SNAPSHOT_INTERVAL_MS);
+  }
+}
+
 function readSubstrateBlock(db, ref) {
   let block;
   if (/^(0|[1-9][0-9]*)$/.test(String(ref))) {
