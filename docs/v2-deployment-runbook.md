@@ -70,15 +70,26 @@ On the configured Gensyn2 host, `python3 scripts/prepare-live-v2-e2e.py` prepare
 The helper's normal invocation intentionally stops before broadcast. It writes private local artifacts under `/opt/verigate-portaldot-issuer/live-e2e/` with restrictive file permissions and updates only the local project's `VERIGATE_BASE_URL` after Verigate returns ALLOW. The successful live V2 transaction was broadcast only after a fresh ALLOW/signature, pre-broadcast re-simulation, a refreshed gas quote, and a fee-budget check, then checked by a separate read-only receipt verifier. Any future transfer requires a fresh authorization and explicit operator approval; do not replay old signed artifacts. This is a host-specific test harness, not a production deployment workflow.
 
 
-## Required live checks before calling V2 deployed
+## Live V2 evidence and remaining checks
 
-1. Independently query `eth_getTransactionReceipt` for the new deployment hash and confirm status `0x1` on chain ID 420420777.
-2. Query `eth_getCode` at the new address and confirm non-empty runtime code.
-3. Read back `admin()`, `authoritySigner()`, `maxPerTransfer()`, `windowLimit()`, `windowSeconds()`, and `allowedRecipients(initialRecipient)`.
-4. Execute a signed test transfer to the allowlisted recipient, which must be a different address from the relayer/sender.
-5. Confirm receipt status, matching `TransferExecuted` event, nonce consumption, and recipient balance delta. Record actual fee and amount side by side.
-6. Verify that a transfer above the per-transfer cap and a transfer that exceeds the window cap revert; confirm the reverted nonce remains unused.
-7. Only after the above succeeds should the dashboard be opened with `?guard=0x<deployed-v2-address>`. The dashboard is read-only and cannot deploy, authorize, sign, or execute.
-8. Confirm H160-to-SS58 mapping separately using a real runtime mapping entry. Do not infer it from an address conversion or a successful EVM transaction.
+### Confirmed on 2026-10-22
 
-If live RPC history is unavailable, report the limitation and preserve transaction evidence captured at the time. Never label a historical saved receipt as a current live lookup.
+- V2 runtime bytecode is present and the reported runtime code hash matches the expected hash.
+- Deployment/configuration readback previously passed; the verifier also confirmed current code and policy readbacks when the deployment receipt was no longer available through the RPC.
+- The 0.11 POT funding transaction was reported confirmed in block 148577.
+- A fresh Verigate `ALLOW` was followed by a V2 bridge signature and a real 0.1 POT transfer to the allowlisted recipient.
+- The separate read-only receipt check reported status `1`, block `149241`, a matching block hash, the correct guard address, and exactly one `TransferExecuted` event with the expected recipient and amount. The actual fee reported was 7.82782148139542551 POT.
+- Complete details and caveats are in `docs/evidence/portaldot-v2-live-transfer-2026-10-22.json`.
+
+These results came from the configured PortalDot RPC. The separate verifier is a separate query path, not independent authentication of the RPC operator. The recipient balance delta and post-transaction nonce state were not separately verified in the captured output. The old deployment transaction receipt later became unavailable through this RPC; do not redeploy just to recreate historical RPC access.
+
+### Still open before claiming broader policy-enforcement coverage
+
+1. Verify that a transfer above the per-transfer cap reverts.
+2. Verify that a transfer exceeding the rolling-window cap reverts.
+3. For those negative tests, confirm that a reverted operation does not consume its nonce. Prefer local tests or a dedicated test fixture first; live revert transactions may still consume a material testnet fee.
+4. Measure the recipient's balance delta with before/after reads if that proof is needed for the demo.
+5. Confirm H160-to-SS58 mapping separately using a real runtime mapping entry. Do not infer it from an address conversion or a successful EVM transaction.
+6. The dashboard can be opened with `?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6`; it is read-only and cannot deploy, authorize, sign, or execute.
+
+If live RPC history becomes unavailable, preserve transaction evidence captured at the time. Never label a saved receipt as a current live lookup.
