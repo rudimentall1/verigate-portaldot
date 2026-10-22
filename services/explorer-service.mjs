@@ -1258,20 +1258,31 @@ export async function createExplorerServer({ db, runtime = { lastRpcError: null,
 async function main() {
   const db = openExplorerDatabase(DB_PATH);
   saveKnownEvidence(db);
-  const runtime = { lastRpcError: null, lastHead: null, stopping: false };
+  const runtime = {
+    lastRpcError: null, lastHead: null, stopping: false,
+    substrateApi: null, substrateConnected: false, substrateGenesisHash: null,
+    substrateLatestFinalized: null, substrateError: null
+  };
   const { server } = await createExplorerServer({ db, runtime });
   server.listen(PORT, "0.0.0.0", () => {
     console.log("PortalDot Explorer API listening on 0.0.0.0:" + PORT);
-    console.log("RPC origin: " + RPC_ORIGIN);
+    console.log("EVM RPC origin: " + RPC_ORIGIN);
+    console.log("Substrate WS origin: " + new URL(SUBSTRATE_WS_URL).origin);
     console.log("SQLite database: " + DB_PATH);
-    console.log("Indexer: start block " + (START_BLOCK_ENV || ("latest - " + BACKFILL_BLOCKS)) + ", batch " + BATCH_BLOCKS + ", confirmations " + CONFIRMATIONS);
+    console.log("EVM indexer: start block " + (START_BLOCK_ENV || ("latest - " + BACKFILL_BLOCKS)) + ", batch " + BATCH_BLOCKS + ", confirmations " + CONFIRMATIONS);
+    console.log("Substrate indexer: start block " + (SUBSTRATE_START_BLOCK_ENV || ("finalized - " + SUBSTRATE_BACKFILL_BLOCKS)) + ", batch " + SUBSTRATE_BATCH_BLOCKS);
   });
   runIndexer(db, runtime).catch((error) => {
     runtime.lastRpcError = error.message || String(error);
-    console.error("Indexer stopped unexpectedly:", runtime.lastRpcError);
+    console.error("EVM indexer stopped unexpectedly:", runtime.lastRpcError);
+  });
+  runSubstrateIndexer(db, runtime).catch((error) => {
+    runtime.substrateError = error.message || String(error);
+    console.error("Substrate indexer stopped unexpectedly:", runtime.substrateError);
   });
   const shutdown = () => {
     runtime.stopping = true;
+    Promise.resolve(runtime.substrateApi?.disconnect()).catch(() => {});
     server.close(() => {
       try { db.close(); } catch {}
       process.exit(0);
