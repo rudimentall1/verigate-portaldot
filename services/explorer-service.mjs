@@ -653,7 +653,9 @@ async function readStaticFile(pathname) {
     "/explorer": resolve(ROOT, "web3-dapp/explorer/index.html"),
     "/explorer/": resolve(ROOT, "web3-dapp/explorer/index.html"),
     "/dashboard": resolve(ROOT, "web3-dapp/index.html"),
-    "/dashboard/": resolve(ROOT, "web3-dapp/index.html")
+    "/dashboard/": resolve(ROOT, "web3-dapp/index.html"),
+    "/dashboard/explorer": resolve(ROOT, "web3-dapp/explorer/index.html"),
+    "/dashboard/explorer/": resolve(ROOT, "web3-dapp/explorer/index.html")
   };
   const filePath = files[pathname];
   if (!filePath || !existsSync(filePath)) return null;
