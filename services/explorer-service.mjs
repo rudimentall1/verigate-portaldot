@@ -449,39 +449,66 @@ export async function persistSubstrateBlock(db, block) {
   });
 }
 
+async function withTimeout(promise, timeoutMs, message) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+        timer.unref?.();
+      })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function ensureSubstrateApi(runtime) {
   if (runtime.substrateApi && runtime.substrateConnected === true) return runtime.substrateApi;
-  runtime.substrateConnected = false;
-  let provider;
-  let api;
-  try {
-    provider = new WsProvider(SUBSTRATE_WS_URL);
-    api = await ApiPromise.create({ provider, noInitWarn: true });
-    await Promise.race([
-      api.isReady,
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Substrate RPC connection timed out.")), 20000))
-    ]);
-    const genesisHash = (await api.rpc.chain.getBlockHash(0)).toHex().toLowerCase();
-    if (EXPECTED_SUBSTRATE_GENESIS_HASH && genesisHash !== EXPECTED_SUBSTRATE_GENESIS_HASH) {
-      throw new Error("Substrate genesis hash mismatch. Refusing to index the unexpected chain.");
-    }
-    runtime.substrateApi = api;
-    runtime.substrateConnected = true;
-    runtime.substrateGenesisHash = genesisHash;
-    runtime.substrateError = null;
-    api.on("disconnected", () => {
-      runtime.substrateConnected = false;
-      runtime.substrateError = "Substrate WebSocket disconnected.";
-    });
-    api.on("error", (error) => {
-      runtime.substrateError = error?.message || "Substrate API error.";
-    });
-    return api;
-  } catch (error) {
+  if (runtime.substrateConnectPromise) return runtime.substrateConnectPromise;
+  const connectPromise = (async () => {
     runtime.substrateConnected = false;
-    runtime.substrateError = error?.message || String(error);
-    try { if (api) await api.disconnect(); else if (provider) await provider.disconnect(); } catch {}
-    throw error;
+    let provider;
+    let api;
+    try {
+      const wsUrl = new URL(SUBSTRATE_WS_URL);
+      if (!["wss:", "ws:"].includes(wsUrl.protocol)) throw new Error("Substrate RPC URL must use WebSocket.");
+      if (wsUrl.protocol === "ws:" && !["localhost", "127.0.0.1", "[::1]"].includes(wsUrl.hostname)) {
+        throw new Error("Remote Substrate endpoints must use WSS.");
+      }
+      if (wsUrl.username || wsUrl.password) throw new Error("Substrate RPC URL must not contain credentials.");
+      provider = new WsProvider(SUBSTRATE_WS_URL);
+      api = await ApiPromise.create({ provider, noInitWarn: true });
+      await withTimeout(api.isReady, 20000, "Substrate RPC connection timed out.");
+      const genesisHash = (await api.rpc.chain.getBlockHash(0)).toHex().toLowerCase();
+      if (EXPECTED_SUBSTRATE_GENESIS_HASH && genesisHash !== EXPECTED_SUBSTRATE_GENESIS_HASH) {
+        throw new Error("Substrate genesis hash mismatch. Refusing to index the unexpected chain.");
+      }
+      runtime.substrateApi = api;
+      runtime.substrateConnected = true;
+      runtime.substrateGenesisHash = genesisHash;
+      runtime.substrateError = null;
+      api.on("disconnected", () => {
+        runtime.substrateConnected = false;
+        runtime.substrateError = "Substrate WebSocket disconnected.";
+      });
+      api.on("error", (error) => {
+        runtime.substrateError = error?.message || "Substrate API error.";
+      });
+      return api;
+    } catch (error) {
+      runtime.substrateConnected = false;
+      runtime.substrateError = error?.message || String(error);
+      try { if (api) await api.disconnect(); else if (provider) await provider.disconnect(); } catch {}
+      throw error;
+    }
+  })();
+  runtime.substrateConnectPromise = connectPromise;
+  try {
+    return await connectPromise;
+  } finally {
+    if (runtime.substrateConnectPromise === connectPromise) runtime.substrateConnectPromise = null;
   }
 }
 
