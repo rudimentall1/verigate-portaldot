@@ -7,7 +7,7 @@ const os = require("node:os");
 const path = require("node:path");
 const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
-const { validateAuthorizationBinding, verifyLocally, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate, verifyGuardDeployment } = require("../adapter/verigate-bridge");
+const { validateAuthorizationBinding, verifyLocally, actionDigest, canonicalJson, signAuthorization, verifyWithVerigate, verifyGuardDeployment, resolveGuardDomainProfile } = require("../adapter/verigate-bridge");
 const TEST_GENESIS_HASH = "0x" + "ab".repeat(32);
 class TestWebSocket extends EventTarget {
   constructor(url) { super(); this.url=url; queueMicrotask(()=>this.dispatchEvent(new Event("open"))); }
@@ -17,6 +17,16 @@ class TestWebSocket extends EventTarget {
 globalThis.WebSocket=TestWebSocket;
 
 describe("Verigate bridge binding", function () {
+  it("selects the right EIP-712 domain profile without changing V1 defaults", function () {
+    expect(resolveGuardDomainProfile("v1")).to.deep.equal({
+      profile: "v1", name: "PortalDotAgentGuard", version: "1"
+    });
+    expect(resolveGuardDomainProfile("v2")).to.deep.equal({
+      profile: "v2", name: "PortalDotAgentGuardV2", version: "2"
+    });
+    expect(() => resolveGuardDomainProfile("v3")).to.throw(/must be either v1 or v2/);
+  });
+
   let recipient;
   let other;
   let issuerPrivateKey;
@@ -658,7 +668,8 @@ describe("Verigate bridge binding", function () {
       "BRIDGE_SIGNER_PRIVATE_KEY",
       "AUTHORITY_SIGNER_ADDRESS",
       "PORTALDOT_GUARD_ADDRESS",
-      "PORTALDOT_GUARD_CODE_HASH"
+      "PORTALDOT_GUARD_CODE_HASH",
+      "PORTALDOT_GUARD_PROFILE"
     ];
     const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
     const originalFetch = global.fetch;
@@ -702,6 +713,7 @@ describe("Verigate bridge binding", function () {
       process.env.AUTHORITY_SIGNER_ADDRESS = bridgeWallet.address;
       process.env.PORTALDOT_GUARD_ADDRESS = guardAddress;
       process.env.PORTALDOT_GUARD_CODE_HASH = ethers.keccak256(await ethers.provider.getCode(guardAddress));
+      process.env.PORTALDOT_GUARD_PROFILE = "v1";
       // The suite's before hook writes this temporary issuer public key.
       process.env.VERIGATE_PUBLIC_KEY_FILE = publicKeyFile;
       global.fetch = async (url, options) => {
@@ -723,6 +735,116 @@ describe("Verigate bridge binding", function () {
       const amount = BigInt(transfer.amount);
       const recipientBefore = await ethers.provider.getBalance(transfer.recipient);
 
+      await expect(guard.connect(relayer).executeTransfer(
+        transfer.recipient,
+        amount,
+        nonce,
+        BigInt(transfer.deadline),
+        transfer.actionId,
+        signed.signature
+      )).to.emit(guard, "TransferExecuted")
+        .withArgs(transfer.actionId, transfer.recipient, amount, nonce);
+
+      expect(await ethers.provider.getBalance(transfer.recipient)).to.equal(recipientBefore + amount);
+      expect(await guard.usedNonces(nonce)).to.equal(true);
+    } finally {
+      global.fetch = originalFetch;
+      for (const key of envKeys) {
+        if (originalEnv[key] === undefined) delete process.env[key];
+        else process.env[key] = originalEnv[key];
+      }
+    }
+  });
+
+
+  it("executes an end-to-end Verigate ALLOW through V2 EIP-712 domain into PortalDotAgentGuardV2 on a local chain", async function () {
+    const envKeys = [
+      "PORTALDOT_CHAIN_ID",
+      "PORTALDOT_SUBSTRATE_GENESIS_HASH",
+      "PORTALDOT_RPC_URL",
+      "VERIGATE_BASE_URL",
+      "VERIGATE_API_KEY",
+      "VERIGATE_PUBLIC_KEY_FILE",
+      "VERIGATE_PUBLIC_KEY_SHA256",
+      "BRIDGE_SIGNER_PRIVATE_KEY",
+      "AUTHORITY_SIGNER_ADDRESS",
+      "PORTALDOT_GUARD_ADDRESS",
+      "PORTALDOT_GUARD_CODE_HASH",
+      "PORTALDOT_GUARD_PROFILE"
+    ];
+    const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+    const originalFetch = global.fetch;
+    let verifierCalls = 0;
+
+    try {
+      const signers = await ethers.getSigners();
+      const deployer = signers[0];
+      const admin = signers[3];
+      const relayer = signers[4];
+      const chainId = (await ethers.provider.getNetwork()).chainId;
+      const now = Math.floor(Date.now() / 1000);
+      const item = response(now);
+      const intent = item.decision_receipt.payload.intent;
+      const action = item.execution_authorization.payload.action;
+
+      intent.metadata.portaldot_v3.chain_id = Number(chainId);
+      action.metadata.portaldot_v3.chain_id = Number(chainId);
+      item.decision_receipt.signature = signPayload(item.decision_receipt.payload);
+      const executionPayload = item.execution_authorization.payload;
+      executionPayload.authorization_id = crypto
+        .createHash("sha256")
+        .update(item.decision_receipt.signature + String(executionPayload.nonce), "utf8")
+        .digest("hex");
+      executionPayload.action_sha256 = actionDigest(action);
+      item.execution_authorization.signature = signPayload(executionPayload);
+
+      const bridgeWallet = ethers.Wallet.createRandom();
+      const factory = await ethers.getContractFactory("PortalDotAgentGuardV2");
+      const guard = await factory.deploy(
+        admin.address,
+        bridgeWallet.address,
+        recipient.address,
+        ethers.parseEther("0.1"),
+        ethers.parseEther("0.5"),
+        3600
+      );
+      await guard.waitForDeployment();
+      const guardAddress = await guard.getAddress();
+      await deployer.sendTransaction({ to: guardAddress, value: ethers.parseEther("1") });
+
+      process.env.PORTALDOT_CHAIN_ID = chainId.toString();
+      process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH = TEST_GENESIS_HASH;
+      process.env.PORTALDOT_RPC_URL = "http://127.0.0.1:8545";
+      process.env.VERIGATE_BASE_URL = "https://verigate.example";
+      process.env.VERIGATE_API_KEY = "disposable-test-api-key";
+      process.env.BRIDGE_SIGNER_PRIVATE_KEY = bridgeWallet.privateKey;
+      process.env.AUTHORITY_SIGNER_ADDRESS = bridgeWallet.address;
+      process.env.PORTALDOT_GUARD_ADDRESS = guardAddress;
+      process.env.PORTALDOT_GUARD_CODE_HASH = ethers.keccak256(await ethers.provider.getCode(guardAddress));
+      process.env.PORTALDOT_GUARD_PROFILE = "v2";
+      process.env.VERIGATE_PUBLIC_KEY_FILE = publicKeyFile;
+      global.fetch = async (url, options) => {
+        verifierCalls += 1;
+        expect(String(url)).to.equal("https://verigate.example/v1/verify");
+        expect(options.method).to.equal("POST");
+        expect(options.redirect).to.equal("error");
+        return { ok: true, status: 200, json: async () => ({ valid: true }) };
+      };
+
+      const signed = await signAuthorization(item, { providerFactory: () => ethers.provider });
+      expect(signed.domain).to.include({
+        name: "PortalDotAgentGuardV2",
+        version: "2",
+        chainId,
+        verifyingContract: guardAddress
+      });
+      expect(signed.authoritySigner).to.equal(bridgeWallet.address);
+      expect(verifierCalls).to.equal(2);
+
+      const transfer = signed.transfer;
+      const nonce = BigInt(transfer.nonce);
+      const amount = BigInt(transfer.amount);
+      const recipientBefore = await ethers.provider.getBalance(transfer.recipient);
       await expect(guard.connect(relayer).executeTransfer(
         transfer.recipient,
         amount,
