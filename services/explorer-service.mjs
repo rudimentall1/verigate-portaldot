@@ -946,10 +946,104 @@ async function apiRoute(req, res, url, db, runtime) {
         service: "portal-dot-explorer", network: "PortalDot V3 EVM testnet", rpcOrigin: RPC_ORIGIN,
         expectedChainId: EXPECTED_CHAIN_ID.toString(),
         chainMatches: live.chainId != null && live.chainId === EXPECTED_CHAIN_ID.toString(),
-        live, indexer: getIndexerStatus(db), knownEvidence: KNOWN_EVIDENCE
+        live,
+        indexer: getIndexerStatus(db),
+        substrate: getSubstrateIndexerStatus(db, runtime),
+        knownEvidence: KNOWN_EVIDENCE
       }, origin);
     }
     if (path === "/api/known-evidence") return jsonResponse(res, 200, KNOWN_EVIDENCE, origin);
+    if (path === "/api/substrate/status") {
+      return jsonResponse(res, 200, getSubstrateIndexerStatus(db, runtime), origin);
+    }
+    if (path === "/api/substrate/blocks") {
+      const limit = boundedLimit(url.searchParams.get("limit"), 30);
+      const rows = db.prepare(
+        "SELECT block_number,block_hash,parent_hash,state_root,extrinsics_root,timestamp_ms,extrinsic_count,event_count,raw_json,indexed_at FROM substrate_blocks ORDER BY block_number DESC LIMIT ?"
+      ).all(limit);
+      return jsonResponse(res, 200, {
+        source: "substrate_indexer",
+        indexedThrough: getSubstrateIndexerStatus(db, runtime).indexedThrough,
+        items: rows.map((row) => ({
+          blockNumber: row.block_number, blockHash: row.block_hash, parentHash: row.parent_hash,
+          stateRoot: row.state_root, extrinsicsRoot: row.extrinsics_root, timestampMs: row.timestamp_ms,
+          extrinsicCount: row.extrinsic_count, eventCount: row.event_count,
+          block: JSON.parse(row.raw_json), indexedAt: row.indexed_at
+        }))
+      }, origin);
+    }
+    if (path === "/api/substrate/extrinsics") {
+      const limit = boundedLimit(url.searchParams.get("limit"), 30);
+      const section = url.searchParams.get("section");
+      const method = url.searchParams.get("method");
+      const signer = url.searchParams.get("signer");
+      if (signer && !cleanSubstrateAccount(signer)) return jsonResponse(res, 400, { error: "signer must be an SS58 address." }, origin);
+      let sql = "SELECT block_number,extrinsic_index,extrinsic_hash,section,method,signer,raw_json FROM substrate_extrinsics WHERE 1=1";
+      const args = [];
+      if (section) { sql += " AND section=?"; args.push(section.slice(0,100)); }
+      if (method) { sql += " AND method=?"; args.push(method.slice(0,100)); }
+      if (signer) { sql += " AND signer=?"; args.push(signer); }
+      sql += " ORDER BY block_number DESC,extrinsic_index DESC LIMIT ?";
+      args.push(limit);
+      return jsonResponse(res, 200, {
+        source: "substrate_indexer",
+        items: db.prepare(sql).all(...args).map((row) => ({
+          blockNumber: row.block_number, extrinsicIndex: row.extrinsic_index, hash: row.extrinsic_hash,
+          section: row.section, method: row.method, signer: row.signer, extrinsic: JSON.parse(row.raw_json)
+        }))
+      }, origin);
+    }
+    if (path === "/api/substrate/events") {
+      const limit = boundedLimit(url.searchParams.get("limit"), 50);
+      const cursor = Number(readState(db, "substrate_cursor") || 0);
+      const started = Number(readState(db, "substrate_started_from") || 0);
+      const fromBlock = queryInteger(url, "fromBlock", Math.max(started, cursor - 1000), Number.MAX_SAFE_INTEGER);
+      const toBlock = queryInteger(url, "toBlock", cursor, Number.MAX_SAFE_INTEGER);
+      if (toBlock < fromBlock || toBlock - fromBlock > 10000) return jsonResponse(res, 400, { error: "Invalid Substrate event range; maximum range is 10000 blocks." }, origin);
+      const section = url.searchParams.get("section");
+      const method = url.searchParams.get("method");
+      const address = url.searchParams.get("address");
+      if (address && !cleanSubstrateAccount(address)) return jsonResponse(res, 400, { error: "address must be an SS58 address." }, origin);
+      let sql = "SELECT e.block_number,e.event_index,e.extrinsic_index,e.section,e.method,e.data_json,e.raw_json FROM substrate_events e WHERE e.block_number BETWEEN ? AND ?";
+      const args = [fromBlock, toBlock];
+      if (section) { sql += " AND e.section=?"; args.push(section.slice(0,100)); }
+      if (method) { sql += " AND e.method=?"; args.push(method.slice(0,100)); }
+      if (address) {
+        sql += " AND EXISTS (SELECT 1 FROM substrate_event_accounts a WHERE a.block_number=e.block_number AND a.event_index=e.event_index AND a.address=?)";
+        args.push(address);
+      }
+      sql += " ORDER BY e.block_number DESC,e.event_index DESC LIMIT ?";
+      args.push(limit);
+      return jsonResponse(res, 200, {
+        source: "substrate_indexer", indexedThrough: getSubstrateIndexerStatus(db, runtime).indexedThrough,
+        fromBlock, toBlock,
+        items: db.prepare(sql).all(...args).map((row) => ({
+          blockNumber: row.block_number, eventIndex: row.event_index, extrinsicIndex: row.extrinsic_index,
+          section: row.section, method: row.method, data: JSON.parse(row.data_json), event: JSON.parse(row.raw_json)
+        }))
+      }, origin);
+    }
+    if (path.startsWith("/api/substrate/block/")) {
+      const ref = decodeURIComponent(path.slice("/api/substrate/block/".length));
+      if (!/^(0|[1-9][0-9]*)$/.test(ref) && !normaliseHash(ref)) return jsonResponse(res, 400, { error: "Block reference must be a decimal number or 32-byte hash." }, origin);
+      const block = readSubstrateBlock(db, ref);
+      return jsonResponse(res, 200, block || {
+        source: "not_found",
+        note: "This Substrate block is not in the indexed range or its history could not be read.",
+        indexer: getSubstrateIndexerStatus(db, runtime)
+      }, origin);
+    }
+    if (path.startsWith("/api/substrate/extrinsic/")) {
+      const hash = decodeURIComponent(path.slice("/api/substrate/extrinsic/".length));
+      if (!normaliseHash(hash)) return jsonResponse(res, 400, { error: "Extrinsic hash must be 32 bytes." }, origin);
+      return jsonResponse(res, 200, readSubstrateExtrinsic(db, hash) || { source: "not_found" }, origin);
+    }
+    if (path.startsWith("/api/substrate/address/")) {
+      const address = decodeURIComponent(path.slice("/api/substrate/address/".length));
+      if (!cleanSubstrateAccount(address)) return jsonResponse(res, 400, { error: "Address must be an SS58 address." }, origin);
+      try { return jsonResponse(res, 200, await resolveSubstrateAddress(db, runtime, address), origin); }
+      catch (error) { return jsonResponse(res, 502, { error: error.message || "Substrate RPC error." }, origin); }
+    }
     if (path === "/api/search") {
       const q = (url.searchParams.get("q") || "").trim();
       if (!q || q.length > 256) return jsonResponse(res, 400, { error: "Supply q (max 256 characters)." }, origin);
