@@ -394,7 +394,18 @@ function renderApiResult(data) {
       ['Signed extrinsics indexed',esc(data.indexedExtrinsicsCount ?? 0)],
       ['Indexed through',esc(data.coverage?.indexedThrough ?? 'Not complete')],
       ['Coverage',esc(data.coverage?.note || 'Current state is live; history depends on indexed range.')]
-    ]) + '<h3>Recent extrinsics</h3>' + (data.recentExtrinsics?.length ? data.recentExtrinsics.map(item =>
+    ]) + (data.stateSnapshot ? '<h3>Last complete state snapshot · block #' + esc(data.stateSnapshot.block) + '</h3>' + rows([
+      ['Snapshot captured',esc(data.stateSnapshot.capturedAt || '—')],
+      ['Native free balance',esc(formatUnitsExact(data.stateSnapshot.nativeBalance?.free ?? '0',data.stateSnapshot.nativeDecimals)) + ' ' + esc(data.stateSnapshot.nativeSymbol || 'native')],
+      ['Native reserved balance',esc(formatUnitsExact(data.stateSnapshot.nativeBalance?.reserved ?? '0',data.stateSnapshot.nativeDecimals)) + ' ' + esc(data.stateSnapshot.nativeSymbol || 'native')],
+      ['Assets held',esc(data.stateSnapshot.assetBalances?.length ?? 0)],
+      ['NFTs owned in snapshot',esc(data.stateSnapshot.ownedNfts?.length ?? 0)],
+      ['Snapshot coverage',esc(data.stateSnapshot.note || 'Finalized state snapshot')]
+    ]) + (data.stateSnapshot.assetBalances?.length ? '<h3>Asset holdings</h3>' + data.stateSnapshot.assetBalances.map(asset =>
+      '<div class="feed-item"><div class="feed-main"><strong>' + esc(formatUnitsExact(asset.balance,asset.decimals)) + ' ' + esc(asset.symbol || asset.name || ('Asset #' + asset.asset_id)) + '</strong></div><div class="feed-secondary">asset ' + esc(asset.asset_id) + ' · raw ' + esc(asset.balance) + '</div></div>'
+    ).join('') : '') + (data.stateSnapshot.ownedNfts?.length ? '<h3>Owned NFT items</h3>' + data.stateSnapshot.ownedNfts.map(item =>
+      '<div class="feed-item">' + esc(item.pallet + ' · collection ' + item.collectionId + ' · item ' + item.itemId) + '</div>'
+    ).join('') : '') : '<p class="muted">No complete finalized-state snapshot is available yet.</p>') + '<h3>Recent extrinsics</h3>' + (data.recentExtrinsics?.length ? data.recentExtrinsics.map(item =>
       '<div class="feed-item"><div class="feed-main"><span class="mono">' + esc(short(item.hash)) + '</span><button data-query="' + esc(item.hash) + '">Open</button></div><div class="feed-secondary">#' + esc(item.blockNumber) + ' · ' + esc(item.section + '.' + item.method) + '</div></div>'
     ).join('') : '<div class="muted">No signer extrinsics from this address were found in indexed history.</div>');
     renderSubstrateEvents(data.recentEvents || [],'Address event history');
