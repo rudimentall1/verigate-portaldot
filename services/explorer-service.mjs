@@ -1076,7 +1076,7 @@ export function decodeContractLogsForSlug(db, slug, startBlock, endBlock) {
     const currentFrom = db.prepare("SELECT indexed_from_block FROM registered_contracts WHERE slug=?").get(slug)?.indexed_from_block;
     db.prepare(
       "UPDATE registered_contracts SET event_count=?,last_decoded_block=?,indexed_from_block=COALESCE(indexed_from_block,?),decode_error=NULL WHERE slug=?"
-    ).run(count, last ?? null, first ?? (currentFrom ?? null), slug);
+    ).run(count, endBlock, first ?? (currentFrom ?? null), slug);
     db.exec("COMMIT");
     return decoded;
   } catch (error) {
