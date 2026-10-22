@@ -72,6 +72,7 @@ const SUBSTRATE_ACCOUNT_RE = /^[1-9A-HJ-NP-Za-km-z]{46,50}$/;
 export function classifyLookup(input) {
   const value = String(input || "").trim();
   if (/^0x[0-9a-fA-F]{40}$/.test(value)) return { type: "address", value: value.toLowerCase() };
+  if (SUBSTRATE_ACCOUNT_RE.test(value)) return { type: "substrate_address", value };
   if (/^0x[0-9a-fA-F]{64}$/.test(value)) return { type: "hash", value: value.toLowerCase() };
   if (/^(0|[1-9][0-9]*)$/.test(value)) {
     const number = Number(value);
@@ -859,9 +860,10 @@ function boundedLimit(value, fallback = 30, max = 100) {
   return Math.min(max, Math.max(1, Number(value)));
 }
 
-async function handleSearch(db, q) {
+async function handleSearch(db, q, runtime) {
   const parsed = classifyLookup(q);
   if (parsed.type === "address") return resolveAddress(db, parsed.value);
+  if (parsed.type === "substrate_address") return resolveSubstrateAddress(db, runtime, parsed.value);
   if (parsed.type === "block_number") return resolveBlock(db, String(parsed.value));
   if (parsed.type === "hash") {
     const tx = await resolveTransaction(db, parsed.value);
@@ -951,7 +953,7 @@ async function apiRoute(req, res, url, db, runtime) {
     if (path === "/api/search") {
       const q = (url.searchParams.get("q") || "").trim();
       if (!q || q.length > 256) return jsonResponse(res, 400, { error: "Supply q (max 256 characters)." }, origin);
-      return jsonResponse(res, 200, await handleSearch(db, q), origin);
+      return jsonResponse(res, 200, await handleSearch(db, q, runtime), origin);
     }
     if (path.startsWith("/api/tx/")) {
       const hash = normaliseHash(decodeURIComponent(path.slice("/api/tx/".length)));
@@ -1059,7 +1061,7 @@ async function indexRange(db, startBlock, endBlock, advanceCursor = true) {
 }
 
 async function retryOneGap(db) {
-  const gap = db.prepare("SELECT component,start_block,end_block FROM indexer_gaps ORDER BY updated_at ASC LIMIT 1").get();
+  const gap = db.prepare("SELECT component,start_block,end_block FROM indexer_gaps WHERE component IN ('blocks','logs') ORDER BY updated_at ASC LIMIT 1").get();
   if (!gap) return;
   const from = gap.start_block;
   const to = gap.end_block;
