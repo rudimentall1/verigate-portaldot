@@ -123,7 +123,7 @@ Current scope is deliberately specific: native-token transfers through one EVM g
 
 - [Architecture and trust boundaries](docs/architecture.md)
 - [Network settings and units](docs/portaldot-v3-network.md)
-- [Funding and account-mapping investigation, including the unresolved SubWallet/Pindex/explorer discrepancy](docs/funding-and-account-mapping.md)
+- [Funding and account-mapping investigation, including the confirmed SubWallet/Pindex/explorer address-association discrepancy](docs/funding-and-account-mapping.md)
 - [Deployment evidence](docs/deployment-evidence-2026-10-20.md)
 - [0.1 EVM POT transfer evidence](docs/authorized-transfer-evidence-2026-10-21-nondust.md)
 - [One-base-unit transfer evidence](docs/authorized-transfer-evidence-2026-10-21.md)
