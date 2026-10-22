@@ -57,7 +57,7 @@ jobs:
           echo "=== API health ==="
           jq . /tmp/health.json
           echo "=== EVM RPC and indexer status ==="
-          jq '{connected: .live.connected, chainId: .live.chainId, chainMatches: .chainMatches, latestBlock: .live.latestBlock, indexer: {indexedThrough: .indexer.indexedThrough, startedFrom: .indexer.startedFrom, blocksStored: .indexer.blocksStored, transactionsStored: .indexer.transactionsStored, logsStored: .indexer.logsStored, gapCount: .indexer.gapCount, lastBatchAt: .indexer.lastBatchAt}, error: .live.error}' /tmp/evm.json
+          jq '{connected: .live.connected, chainId: .live.chainId, chainMatches: .chainMatches, latestBlock: .live.latestBlock, indexer: {indexedThrough: .indexer.indexedThrough, startedFrom: .indexer.startedFrom, blocksStored: .indexer.blocksStored, transactionsStored: .indexer.transactionsStored, logsStored: .indexer.logsStored, gapCount: .indexer.gapCount, lastBatchAt: .indexer.lastBatchAt, firstGaps: (.indexer.gaps[0:3] // [])}, error: .live.error}' /tmp/evm.json
           echo "=== Substrate RPC and indexer status ==="
           jq '{connected, expectedGenesisHash, actualGenesisHash, latestFinalized, indexedThrough, processedThrough, startedFrom, blocksStored, extrinsicsStored, eventsStored, gapCount, lastBatchAt, error}' /tmp/substrate.json
 
