@@ -480,7 +480,7 @@ async function verifyGuardDeployment(options = {}) {
     fail("AUTHORITY_SIGNER_ADDRESS must be a non-zero EVM address before verifying the deployed guard.");
   }
   if (!/^0x[a-fA-F0-9]{64}$/.test(expectedCodeHash)) {
-    fail("The active guard code hash must be the independently verified 32-byte runtime-code hash.");
+    fail("PORTALDOT_GUARD_CODE_HASH (V1) or PORTALDOT_V2_GUARD_CODE_HASH (V2) must be the independently verified 32-byte runtime-code hash.");
   }
   const validatedSubstrateRpcUrl = validateSubstrateRpcUrl(substrateRpcUrl);
   const expectedSubstrateGenesisHash = parseExpectedSubstrateGenesisHash(expectedSubstrateGenesisHashValue);
