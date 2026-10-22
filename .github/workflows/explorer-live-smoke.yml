@@ -8,6 +8,8 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/explorer-live-smoke.yml"
+      - "services/explorer-service.mjs"
+      - "render.yaml"
 
 permissions:
   contents: read
@@ -75,5 +77,26 @@ jobs:
 
           if [[ "$READY" != "true" ]]; then
             echo "::error::Explorer API did not reach a healthy EVM and Substrate RPC state within the retry window."
+            exit 1
+          fi
+
+          echo "=== Require actual EVM indexing progress ==="
+          INDEXED=false
+          for attempt in $(seq 1 8); do
+            curl --max-time 12 -fsS "$BASE/api/status" -o /tmp/evm.json
+            BLOCKS_STORED="$(jq -r '.indexer.blocksStored // 0' /tmp/evm.json)"
+            INDEXED_THROUGH="$(jq -r '.indexer.indexedThrough // empty' /tmp/evm.json)"
+            LATEST_BLOCK="$(jq -r '.live.latestBlock // 0' /tmp/evm.json)"
+            if [[ "$BLOCKS_STORED" =~ ^[0-9]+$ && "$INDEXED_THROUGH" =~ ^[0-9]+$ && "$LATEST_BLOCK" =~ ^[0-9]+$ ]] &&
+               (( BLOCKS_STORED > 0 && LATEST_BLOCK - INDEXED_THROUGH <= 100 )); then
+              INDEXED=true
+              break
+            fi
+            echo "Waiting for EVM indexer progress (attempt $attempt/8): blocksStored=$BLOCKS_STORED indexedThrough=${INDEXED_THROUGH:-<null>} latestBlock=$LATEST_BLOCK"
+            sleep 5
+          done
+          jq '{latestBlock: .live.latestBlock, indexer: {startedFrom: .indexer.startedFrom, indexedThrough: .indexer.indexedThrough, blocksStored: .indexer.blocksStored, transactionsStored: .indexer.transactionsStored, logsStored: .indexer.logsStored, gapCount: .indexer.gapCount}}' /tmp/evm.json
+          if [[ "$INDEXED" != "true" ]]; then
+            echo "::error::EVM RPC is reachable, but the indexer is not storing a recent contiguous block range."
             exit 1
           fi
