@@ -66,8 +66,17 @@ function validateSignedAuthorization(artifact, options = {}) {
   if (!domain || typeof domain !== "object" || Array.isArray(domain)) {
     fail("Signed authorization is missing its EIP-712 domain.");
   }
-  if (domain.name !== "PortalDotAgentGuard" || domain.version !== "1") {
-    fail("Signed authorization uses an unexpected EIP-712 domain name or version.");
+  const guardProfile = String(options.guardProfile ?? "v1").trim().toLowerCase();
+  let expectedDomain;
+  if (guardProfile === "v1") {
+    expectedDomain = { name: "PortalDotAgentGuard", version: "1" };
+  } else if (guardProfile === "v2") {
+    expectedDomain = { name: "PortalDotAgentGuardV2", version: "2" };
+  } else {
+    fail("guardProfile must be either v1 or v2.");
+  }
+  if (domain.name !== expectedDomain.name || domain.version !== expectedDomain.version) {
+    fail(`Signed authorization EIP-712 domain does not match selected ${guardProfile.toUpperCase()} guard profile.`);
   }
   const domainChainId = parseCanonicalUint(
     typeof domain.chainId === "bigint" ? domain.chainId.toString() : domain.chainId,
@@ -130,8 +139,8 @@ function validateSignedAuthorization(artifact, options = {}) {
   }
 
   const typedDomain = {
-    name: "PortalDotAgentGuard",
-    version: "1",
+    name: expectedDomain.name,
+    version: expectedDomain.version,
     chainId: expectedChainId,
     verifyingContract: guardAddress
   };
