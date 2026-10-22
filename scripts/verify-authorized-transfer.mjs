@@ -12,10 +12,26 @@ if (typeof txHash !== "string" || !/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
   process.exit(2);
 }
 
+const guardProfile = String(process.env.PORTALDOT_GUARD_PROFILE || "v1").trim().toLowerCase();
+if (!["v1", "v2"].includes(guardProfile)) {
+  console.error("PORTALDOT_GUARD_PROFILE must be either v1 or v2");
+  process.exit(2);
+}
+const profileConfig = guardProfile === "v2"
+  ? {
+      guardAddress: process.env.PORTALDOT_V2_GUARD_ADDRESS,
+      contractName: "PortalDotAgentGuardV2",
+      codeHash: process.env.PORTALDOT_V2_GUARD_CODE_HASH
+    }
+  : {
+      guardAddress: process.env.PORTALDOT_GUARD_ADDRESS,
+      contractName: "PortalDotAgentGuard",
+      codeHash: process.env.PORTALDOT_GUARD_CODE_HASH
+    };
+
 const required = [
   "PORTALDOT_RPC_URL",
-  "PORTALDOT_CHAIN_ID",
-  "PORTALDOT_GUARD_ADDRESS"
+  "PORTALDOT_CHAIN_ID"
 ];
 for (const name of required) {
   if (!process.env[name]) {
@@ -25,7 +41,11 @@ for (const name of required) {
 }
 const rpcUrl = process.env.PORTALDOT_RPC_URL;
 const expectedChainId = BigInt(process.env.PORTALDOT_CHAIN_ID);
-const guardAddress = getAddress(process.env.PORTALDOT_GUARD_ADDRESS);
+if (!profileConfig.guardAddress) {
+  console.error(`Missing configured guard address for ${guardProfile.toUpperCase()} profile.`);
+  process.exit(2);
+}
+const guardAddress = getAddress(profileConfig.guardAddress);
 const provider = new JsonRpcProvider(rpcUrl);
 const eventInterface = new Interface([
   "event TransferExecuted(bytes32 indexed actionId,address indexed recipient,uint256 amount,uint256 nonce)"
@@ -47,7 +67,7 @@ try {
     throw new Error("Receipt transaction hash does not match the requested hash.");
   }
   if (tx.to === null || getAddress(tx.to) !== guardAddress) {
-    throw new Error(`Transaction recipient is not configured PortalDotAgentGuard (${guardAddress}).`);
+    throw new Error(`Transaction recipient is not configured ${profileConfig.contractName} (${guardAddress}).`);
   }
   if (receipt.status !== 1) {
     throw new Error(`Transaction receipt status is ${receipt.status}; expected success (1).`);
@@ -88,6 +108,9 @@ try {
     mode: "read-only",
     rpcOrigin: new URL(rpcUrl).origin,
     chainId: network.chainId.toString(),
+    guardProfile,
+    contractName: profileConfig.contractName,
+    guardAddress,
     transactionHash: receipt.hash,
     receiptStatus: receipt.status,
     blockNumber: receipt.blockNumber,
