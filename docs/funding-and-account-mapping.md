@@ -113,9 +113,26 @@ The estimator compiles the current contract, verifies `eth_chainId` and the pinn
 
 The earlier quote with the placeholder signer is still preliminary. Do not use it alone to decide to fund an account. Re-run the quote after verifying the account mapping, signer, optimized bytecode and runtime deposit constants.
 
-## Incident record: SubWallet, Pindex and explorer disagree (22 October 2026)
+## Incident record: one native account, different EVM address displays (22 October 2026)
 
-This is an unresolved address-mapping discrepancy, not evidence that any wallet UI is necessarily wrong. Do not explain it as “one Substrate account automatically has different EVM addresses for different dApps”; that explanation has not been established for PortalDot V3.
+### Confirmed findings
+
+The discrepancy itself is established by the recorded user-provided wallet/explorer results and the earlier read-only runtime query:
+
+- SubWallet displays the native SS58 account `5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB` together with EVM address `0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB`.
+- Pindex displays that same SS58 account together with `0xb82c4b7923080251c6cbb3bab79de1e56f901ce1`.
+- The earlier PortalDot V3 `Revive.OriginalAccount` read returned the same AccountId32 for the `0xb82c...` H160, while the query for `0x4c07...` returned `no_mapping_entry` at the time of that query.
+- The PortalDot explorer separately displayed `0x4c07...` with native account `5DnPnX...Q2sNEj`, and `0xb82c...` with `5CwFhh...gyrEPB`.
+
+Therefore, **it is a confirmed fact that SubWallet and PortalDot-facing lookup surfaces display different EVM associations for the same native SS58 account.** This is not a hypothetical discrepancy and should not be dismissed or re-investigated from scratch in routine project discussions.
+
+### Interpretation for the team
+
+The expert explanation supplied to the project identifies network-specific address derivation, derivation paths, and runtime account mapping as the relevant mechanisms to understand. In a multi-chain wallet, an address displayed alongside a native account can depend on the selected network and the wallet's account/derivation context. The project should explain this context to users and developers instead of assuming every displayed H160 is interchangeable with every other H160.
+
+The exact mechanism responsible for this PortalDot V3 instance should not be described more narrowly than the evidence supports: the source observations and runtime query establish the conflicting associations, but do not by themselves prove that both H160 values derive from the same private key, share signing authority, or have a common balance. Do not claim that chain ID alone changes a conventional Ethereum address; different H160 values require different key material, a different derivation/account-selection context, or a runtime-specific mapping mechanism.
+
+Operational conclusion: **the address-display discrepancy is proven; shared key control and balance equivalence are not.** Do not treat `0x4c07...D2CB` and `0xb82c...1ce1` as interchangeable. Do not change the configured deployer or send funds based only on a UI association.
 
 The project has the following observations:
 
@@ -138,4 +155,4 @@ The explorer results associate `0x4c07...D2CB` with `5DnPnX...Q2sNEj`, while Sub
 - The configured deployer key must be verified locally against the intended H160 with `npm run verify:deployer-address -- <expected-H160> --redact`. This proves the key-to-H160 relation only; it does not resolve the SS58 mapping discrepancy.
 - Record a new read-only `Revive.OriginalAccount` query with its finalized block fingerprint and independently ask PortalDot to explain the runtime/wallet mapping semantics before changing funding or deployment decisions. Never share seed phrases or private keys.
 
-Until PortalDot clarifies this discrepancy, describe it to the team as **unresolved mapping inconsistency across SubWallet, Pindex, and the explorer**, not as normal multi-address derivation.
+Describe it to the team as a **confirmed discrepancy in address associations shown by SubWallet, Pindex and the PortalDot explorer**. The discrepancy is established; the precise runtime/wallet mechanism and shared-key implications must remain separately qualified.
