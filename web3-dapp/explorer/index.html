@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07101c">
+<meta name="description" content="Independent read-only PortalDot V3 explorer with Verigate deployment evidence.">
+<title>PortalDot Explorer | Verigate</title>
+<style>
+:root{color-scheme:dark;--bg:#070c14;--panel:#0e1725;--panel2:#121f31;--line:#243348;--text:#eef5ff;--muted:#93a7bf;--cyan:#58d9ee;--green:#62e3aa;--amber:#ffc875;--red:#ff7d89}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 75% -12%,#153954 0,transparent 40%),var(--bg);color:var(--text);font:14px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}button,input{font:inherit}button{border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:#18263a;color:var(--text);font-weight:700;cursor:pointer}button:hover{border-color:#4ba9bc}button:disabled{opacity:.5;cursor:wait}
+.wrap{max-width:1180px;margin:auto;padding:0 22px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 0;border-bottom:1px solid var(--line)}.brand{font-weight:900;letter-spacing:.12em;color:var(--text)}.nav{display:flex;gap:20px;flex-wrap:wrap;color:var(--muted)}.pill{font-size:11px;letter-spacing:.09em;font-weight:800;color:var(--green);border:1px solid #275943;border-radius:999px;padding:6px 10px}
+.hero{padding:34px 0 22px}.eyebrow{font-size:11px;font-weight:850;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}h1{font-size:clamp(30px,4.6vw,48px);letter-spacing:-.045em;line-height:1.08;margin:10px 0 12px}.lead{max-width:820px;color:var(--muted);font-size:15px}.search{display:flex;gap:10px;margin:20px 0 10px;max-width:900px}.search input{flex:1;min-width:0;background:#080f1a;border:1px solid #30445d;border-radius:10px;padding:14px 15px;color:var(--text);outline:none}.search input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #58d9ee20}.search button{background:var(--cyan);color:#07101c;border-color:var(--cyan);padding-inline:21px}.presets{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 24px}.presets button{font-size:12px;color:#cfdeef;padding:7px 10px;background:#101b2b}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0 30px}.metric,.card{background:linear-gradient(135deg,#101a2a,#0c1421);border:1px solid var(--line);border-radius:14px;padding:17px}.metric .label,.label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}.metric strong{display:block;font-size:21px;margin:7px 0 2px;overflow-wrap:anywhere}.metric small{color:var(--muted)}
+h2{font-size:18px;margin:25px 0 12px;letter-spacing:-.02em}.card{min-width:0}.muted{color:var(--muted)}.status{padding:12px 14px;border-radius:9px;border:1px solid var(--line);background:#0b1420;color:#c3d5e8;overflow-wrap:anywhere}.status.good{color:var(--green);border-color:#28674b;background:#0b1a16}.status.warn{color:var(--amber);border-color:#66502a;background:#20190d}.status.bad{color:var(--red);border-color:#67313b;background:#201016}.rows{margin-top:14px}.row{display:grid;grid-template-columns:minmax(130px,190px) minmax(0,1fr);gap:14px;padding:11px 0;border-bottom:1px solid #1e2b3c}.row:last-child{border-bottom:0}.key{color:var(--muted)}.val{overflow-wrap:anywhere;word-break:break-word}.mono,code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;word-break:break-all}.copy{font-size:11px;padding:3px 7px;margin-left:7px}.tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:4px 8px;border:1px solid #36516e;border-radius:999px;color:#c4d9f0;white-space:nowrap}.headrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.headrow h3{font-size:16px;margin:0}.event{border:1px solid var(--line);border-radius:9px;margin-top:9px;overflow:hidden}.event summary{cursor:pointer;padding:11px;background:#101b2a;display:flex;gap:12px;justify-content:space-between}.event pre{padding:14px;overflow:auto;white-space:pre-wrap;color:#c7d6e8}.two{display:grid;grid-template-columns:1fr 1fr;gap:13px}.small{color:var(--muted);font-size:12px}.notice{margin:20px 0;padding:14px 16px;border-left:3px solid var(--amber);background:#1a160e;color:#d5c29e;border-radius:0 8px 8px 0}.footer{border-top:1px solid var(--line);margin-top:38px;padding:22px 0 32px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px}
+@media(max-width:700px){.wrap{padding:0 14px}.nav{gap:10px}.search{flex-direction:column}.metrics{grid-template-columns:1fr}.two{grid-template-columns:1fr}.row{grid-template-columns:1fr;gap:4px}.metric strong{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><a class="brand" href="../">PORTALDOT / VERIGATE</a><nav class="nav"><a href="#search">Search</a><a href="#evidence">Our deployment evidence</a><a href="https://github.com/rudimentall1/verigate-portaldot" target="_blank" rel="noopener noreferrer">Source ↗</a></nav><span class="pill">TESTNET · READ ONLY</span></header>
+<main>
+<section class="hero" id="search"><div class="eyebrow">Independent PortalDot V3 Explorer</div><h1>Search the chain. Verify the evidence.</h1><p class="lead">Look up an EVM transaction, block, or address using the PortalDot V3 RPC. Results from the live endpoint are kept separate from saved Verigate deployment records. This first version does not claim full historical indexing or address-wide transaction history.</p>
+<div class="search"><input id="query" spellcheck="false" autocomplete="off" aria-label="Transaction hash, block number, block hash, or EVM address" placeholder="Transaction hash, block number, block hash, or EVM address"><button id="searchBtn">Search</button></div>
+<div class="presets"><button data-query="0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c">Our deployment transaction</button><button data-query="0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c">Saved TransferExecuted</button><button data-query="0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b">V1 guard contract</button><button data-query="116872">Recorded deployment block</button><button data-query="132475">Recorded transfer block</button></div></section>
+<section class="metrics" aria-label="Live network status"><article class="metric"><div class="label">Network</div><strong>PortalDot V3</strong><small>Expected chain ID 420420777</small></article><article class="metric"><div class="label">RPC connection</div><strong id="rpcStatus">Checking…</strong><small id="rpcHint">Read-only request in progress</small></article><article class="metric"><div class="label">Latest EVM block</div><strong id="latestBlock">—</strong><small id="refreshed">Not refreshed yet</small></article></section>
+<h2>Lookup result</h2><section class="card" id="result"><div class="status">Connecting to the PortalDot V3 EVM RPC…</div></section>
+<h2>Logs for the resolved block</h2><section class="card" id="logs"><div class="muted">Block logs appear here when the RPC can return the requested block.</div></section>
+<h2 id="evidence">Saved Verigate evidence</h2><section class="two"><article class="card"><div class="headrow"><h3>PortalDotAgentGuard V1 deployment</h3><span class="tag">Historical record</span></div><div id="deployEvidence"></div></article><article class="card"><div class="headrow"><h3>TransferExecuted</h3><span class="tag">Historical record</span></div><div id="transferEvidence"></div></article></section>
+<div class="notice">Evidence boundary: a saved transaction record is not a fresh RPC confirmation. If the node has pruned a historical receipt, this Explorer says so instead of fabricating a successful live lookup. Full address history, native-account mapping, token-holder rankings, NFT ownership, and ABI event indexing require a separate indexer and database.</div>
+</main>
+<footer class="footer"><span>PortalDot Explorer · Independent implementation · Read-only testnet queries</span><span><a href="https://node-console.portaldot.dev/" target="_blank" rel="noopener noreferrer">PortalDot node console ↗</a> · <a href="https://github.com/rudimentall1/verigate-portaldot" target="_blank" rel="noopener noreferrer">Project source ↗</a></span></footer>
+</div>
+<script>
+'use strict';
+(() => {
+const RPC = 'https://test-evm-rpc-v3.portaldot.dev';
+const EXPECTED_CHAIN_ID = '0x190f1ca9';
+const DEPLOY_TX = '0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c';
+const TRANSFER_TX = '0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c';
+const GUARD = '0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b';
+const SAVED = {
+  [DEPLOY_TX.toLowerCase()]: {label:'PortalDotAgentGuard V1 deployment',block:'116872',contract:GUARD},
+  [TRANSFER_TX.toLowerCase()]: {label:'TransferExecuted',block:'132475',event:'TransferExecuted'}
+};
+const $ = selector => document.querySelector(selector);
+const esc = value => String(value ?? '—').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const short = value => value && value.length > 24 ? value.slice(0,10) + '…' + value.slice(-8) : value || '—';
+const raw = value => { try { return BigInt(value || '0x0').toString(); } catch { return String(value ?? '—'); } };
+const copyButton = value => '<button class="copy" data-copy="' + esc(value) + '">Copy</button>';
+const mono = value => '<span class="mono">' + esc(value) + '</span>';
+const rows = pairs => '<div class="rows">' + pairs.map(([key,value]) => '<div class="row"><div class="key">' + esc(key) + '</div><div class="val">' + value + '</div></div>').join('') + '</div>';
+const status = (type,message) => '<div class="status ' + esc(type || '') + '">' + esc(message) + '</div>';
+const rpc = async (method, params=[]) => {
+  const response = await fetch(RPC, {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method,params})});
+  if (!response.ok) throw new Error('HTTP ' + response.status);
+  const json = await response.json();
+  if (json.error) throw new Error(json.error.message || 'JSON-RPC error');
+  return json.result;
+};
+function renderRows(pairs, label='Live RPC') {
+  return '<div class="headrow"><h3>Lookup details</h3><span class="tag">' + esc(label) + '</span></div>' + rows(pairs);
+}
+function renderBlock(block, label='Live RPC') {
+  const number = BigInt(block.number).toString();
+  const txs = Array.isArray(block.transactions) ? block.transactions : [];
+  const txList = txs.length ? txs.slice(0,80).map(tx => {
+    const hash = typeof tx === 'string' ? tx : tx.hash;
+    return '<div class="row"><div class="key">Transaction</div><div class="val">' + mono(short(hash)) + ' ' + copyButton(hash) + '</div></div>';
+  }).join('') : '<div class="muted">The RPC returned no transaction objects for this block query.</div>';
+  $('#result').innerHTML = '<div class="headrow"><h3>Block #' + esc(number) + '</h3><span class="tag">' + esc(label) + '</span></div>' + rows([
+    ['Block number',esc(number)],
+    ['Block hash',mono(block.hash) + ' ' + copyButton(block.hash)],
+    ['Parent hash',mono(block.parentHash) + ' ' + copyButton(block.parentHash)],
+    ['Timestamp',esc(block.timestamp ? new Date(Number(BigInt(block.timestamp))*1000).toISOString() : '—')],
+    ['Transactions',esc(txs.length)]
+  ]) + (txs.length ? '<h3>Transactions (up to 80)</h3>' + txList : '');
+  loadLogs(block);
+}
+async function loadLogs(block) {
+  $('#logs').innerHTML = '<div class="status">Requesting EVM logs from the live RPC…</div>';
+  try {
+    const filter = block.hash ? {blockHash:block.hash} : {fromBlock:block.number,toBlock:block.number};
+    const logs = await rpc('eth_getLogs',[filter]);
+    if (!logs.length) { $('#logs').innerHTML = status('warn','The RPC returned no EVM logs for this block. This does not mean the block has no Substrate events.'); return; }
+    $('#logs').innerHTML = status('good',logs.length + ' EVM log(s) returned by the live RPC.') + logs.map((log,index) =>
+      '<details class="event"><summary><span>Log ' + (index+1) + ' · ' + esc(short(log.address)) + '</span><span class="mono">' + esc(short(log.transactionHash)) + '</span></summary><pre>' + esc(JSON.stringify(log,null,2)) + '</pre></details>'
+    ).join('');
+  } catch (error) {
+    $('#logs').innerHTML = status('warn','The RPC could not return EVM logs: ' + error.message);
+  }
+}
+async function search(queryText) {
+  const query = queryText.trim();
+  if (!query) return;
+  $('#query').value = query;
+  $('#searchBtn').disabled = true;
+  $('#result').innerHTML = status('','Querying PortalDot V3…');
+  $('#logs').innerHTML = '<div class="muted">Waiting for a resolved transaction or block.</div>';
+  try {
+    const isHash = /^0x[0-9a-fA-F]{64}$/.test(query);
+    const isAddress = /^0x[0-9a-fA-F]{40}$/.test(query);
+    const isNumber = /^\d+$/.test(query);
+    if (isHash) {
+      let transaction = null;
+      let receipt = null;
+      let transactionError = '';
+      try {
+        transaction = await rpc('eth_getTransactionByHash',[query]);
+        if (transaction) {
+          try { receipt = await rpc('eth_getTransactionReceipt',[query]); } catch (error) { transactionError = error.message; }
+        }
+      } catch (error) { transactionError = error.message; }
+      if (transaction) {
+        const blockNumber = receipt?.blockNumber || transaction.blockNumber;
+        const blockHash = receipt?.blockHash || transaction.blockHash;
+        const receiptStatus = receipt ? (receipt.status === '0x1' ? status('good','0x1 · successful receipt') : receipt.status === '0x0' ? status('bad','0x0 · reverted') : status('warn',receipt.status || 'Receipt returned without status')) : status('warn','Transaction found, but its receipt is unavailable.');
+        $('#result').innerHTML = '<div class="headrow"><h3>Transaction</h3><span class="tag">Live RPC response</span></div>' + rows([
+          ['Transaction hash',mono(transaction.hash) + ' ' + copyButton(transaction.hash)],
+          ['Receipt status',receiptStatus],
+          ['Block number',blockNumber ? esc(BigInt(blockNumber).toString()) : 'Pending / not supplied'],
+          ['Block hash',blockHash ? mono(blockHash) + ' ' + copyButton(blockHash) : '—'],
+          ['From',mono(transaction.from) + ' ' + copyButton(transaction.from)],
+          ['To',transaction.to ? mono(transaction.to) + ' ' + copyButton(transaction.to) : 'Contract creation'],
+          ['Value (raw EVM units)',esc(raw(transaction.value))],
+          ['Gas limit',esc(raw(transaction.gas))],
+          ['Gas used',receipt?.gasUsed ? esc(raw(receipt.gasUsed)) : '—'],
+          ['Effective gas price',receipt?.effectiveGasPrice ? esc(raw(receipt.effectiveGasPrice)) : 'Not supplied'],
+          ['Input bytes',esc(transaction.input ? Math.max(0,(transaction.input.length-2)/2) : 0)],
+          ['Receipt note',esc(transactionError || (receipt ? 'Receipt returned by the current RPC.' : 'Current RPC did not return a receipt.'))]
+        ]);
+        if (blockNumber) {
+          let block = null;
+          try { block = await rpc('eth_getBlockByNumber',[blockNumber,false]); } catch {}
+          if (block) await loadLogs(block);
+          else if (blockHash) await loadLogs({hash:blockHash});
+        }
+        return;
+      }
+      let block = null;
+      try { block = await rpc('eth_getBlockByHash',[query,false]); } catch {}
+      if (block) { renderBlock(block); return; }
+      const saved = SAVED[query.toLowerCase()];
+      const details = [
+        ['Searched hash',mono(query) + ' ' + copyButton(query)],
+        ['Current RPC',esc(transactionError || 'No transaction or block was returned for this hash.')],
+        ['Interpretation','The current endpoint did not confirm the transaction. A null response does not prove it never existed.']
+      ];
+      if (saved) details.push(['Saved project record',esc(saved.label)],['Recorded block',esc(saved.block)]);
+      $('#result').innerHTML = '<div class="headrow"><h3>Hash lookup was not resolved</h3><span class="tag">No live confirmation</span></div>' + status('warn','The current RPC returned no transaction or block for this hash.') + rows(details);
+      if (saved) $('#result').innerHTML += status('warn','Saved historical evidence is shown separately below; it is not a fresh receipt confirmation.');
+      $('#logs').innerHTML = '<div class="muted">No live block was resolved, so no block logs were requested.</div>';
+      return;
+    }
+    if (isNumber) {
+      const hexNumber = '0x' + BigInt(query).toString(16);
+      const block = await rpc('eth_getBlockByNumber',[hexNumber,true]);
+      if (!block) { $('#result').innerHTML = status('warn','The current RPC did not return block ' + query + '. Historical availability is inconclusive.'); return; }
+      renderBlock(block);
+      return;
+    }
+    if (isAddress) {
+      const [code,balance,nonce] = await Promise.all([rpc('eth_getCode',[query,'latest']),rpc('eth_getBalance',[query,'latest']),rpc('eth_getTransactionCount',[query,'latest'])]);
+      const hasCode = code && code !== '0x' && code !== '0x0';
+      $('#result').innerHTML = '<div class="headrow"><h3>' + (hasCode ? 'Contract address' : 'EVM account') + '</h3><span class="tag">Live RPC response</span></div>' + rows([
+        ['Address',mono(query) + ' ' + copyButton(query)],
+        ['Current balance (raw EVM units)',esc(raw(balance))],
+        ['Transaction count / nonce',esc(raw(nonce))],
+        ['Runtime code',hasCode ? 'Present' : 'No code at latest block'],
+        ['Runtime code size',hasCode ? esc(Math.max(0,(code.length-2)/2) + ' bytes') : '0 bytes'],
+        ['RPC boundary','Current balance and code only; address-wide transaction history requires an indexer.']
+      ]);
+      $('#logs').innerHTML = '<div class="muted">Search a transaction or block to view its EVM logs.</div>';
+      return;
+    }
+    $('#result').innerHTML = status('warn','Enter a 32-byte transaction/block hash, a decimal block number, or a 20-byte EVM address (0x…).');
+  } catch (error) {
+    $('#result').innerHTML = status('bad','RPC request failed: ' + error.message + '. Check the endpoint, network access, or browser CORS policy.');
+    $('#logs').innerHTML = '<div class="muted">No logs loaded because the lookup failed.</div>';
+  } finally {
+    $('#searchBtn').disabled = false;
+  }
+}
+async function init() {
+  try {
+    const [chainId,head] = await Promise.all([rpc('eth_chainId'),rpc('eth_blockNumber')]);
+    const expected = chainId.toLowerCase() === EXPECTED_CHAIN_ID;
+    $('#rpcStatus').textContent = expected ? 'Connected' : 'Wrong chain';
+    $('#rpcStatus').style.color = expected ? 'var(--green)' : 'var(--amber)';
+    $('#rpcHint').textContent = 'Chain ID ' + BigInt(chainId).toString() + (expected ? ' matches the expected testnet.' : ' does not match expected 420420777.');
+    $('#latestBlock').textContent = BigInt(head).toLocaleString('en-US');
+    $('#refreshed').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch (error) {
+    $('#rpcStatus').textContent = 'Unavailable';
+    $('#rpcStatus').style.color = 'var(--amber)';
+    $('#rpcHint').textContent = error.message;
+    $('#latestBlock').textContent = '—';
+  }
+  const deployPairs = [
+    ['Transaction',mono(DEPLOY_TX) + ' ' + copyButton(DEPLOY_TX)],
+    ['Recorded block','116872'],
+    ['Contract',mono(GUARD) + ' ' + copyButton(GUARD)],
+    ['Evidence class','Saved project record; historical RPC response may be pruned']
+  ];
+  $('#deployEvidence').innerHTML = rows(deployPairs);
+  const transferPairs = [
+    ['Transaction',mono(TRANSFER_TX) + ' ' + copyButton(TRANSFER_TX)],
+    ['Recorded block','132475'],
+    ['Event','TransferExecuted'],
+    ['Recorded receipt','Previously recorded status 0x1; not a live re-confirmation']
+  ];
+  $('#transferEvidence').innerHTML = rows(transferPairs);
+}
+$('#searchBtn').addEventListener('click',()=>search($('#query').value));
+$('#query').addEventListener('keydown',event=>{if(event.key==='Enter')search($('#query').value);});
+document.querySelectorAll('[data-query]').forEach(button=>button.addEventListener('click',()=>search(button.dataset.query)));
+document.addEventListener('click',async event=>{
+  const button = event.target.closest('[data-copy]');
+  if (!button) return;
+  try { await navigator.clipboard.writeText(button.dataset.copy); button.textContent='Copied'; setTimeout(()=>button.textContent='Copy',1100); }
+  catch { button.textContent='Copy manually'; }
+});
+init();
+const initialQuery = new URLSearchParams(location.search).get('q') || DEPLOY_TX;
+$('#query').value = initialQuery;
+search(initialQuery);
+})();
+</script>
+</body>
+</html>
