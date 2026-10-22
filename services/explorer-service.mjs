@@ -487,67 +487,78 @@ async function ensureSubstrateApi(runtime) {
 
 async function indexSubstrateRange(db, runtime, startBlock, endBlock, advanceCursor = true) {
   const api = await ensureSubstrateApi(runtime);
-  const blocks = [];
+  const numbers = [];
+  for (let n = startBlock; n <= endBlock; n++) {
+    if (runtime.stopping) break;
+    numbers.push(n);
+  }
   const blockErrors = [];
   const eventErrors = [];
-  for (let number = startBlock; number <= endBlock; number++) {
-    if (runtime.stopping) break;
-    let hash;
-    let block;
+  const blocks = [];
+  const hashes = await Promise.all(numbers.map(async (number) => {
     try {
-      hash = await api.rpc.chain.getBlockHash(number);
+      const hash = await api.rpc.chain.getBlockHash(number);
       if (!hash || hash.isEmpty) throw new Error("The node returned no block hash.");
-      const signedBlock = await api.rpc.chain.getBlock(hash);
-      block = signedBlock.block;
+      return { number, hash };
     } catch (error) {
       blockErrors.push({ block: number, error: error?.message || String(error) });
-      continue;
+      return null;
     }
+  }));
+  const signedBlocks = await Promise.all(hashes.map(async (item) => {
+    if (!item) return null;
+    try {
+      const result = await api.rpc.chain.getBlock(item.hash);
+      return { ...item, block: result.block };
+    } catch (error) {
+      blockErrors.push({ block: item.number, error: error?.message || String(error) });
+      return null;
+    }
+  }));
+  const hydrated = await Promise.all(signedBlocks.map(async (item) => {
+    if (!item) return null;
+    const { number, hash, block } = item;
     const extrinsics = (block.extrinsics || []).map((extrinsic, index) => parseSubstrateExtrinsic(extrinsic, index));
     let events = [];
     let eventsComplete = true;
     let eventsError = null;
-    try {
-      const records = await api.query.system.events.at(hash);
-      events = records.map((record, index) => parseSubstrateEvent(record, index));
-    } catch (error) {
-      eventsComplete = false;
-      eventsError = error?.message || String(error);
-      eventErrors.push({ block: number, error: eventsError });
-    }
     let timestampMs = null;
-    try {
-      const timestamp = await api.query.timestamp.now.at(hash);
-      const numeric = BigInt(timestamp.toString());
-      if (numeric >= 0n && numeric <= BigInt(Number.MAX_SAFE_INTEGER)) timestampMs = Number(numeric);
-    } catch {
-      // Timestamp is optional metadata; a missing timestamp is not a block/event indexing gap.
-    }
+    const eventPromise = (async () => {
+      try {
+        const records = await api.query.system.events.at(hash);
+        events = records.map((record, index) => parseSubstrateEvent(record, index));
+      } catch (error) {
+        eventsComplete = false;
+        eventsError = error?.message || String(error);
+        eventErrors.push({ block: number, error: eventsError });
+      }
+    })();
+    const timestampPromise = (async () => {
+      try {
+        const timestamp = await api.query.timestamp.now.at(hash);
+        const numeric = BigInt(timestamp.toString());
+        if (numeric >= 0n && numeric <= BigInt(Number.MAX_SAFE_INTEGER)) timestampMs = Number(numeric);
+      } catch {
+        // Timestamp is optional metadata; a missing timestamp is not a block/event indexing gap.
+      }
+    })();
+    await Promise.all([eventPromise, timestampPromise]);
     const header = block.header;
-    blocks.push({
-      number,
-      hash: hash.toHex().toLowerCase(),
-      parentHash: header.parentHash?.toHex().toLowerCase() || null,
-      stateRoot: header.stateRoot?.toHex().toLowerCase() || null,
-      extrinsicsRoot: header.extrinsicsRoot?.toHex().toLowerCase() || null,
-      timestampMs,
-      extrinsics,
-      events,
-      eventsComplete,
-      eventsError,
+    const blockHash = hash.toHex().toLowerCase();
+    const parentHash = header.parentHash?.toHex().toLowerCase() || null;
+    const stateRoot = header.stateRoot?.toHex().toLowerCase() || null;
+    const extrinsicsRoot = header.extrinsicsRoot?.toHex().toLowerCase() || null;
+    return {
+      number, hash: blockHash, parentHash, stateRoot, extrinsicsRoot,
+      timestampMs, extrinsics, events, eventsComplete, eventsError,
       raw: {
-        number,
-        hash: hash.toHex().toLowerCase(),
-        parentHash: header.parentHash?.toHex().toLowerCase() || null,
-        stateRoot: header.stateRoot?.toHex().toLowerCase() || null,
-        extrinsicsRoot: header.extrinsicsRoot?.toHex().toLowerCase() || null,
-        timestampMs,
-        extrinsicCount: extrinsics.length,
-        eventCount: events.length,
+        number, hash: blockHash, parentHash, stateRoot, extrinsicsRoot, timestampMs,
+        extrinsicCount: extrinsics.length, eventCount: events.length,
         digest: header.digest?.toJSON?.() || null
       }
-    });
-  }
+    };
+  }));
+  for (const block of hydrated) if (block) blocks.push(block);
   persistSubstrateBatch(db, { blocks, blockErrors, eventErrors, startBlock, endBlock, advanceCursor });
   return { indexedBlocks: blocks.length, missingBlocks: blockErrors.length, eventGaps: eventErrors.length };
 }
