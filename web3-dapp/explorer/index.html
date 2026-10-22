@@ -182,6 +182,128 @@ async function loadSubstrateBlock(number) {
     $('#result').innerHTML = status('bad','Could not load the indexed Substrate block: ' + error.message);
   }
 }
+async function loadContractRegistry() {
+  const box = $('#contractRegistry');
+  if (!box) return false;
+  box.innerHTML = '<div class="muted">Loading registered contracts…</div>';
+  try {
+    const payload = await apiGet('/api/contracts');
+    const items = Array.isArray(payload.items) ? payload.items : [];
+    if (!items.length) {
+      box.innerHTML = '<div class="muted">No ABI registrations yet. Register a contract with its Solidity ABI.</div>';
+      return true;
+    }
+    box.innerHTML = items.map(item => {
+      const title = item.name || short(item.address);
+      const endpoint = getApiBase() + '/api/contracts/' + encodeURIComponent(item.slug) + '/events';
+      return '<div class="registry-card">' +
+        '<div class="feed-main"><strong>' + esc(title) + '</strong><button type="button" data-contract-events="' + esc(item.slug) + '">View events</button></div>' +
+        '<div class="feed-secondary">' + esc(item.address) + '</div>' +
+        '<div class="feed-secondary">slug: ' + esc(item.slug) + ' · from block ' + esc(item.indexed_from_block ?? 'pending') + ' · ' + esc(item.event_count || 0) + ' decoded events</div>' +
+        (item.decode_error ? '<div class="small" style="color:var(--amber)">Decode note: ' + esc(item.decode_error) + '</div>' : '') +
+        '<div class="small"><a href="' + esc(endpoint) + '" target="_blank" rel="noopener noreferrer">Open events API ↗</a></div>' +
+      '</div>';
+    }).join('');
+    return true;
+  } catch (error) {
+    box.innerHTML = '<div class="muted">Contract registry unavailable. Check that the persistent Explorer API is connected. ' + esc(error.message) + '</div>';
+    return false;
+  }
+}
+
+async function loadContractEvents(slug) {
+  $('#contractEventsTag').textContent = 'Loading…';
+  $('#contractEventsList').innerHTML = '<div class="muted">Loading decoded events…</div>';
+  try {
+    const result = await apiGet('/api/contracts/' + encodeURIComponent(slug) + '/events?limit=100');
+    $('#contractEventsTag').textContent = slug + ' · ' + (result.items?.length || 0) + ' shown';
+    if (!result.items?.length) {
+      $('#contractEventsList').innerHTML = '<div class="muted">No decoded events in the available index range. The contract may not have emitted logs in that range, or those blocks may not be indexed.</div>';
+      return;
+    }
+    $('#contractEventsList').innerHTML = result.items.map(item =>
+      '<div class="registry-card">' +
+        '<div class="feed-main"><strong>' + esc(item.event_name) + '</strong><button type="button" data-query="' + esc(item.transaction_hash) + '">Open tx</button></div>' +
+        '<div class="feed-secondary">Block #' + esc(item.block_number) + ' · log ' + esc(item.log_index) + ' · ' + esc(item.event_signature) + '</div>' +
+        '<pre class="result-pre">' + esc(JSON.stringify(item.args,null,2)) + '</pre>' +
+      '</div>'
+    ).join('');
+  } catch (error) {
+    $('#contractEventsTag').textContent = 'API error';
+    $('#contractEventsList').innerHTML = '<div class="muted">Could not load decoded events: ' + esc(error.message) + '</div>';
+  }
+}
+
+async function registerContractFromForm(event) {
+  event.preventDefault();
+  const button = $('#registerContractButton');
+  button.disabled = true;
+  $('#contractRegistrationResult').textContent = 'Validating ABI and registering contract…';
+  try {
+    const address = $('#contractAddress').value.trim();
+    const name = $('#contractName').value.trim();
+    let abi;
+    try { abi = JSON.parse($('#contractAbi').value); }
+    catch { throw new Error('ABI field is not valid JSON.'); }
+    const result = await apiRequest('/api/contracts', {
+      method: 'POST',
+      body: { address, name, abi }
+    });
+    $('#manageContractSlug').value = result.slug;
+    $('#manageContractToken').value = result.manage_token;
+    const eventsUrl = getApiBase() + result.events_url;
+    $('#contractRegistrationResult').innerHTML =
+      status('good','Contract registered: ' + result.slug) +
+      '<div class="small">Event URL: <a href="' + esc(eventsUrl) + '" target="_blank" rel="noopener noreferrer">' + esc(eventsUrl) + '</a></div>' +
+      '<div class="small">Manage token (shown once by the API response):</div>' +
+      '<div class="result-pre mono">' + esc(result.manage_token) + ' ' + copyButton(result.manage_token) + '</div>' +
+      '<div class="small">Save this token. The public contract registry does not expose it.</div>';
+    await Promise.all([loadContractRegistry(),loadContractEvents(result.slug)]);
+  } catch (error) {
+    $('#contractRegistrationResult').innerHTML = status('bad','Registration failed: ' + error.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function manageRegisteredContract(action) {
+  const slug = $('#manageContractSlug').value.trim();
+  const token = $('#manageContractToken').value.trim();
+  if (!/^[a-z0-9][a-z0-9-]{2,70}$/.test(slug)) {
+    $('#contractManageResult').innerHTML = status('warn','Enter a valid contract slug.');
+    return;
+  }
+  if (!/^[a-fA-F0-9]{64}$/.test(token)) {
+    $('#contractManageResult').innerHTML = status('warn','Enter the 64-character manage token returned when the contract was registered.');
+    return;
+  }
+  if (action === 'delete' && !window.confirm('Delete this ABI registration and its decoded event rows? This does not change or delete the on-chain contract or its logs.')) return;
+  const button = action === 'delete' ? $('#deleteContractButton') : $('#resyncContractButton');
+  button.disabled = true;
+  $('#contractManageResult').textContent = action === 'delete' ? 'Deleting ABI registration…' : 'Re-decoding stored logs…';
+  try {
+    const path = '/api/contracts/' + encodeURIComponent(slug) + (action === 'resync' ? '/resync' : '');
+    const result = await apiRequest(path,{method:action === 'delete' ? 'DELETE' : 'POST',token});
+    $('#contractManageResult').innerHTML = status('good',action === 'delete'
+      ? 'Registry entry deleted: ' + result.slug
+      : 'Re-decode complete. ' + result.event_count + ' decoded events currently stored.');
+    if (action === 'delete') {
+      $('#manageContractSlug').value = '';
+      $('#manageContractToken').value = '';
+      $('#contractEventsTag').textContent = 'Waiting for selection';
+      $('#contractEventsList').innerHTML = '<div class="muted">Select a registered contract to inspect decoded events.</div>';
+    } else {
+      $('#manageContractToken').value = token;
+      await loadContractEvents(slug);
+    }
+    await loadContractRegistry();
+  } catch (error) {
+    $('#contractManageResult').innerHTML = status('bad','Management request failed: ' + error.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function renderApiResult(data) {
   if (!data || typeof data !== 'object') return false;
   if (data.source === 'invalid') {
