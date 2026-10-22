@@ -441,12 +441,31 @@ function resolveGuardDomainProfile(value = process.env.PORTALDOT_GUARD_PROFILE |
   fail("PORTALDOT_GUARD_PROFILE must be either v1 or v2.");
 }
 
+function resolveActiveGuardConfig(profileValue = process.env.PORTALDOT_GUARD_PROFILE || "v1", overrides = {}) {
+  const profile = resolveGuardDomainProfile(profileValue);
+  const guardAddress = overrides.guardAddress ?? (
+    profile.profile === "v2"
+      ? process.env.PORTALDOT_V2_GUARD_ADDRESS || process.env.PORTALDOT_GUARD_ADDRESS
+      : process.env.PORTALDOT_GUARD_ADDRESS
+  );
+  const guardCodeHash = overrides.guardCodeHash ?? (
+    profile.profile === "v2"
+      ? process.env.PORTALDOT_V2_GUARD_CODE_HASH || process.env.PORTALDOT_GUARD_CODE_HASH
+      : process.env.PORTALDOT_GUARD_CODE_HASH
+  );
+  return { ...profile, guardAddress, guardCodeHash };
+}
+
 async function verifyGuardDeployment(options = {}) {
   const rpcUrl = String(options.rpcUrl ?? process.env.PORTALDOT_RPC_URL ?? "").trim();
   const chainIdText = String(options.expectedChainId ?? process.env.PORTALDOT_CHAIN_ID ?? "").trim();
-  const guardAddress = options.guardAddress ?? process.env.PORTALDOT_GUARD_ADDRESS;
+  const activeGuard = resolveActiveGuardConfig(options.guardProfile ?? process.env.PORTALDOT_GUARD_PROFILE, {
+    guardAddress: options.guardAddress,
+    guardCodeHash: options.guardCodeHash
+  });
+  const guardAddress = activeGuard.guardAddress;
   const authorityAddress = options.authoritySigner ?? process.env.AUTHORITY_SIGNER_ADDRESS;
-  const expectedCodeHash = String(options.guardCodeHash ?? process.env.PORTALDOT_GUARD_CODE_HASH ?? "").trim();
+  const expectedCodeHash = String(activeGuard.guardCodeHash ?? "").trim();
   const substrateRpcUrl = options.substrateRpcUrl ?? process.env.PORTALDOT_SUBSTRATE_RPC_URL;
   const expectedSubstrateGenesisHashValue = options.substrateGenesisHash ?? options.genesisHash ?? process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH;
 
@@ -455,13 +474,13 @@ async function verifyGuardDeployment(options = {}) {
     fail("PORTALDOT_CHAIN_ID must be a canonical positive decimal integer before verifying the deployed guard.");
   }
   if (!guardAddress || !ethers.isAddress(guardAddress) || ethers.getAddress(guardAddress) === ethers.ZeroAddress) {
-    fail("PORTALDOT_GUARD_ADDRESS must be a non-zero EVM address.");
+    fail("The active guard address must be a non-zero EVM address.");
   }
   if (!authorityAddress || !ethers.isAddress(authorityAddress) || ethers.getAddress(authorityAddress) === ethers.ZeroAddress) {
     fail("AUTHORITY_SIGNER_ADDRESS must be a non-zero EVM address before verifying the deployed guard.");
   }
   if (!/^0x[a-fA-F0-9]{64}$/.test(expectedCodeHash)) {
-    fail("PORTALDOT_GUARD_CODE_HASH must be the independently verified 32-byte runtime-code hash of PortalDotAgentGuard.");
+    fail("The active guard code hash must be the independently verified 32-byte runtime-code hash.");
   }
   const validatedSubstrateRpcUrl = validateSubstrateRpcUrl(substrateRpcUrl);
   const expectedSubstrateGenesisHash = parseExpectedSubstrateGenesisHash(expectedSubstrateGenesisHashValue);
@@ -548,8 +567,9 @@ async function signAuthorization(response, options = {}) {
   if (!process.env.AUTHORITY_SIGNER_ADDRESS || !ethers.isAddress(process.env.AUTHORITY_SIGNER_ADDRESS)) {
     fail("AUTHORITY_SIGNER_ADDRESS must match the signer configured in the deployed contract.");
   }
-  if (!process.env.PORTALDOT_GUARD_ADDRESS || !ethers.isAddress(process.env.PORTALDOT_GUARD_ADDRESS)) {
-    fail("PORTALDOT_GUARD_ADDRESS must be the confirmed live PortalDotAgentGuard address.");
+  const activeGuard = resolveActiveGuardConfig();
+  if (!activeGuard.guardAddress || !ethers.isAddress(activeGuard.guardAddress)) {
+    fail("The selected V1/V2 guard address must be configured and confirmed live.");
   }
 
   const wallet = new ethers.Wallet(process.env.BRIDGE_SIGNER_PRIVATE_KEY);
@@ -561,12 +581,11 @@ async function signAuthorization(response, options = {}) {
   // chain and verify that its on-chain immutable authority matches this signer.
   await verifyGuardDeployment({ providerFactory: options.providerFactory });
 
-  const guardDomainProfile = resolveGuardDomainProfile();
   const domain = {
-    name: guardDomainProfile.name,
-    version: guardDomainProfile.version,
+    name: activeGuard.name,
+    version: activeGuard.version,
     chainId: transfer.chainId,
-    verifyingContract: ethers.getAddress(process.env.PORTALDOT_GUARD_ADDRESS)
+    verifyingContract: ethers.getAddress(activeGuard.guardAddress)
   };
   const signature = await wallet.signTypedData(domain, TRANSFER_TYPES, {
     recipient: transfer.recipient,
@@ -613,4 +632,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { validateAuthorizationBinding, verifyLocally, verifyWithVerigate, verifyGuardDeployment, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers, resolveGuardDomainProfile };
+module.exports = { validateAuthorizationBinding, verifyLocally, verifyWithVerigate, verifyGuardDeployment, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers, resolveGuardDomainProfile, resolveActiveGuardConfig };
