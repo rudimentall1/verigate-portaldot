@@ -105,7 +105,7 @@ export function initializeDatabase(db) {
     "CREATE INDEX IF NOT EXISTS logs_address_idx ON logs(contract_address, block_number DESC);\n" +
     "CREATE INDEX IF NOT EXISTS logs_topic0_idx ON logs(topic0, block_number DESC);\n" +
     "CREATE TABLE IF NOT EXISTS indexer_state (state_key TEXT PRIMARY KEY,state_value TEXT NOT NULL,updated_at TEXT NOT NULL);\n" +
-    "CREATE TABLE IF NOT EXISTS indexer_gaps (component TEXT NOT NULL,start_block INTEGER NOT NULL,end_block INTEGER NOT NULL,error_message TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,PRIMARY KEY(component,start_block,end_block)); +
+    "CREATE TABLE IF NOT EXISTS indexer_gaps (component TEXT NOT NULL,start_block INTEGER NOT NULL,end_block INTEGER NOT NULL,error_message TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,PRIMARY KEY(component,start_block,end_block));" +
     "CREATE TABLE IF NOT EXISTS substrate_blocks (block_number INTEGER PRIMARY KEY,block_hash TEXT NOT NULL,parent_hash TEXT,state_root TEXT,extrinsics_root TEXT,timestamp_ms TEXT,extrinsic_count INTEGER NOT NULL DEFAULT 0,event_count INTEGER NOT NULL DEFAULT 0,raw_json TEXT NOT NULL,indexed_at TEXT NOT NULL);" +
     "CREATE UNIQUE INDEX IF NOT EXISTS substrate_blocks_hash_idx ON substrate_blocks(block_hash);" +
     "CREATE TABLE IF NOT EXISTS substrate_extrinsics (block_number INTEGER NOT NULL,extrinsic_index INTEGER NOT NULL,extrinsic_hash TEXT NOT NULL,section TEXT,method TEXT,signer TEXT,raw_json TEXT NOT NULL,indexed_at TEXT NOT NULL,PRIMARY KEY(block_number,extrinsic_index));" +
