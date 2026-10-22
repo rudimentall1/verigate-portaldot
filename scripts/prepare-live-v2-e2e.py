@@ -330,6 +330,8 @@ def main() -> int:
         die("The active Verigate process does not use the expected issuer SQLite database.")
     if server_env.get("VERIGATE_TENANT_KEY_DIR"):
         die("Tenant-key mode is enabled; refusing shared-database provisioning.")
+    if server_env.get("VERIGATE_REQUIRE_GOVERNED_POLICY", "").strip().lower() in {"1", "true", "yes"}:
+        die("Governed-policy mode is enabled; this helper will not bypass governance by writing a separate policy file.")
     if not (server_cwd / "api/main.py").is_file():
         die("Could not locate api/main.py beneath the running Verigate process working directory.")
     if not any("uvicorn" in item for item in server_cmd) or "api.main:app" not in server_cmd:
