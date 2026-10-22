@@ -377,8 +377,12 @@ $('#saveApiBase').addEventListener('click',async()=>{
 });
 $('#searchBtn').addEventListener('click',()=>search($('#query').value));
 $('#query').addEventListener('keydown',event=>{if(event.key==='Enter')search($('#query').value);});
-document.querySelectorAll('[data-query]').forEach(button=>button.addEventListener('click',()=>search(button.dataset.query)));
 document.addEventListener('click',async event=>{
+  const queryButton = event.target.closest('[data-query]');
+  if (queryButton) {
+    search(queryButton.dataset.query);
+    return;
+  }
   const button = event.target.closest('[data-copy]');
   if (!button) return;
   try { await navigator.clipboard.writeText(button.dataset.copy); button.textContent='Copied'; setTimeout(()=>button.textContent='Copy',1100); }
