@@ -1076,7 +1076,7 @@ export function decodeContractLogsForSlug(db, slug, startBlock, endBlock) {
     const currentFrom = db.prepare("SELECT indexed_from_block FROM registered_contracts WHERE slug=?").get(slug)?.indexed_from_block;
     db.prepare(
       "UPDATE registered_contracts SET event_count=?,last_decoded_block=?,indexed_from_block=COALESCE(indexed_from_block,?),decode_error=NULL WHERE slug=?"
-    ).run(count, endBlock, first ?? (currentFrom ?? null), slug);
+    ).run(count, endBlock, first ?? (currentFrom ?? startBlock), slug);
     db.exec("COMMIT");
     return decoded;
   } catch (error) {
@@ -1222,9 +1222,17 @@ function allowedOrigin(req) {
 function queryInteger(url, key, fallback, max) {
   const raw = url.searchParams.get(key);
   if (raw == null) return fallback;
-  if (!/^(0|[1-9][0-9]*)$/.test(raw)) throw new Error(key + " must be a decimal integer.");
+  if (!/^(0|[1-9][0-9]*)$/.test(raw)) {
+    const error = new Error(key + " must be a decimal integer.");
+    error.statusCode = 400;
+    throw error;
+  }
   const n = Number(raw);
-  if (!Number.isSafeInteger(n) || n > max) throw new Error(key + " is outside the allowed range.");
+  if (!Number.isSafeInteger(n) || n > max) {
+    const error = new Error(key + " is outside the allowed range.");
+    error.statusCode = 400;
+    throw error;
+  }
   return n;
 }
 
