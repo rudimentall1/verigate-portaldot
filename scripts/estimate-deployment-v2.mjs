@@ -100,11 +100,12 @@ async function main() {
     await rpcResult(rpcUrl, "eth_getBalance", [deployerAddress, "latest"]),
     "deployer balance"
   );
+  const safetyMarginPercent = 15;
   const budget = calculateDeploymentCost({
     gasUnits: estimatedGas,
     gasPriceWei: maxFee,
     balanceWei: balance,
-    safetyMarginBps: 2000
+    safetyMarginBps: safetyMarginPercent * 100
   });
 
   console.log(JSON.stringify({
@@ -127,7 +128,7 @@ async function main() {
     estimatedGasUnits: estimatedGas.toString(),
     maxFeePerGasWei: maxFee.toString(),
     estimatedCostPot: formatUnitsExact(budget.estimatedCostWei, 18, 6),
-    requiredWith20PercentMarginPot: formatUnitsExact(budget.costWithMarginWei, 18, 6),
+    requiredWith15PercentMarginPot: formatUnitsExact(budget.costWithMarginWei, 18, 6),
     deployerBalanceWei: balance.toString(),
     deployerBalancePot: formatUnitsExact(balance, 18, 6),
     budgetStatus: budget.isSufficient ? "sufficient_with_20_percent_margin" : "insufficient_for_20_percent_margin",
