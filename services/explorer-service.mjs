@@ -879,6 +879,125 @@ async function retryOneSubstrateGap(db, runtime) {
   }
 }
 
+function unwrapRuntimeResult(value) {
+  if (value == null) return null;
+  try {
+    if (typeof value.isNone === "boolean") return value.isNone ? null : value.unwrap();
+    if (typeof value.isSome === "boolean") return value.isSome ? value.unwrap() : null;
+  } catch {
+    return null;
+  }
+  return value;
+}
+
+function runtimeAddressText(value) {
+  if (value == null) return null;
+  try { return typeof value.toHex === "function" ? value.toHex().toLowerCase() : String(value); }
+  catch { return String(value); }
+}
+
+export async function resolveSubstrateMapping(runtime, input) {
+  const parsed = classifyLookup(input);
+  if (!["address", "substrate_address"].includes(parsed.type)) {
+    return {
+      source: "runtime_mapping",
+      status: "invalid",
+      error: "Supply either a 20-byte EVM address or an SS58 native address."
+    };
+  }
+  const api = await ensureSubstrateApi(runtime);
+  const reviveApi = api.call?.reviveApi;
+  const specVersion = api.runtimeVersion?.specVersion?.toString?.() || null;
+  const common = {
+    source: "runtime_mapping",
+    network: "PortalDot V3",
+    runtimeApi: "reviveApi",
+    specVersion,
+    genesisHash: runtime.substrateGenesisHash || null,
+    runtimeMappingConfirmed: false
+  };
+  if (!reviveApi) {
+    return {
+      ...common,
+      status: "unsupported",
+      note: "The connected runtime does not expose reviveApi through this RPC endpoint. No offline-derived mapping is substituted."
+    };
+  }
+  if (parsed.type === "address") {
+    const lookup = reviveApi.accountId;
+    if (typeof lookup !== "function") {
+      return {
+        ...common, status: "unsupported", queryType: "evm_to_native", evmAddress: parsed.value,
+        note: "The connected runtime does not expose reviveApi.accountId."
+      };
+    }
+    const result = unwrapRuntimeResult(await lookup(parsed.value));
+    if (!result) {
+      return {
+        ...common, status: "not_found", queryType: "evm_to_native", evmAddress: parsed.value,
+        note: "The runtime returned no mapped native AccountId for this EVM address. This says nothing about offline key derivation or mappings outside this runtime API."
+      };
+    }
+    let ss58Address = null;
+    try { ss58Address = result.toString(); } catch {}
+    if (!cleanSubstrateAccount(ss58Address)) {
+      try {
+        const hex = typeof result.toHex === "function" ? result.toHex() : ss58Address;
+        ss58Address = api.createType("AccountId32", hex).toString();
+      } catch {}
+    }
+    if (!cleanSubstrateAccount(ss58Address)) {
+      return {
+        ...common, status: "decode_error", queryType: "evm_to_native", evmAddress: parsed.value,
+        resultHex: runtimeAddressText(result),
+        note: "reviveApi.accountId returned a value, but it could not be rendered as a valid SS58 account address."
+      };
+    }
+    return {
+      ...common,
+      status: "mapped",
+      queryType: "evm_to_native",
+      evmAddress: parsed.value,
+      ss58Address,
+      accountIdHex: runtimeAddressText(result),
+      runtimeMappingConfirmed: true,
+      note: "Mapping was returned by the connected PortalDot runtime API."
+    };
+  }
+  const lookup = reviveApi.address;
+  if (typeof lookup !== "function") {
+    return {
+      ...common, status: "unsupported", queryType: "native_to_evm", ss58Address: parsed.value,
+      note: "The connected runtime does not expose reviveApi.address."
+    };
+  }
+  const result = unwrapRuntimeResult(await lookup(parsed.value));
+  if (!result) {
+    return {
+      ...common, status: "not_found", queryType: "native_to_evm", ss58Address: parsed.value,
+      note: "The runtime returned no mapped H160 address for this native account. No offline-derived address is substituted."
+    };
+  }
+  const hex = runtimeAddressText(result);
+  const evmAddress = normaliseAddress(hex) ? hex : null;
+  if (!evmAddress) {
+    return {
+      ...common, status: "decode_error", queryType: "native_to_evm", ss58Address: parsed.value,
+      resultHex: hex,
+      note: "reviveApi.address returned a value that is not a 20-byte H160 address."
+    };
+  }
+  return {
+    ...common,
+    status: "mapped",
+    queryType: "native_to_evm",
+    ss58Address: parsed.value,
+    evmAddress,
+    runtimeMappingConfirmed: true,
+    note: "Mapping was returned by the connected PortalDot runtime API."
+  };
+}
+
 export async function resolveSubstrateAddress(db, runtime, address) {
   const normalized = cleanSubstrateAccount(address);
   if (!normalized) return { source: "invalid", error: "Address must be a valid-looking SS58 address (5…)." };
