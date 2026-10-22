@@ -434,6 +434,13 @@ async function verifyWithVerigate(baseUrl, attestation, apiKey) {
 
 const GUARD_READ_ABI = ["function authoritySigner() view returns (address)"];
 
+function resolveGuardDomainProfile(value = process.env.PORTALDOT_GUARD_PROFILE || "v1") {
+  const profile = String(value).trim().toLowerCase();
+  if (profile === "v1") return { profile, name: "PortalDotAgentGuard", version: "1" };
+  if (profile === "v2") return { profile, name: "PortalDotAgentGuardV2", version: "2" };
+  fail("PORTALDOT_GUARD_PROFILE must be either v1 or v2.");
+}
+
 async function verifyGuardDeployment(options = {}) {
   const rpcUrl = String(options.rpcUrl ?? process.env.PORTALDOT_RPC_URL ?? "").trim();
   const chainIdText = String(options.expectedChainId ?? process.env.PORTALDOT_CHAIN_ID ?? "").trim();
@@ -554,9 +561,10 @@ async function signAuthorization(response, options = {}) {
   // chain and verify that its on-chain immutable authority matches this signer.
   await verifyGuardDeployment({ providerFactory: options.providerFactory });
 
+  const guardDomainProfile = resolveGuardDomainProfile();
   const domain = {
-    name: "PortalDotAgentGuard",
-    version: "1",
+    name: guardDomainProfile.name,
+    version: guardDomainProfile.version,
     chainId: transfer.chainId,
     verifyingContract: ethers.getAddress(process.env.PORTALDOT_GUARD_ADDRESS)
   };
@@ -605,4 +613,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { validateAuthorizationBinding, verifyLocally, verifyWithVerigate, verifyGuardDeployment, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers };
+module.exports = { validateAuthorizationBinding, verifyLocally, verifyWithVerigate, verifyGuardDeployment, signAuthorization, canonicalJson, actionDigest, parseJsonPreservingNumbers, resolveGuardDomainProfile };
