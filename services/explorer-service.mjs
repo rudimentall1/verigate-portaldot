@@ -14,7 +14,8 @@ const RPC_URL = (process.env.PORTALDOT_RPC_URL || "https://test-evm-rpc-v3.porta
 const EXPECTED_CHAIN_ID = BigInt((process.env.PORTALDOT_CHAIN_ID || "420420777").trim());
 const PORT = Number(process.env.PORT || "10000");
 const DB_PATH = resolve(process.env.EXPLORER_DB_PATH || resolve(ROOT, "data/portal-dot-explorer.sqlite"));
-const START_BLOCK_ENV = (process.env.EXPLORER_START_BLOCK || "").trim();
+const START_BLOCK_ENV = (process.env.EXPLORER_START_BLOCK || "").trim().toLowerCase();
+const LIVE_WINDOW_BLOCKS = positiveInteger(process.env.EXPLORER_LIVE_WINDOW_BLOCKS, 15, 1, 500);
 const BACKFILL_BLOCKS = positiveInteger(process.env.EXPLORER_BACKFILL_BLOCKS, 30000, 1, 2000000);
 const BATCH_BLOCKS = positiveInteger(process.env.EXPLORER_BATCH_BLOCKS, 20, 1, 100);
 const POLL_MS = positiveInteger(process.env.EXPLORER_POLL_MS, 6000, 1000, 120000);
@@ -1213,8 +1214,10 @@ function getIndexerStatus(db) {
   const cursorNumber = cursor == null ? null : Number(cursor);
   const startedNumber = started == null ? null : Number(started);
   const gapCount = db.prepare("SELECT COUNT(*) AS count FROM indexer_gaps WHERE component IN ('blocks','logs')").get().count;
+  const firstGap = db.prepare("SELECT MIN(start_block) AS n FROM indexer_gaps WHERE component IN ('blocks','logs')").get().n;
+  const contiguousThrough = cursorNumber == null ? null : firstGap == null ? cursorNumber : Math.min(cursorNumber, firstGap - 1);
   return {
-    indexedThrough: cursorNumber == null || (startedNumber != null && cursorNumber < startedNumber) ? null : cursorNumber,
+    indexedThrough: contiguousThrough == null || (startedNumber != null && contiguousThrough < startedNumber) ? null : contiguousThrough,
     startedFrom: startedNumber,
     gapCount,
     lastBatchAt: readState(db, "last_batch_at"),
@@ -2118,10 +2121,20 @@ async function runIndexer(db, runtime) {
       runtime.lastHead = head;
       if (chainId !== EXPECTED_CHAIN_ID) throw new Error("Chain ID mismatch: expected " + EXPECTED_CHAIN_ID + ", received " + chainId + ".");
       let cursorText = readState(db, "cursor");
+      const targetHead = Math.max(0, head - CONFIRMATIONS);
+      const hasStoredBlocks = getCount(db, "blocks") > 0;
+      const resetEmptyLatestIndex = START_BLOCK_ENV === "latest" && !hasStoredBlocks &&
+        cursorText != null && Number(cursorText) < targetHead - LIVE_WINDOW_BLOCKS;
+      if (resetEmptyLatestIndex) {
+        db.prepare("DELETE FROM indexer_gaps WHERE component IN ('blocks','logs')").run();
+        cursorText = null;
+      }
       if (cursorText == null) {
         let firstBlock;
-        if (START_BLOCK_ENV !== "") {
-          if (!/^(0|[1-9][0-9]*)$/.test(START_BLOCK_ENV)) throw new Error("EXPLORER_START_BLOCK must be a decimal block number.");
+        if (START_BLOCK_ENV === "latest") {
+          firstBlock = Math.max(0, targetHead - LIVE_WINDOW_BLOCKS + 1);
+        } else if (START_BLOCK_ENV !== "") {
+          if (!/^(0|[1-9][0-9]*)$/.test(START_BLOCK_ENV)) throw new Error("EXPLORER_START_BLOCK must be a decimal block number or 'latest'.");
           firstBlock = Number(START_BLOCK_ENV);
           if (!Number.isSafeInteger(firstBlock) || firstBlock < 0) throw new Error("EXPLORER_START_BLOCK is outside the supported range.");
         } else {
@@ -2131,7 +2144,6 @@ async function runIndexer(db, runtime) {
         upsertState(db, "cursor", firstBlock - 1);
         cursorText = String(firstBlock - 1);
       }
-      const targetHead = Math.max(0, head - CONFIRMATIONS);
       const cursor = Number(cursorText);
       if (cursor < targetHead) {
         const start = cursor + 1;
