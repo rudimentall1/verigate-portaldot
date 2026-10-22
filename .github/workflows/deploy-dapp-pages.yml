@@ -6,6 +6,11 @@ on:
     paths:
       - "web3-dapp/**"
       - ".github/workflows/deploy-dapp-pages.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "web3-dapp/**"
+      - ".github/workflows/deploy-dapp-pages.yml"
   workflow_dispatch:
 
 permissions:
@@ -39,6 +44,20 @@ jobs:
           Path("/tmp/verigate-dapp-inline.js").write_text("\n\n".join(scripts))
           PY
           node --check /tmp/verigate-dapp-inline.js
+      - name: Validate Explorer inline JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("web3-dapp/explorer/index.html").read_text()
+          scripts = re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>", html, re.IGNORECASE | re.DOTALL)
+          if not scripts:
+              raise SystemExit("No inline JavaScript found in Explorer")
+          Path("/tmp/portal-dot-explorer-inline.js").write_text("\n\n".join(scripts))
+          PY
+          node --check /tmp/portal-dot-explorer-inline.js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Validate and package static DApp
@@ -49,8 +68,12 @@ jobs:
           grep -q "test-evm-rpc-v3.portaldot.dev" web3-dapp/index.html
           grep -q "eth_chainId" web3-dapp/index.html
           grep -q "authoritySigner" web3-dapp/index.html
-          mkdir -p _site
+          test -s web3-dapp/explorer/index.html
+          grep -q "eth_getTransactionByHash" web3-dapp/explorer/index.html
+          grep -q "test-evm-rpc-v3.portaldot.dev" web3-dapp/explorer/index.html
+          mkdir -p _site/explorer
           cp web3-dapp/index.html _site/index.html
+          cp web3-dapp/explorer/index.html _site/explorer/index.html
           touch _site/.nojekyll
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -58,6 +81,7 @@ jobs:
           path: _site
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
