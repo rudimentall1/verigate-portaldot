@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+import { ApiPromise, WsProvider } from "@polkadot/api";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -61,6 +62,12 @@ function rpcOrigin(value) {
 }
 
 const RPC_ORIGIN = rpcOrigin(RPC_URL);
+const SUBSTRATE_WS_URL = (process.env.PORTALDOT_SUBSTRATE_RPC_URL || "wss://test-node-v3.portaldot.dev").trim();
+const EXPECTED_SUBSTRATE_GENESIS_HASH = (process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH || "").trim().toLowerCase();
+const SUBSTRATE_START_BLOCK_ENV = (process.env.SUBSTRATE_START_BLOCK || "").trim();
+const SUBSTRATE_BACKFILL_BLOCKS = positiveInteger(process.env.SUBSTRATE_BACKFILL_BLOCKS, 30000, 1, 2000000);
+const SUBSTRATE_BATCH_BLOCKS = positiveInteger(process.env.SUBSTRATE_BATCH_BLOCKS, 10, 1, 50);
+const SUBSTRATE_ACCOUNT_RE = /^[1-9A-HJ-NP-Za-km-z]{46,50}$/;
 
 export function classifyLookup(input) {
   const value = String(input || "").trim();
