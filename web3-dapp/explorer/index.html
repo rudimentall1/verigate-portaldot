@@ -197,6 +197,9 @@ function renderApiResult(data) {
     ]) + '<h3>Extrinsics</h3>' + (data.extrinsics.length ? data.extrinsics.map(item =>
       '<div class="feed-item"><div class="feed-main"><span class="mono">' + esc(short(item.hash)) + '</span><button data-query="' + esc(item.hash) + '">Open</button></div><div class="feed-secondary">' + esc(item.signer || 'Unsigned') + ' · ' + esc(item.section + '.' + item.method) + '</div></div>'
     ).join('') : '<div class="muted">No extrinsics recorded for this block.</div>');
+    if (Array.isArray(data.gaps) && data.gaps.length) {
+      $('#result').innerHTML += status('warn','This block has recorded indexer gaps. Some runtime events or metadata may be unavailable; see /api/substrate/status.');
+    }
     renderSubstrateEvents(data.events,'Substrate block events');
     return true;
   }
