@@ -26,6 +26,12 @@ h2{font-size:18px;margin:25px 0 12px;letter-spacing:-.02em}.card{min-width:0}.mu
 <div class="presets"><button data-query="0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c">Our deployment transaction</button><button data-query="0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c">Saved TransferExecuted</button><button data-query="0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b">V1 guard contract</button><button data-query="116872">Recorded deployment block</button><button data-query="132475">Recorded transfer block</button></div><div class="api-config"><input id="apiBaseInput" placeholder="Optional indexer API URL, e.g. https://your-service.onrender.com" aria-label="Indexer API base URL"><button id="saveApiBase">Connect indexer</button><div class="api-note" id="apiBaseNote">Persistent transaction history requires the Explorer API. Direct RPC lookup continues to work without it.</div></div></section>
 <section class="metrics" aria-label="Live network status"><article class="metric"><div class="label">Network</div><strong>PortalDot V3</strong><small>Expected chain ID 420420777</small></article><article class="metric"><div class="label">RPC connection</div><strong id="rpcStatus">Checking…</strong><small id="rpcHint">Read-only request in progress</small></article><article class="metric"><div class="label">Latest EVM block</div><strong id="latestBlock">—</strong><small id="refreshed">Not refreshed yet</small></article><article class="metric"><div class="label">EVM indexed through</div><strong id="indexedBlock">Not connected</strong><small id="indexerHint">Configure the indexer API to browse stored history</small></article><article class="metric"><div class="label">Substrate finalized through</div><strong id="substrateIndexedBlock">Not connected</strong><small id="substrateIndexerHint">Finalized native-chain history</small></article></section>
 <h2>Lookup result</h2><section class="card" id="result"><div class="status">Connecting to the PortalDot V3 EVM RPC…</div></section>
+<h2>Runtime address mapping</h2>
+<section class="card">
+  <p class="small">Checks the connected PortalDot V3 runtime's reviveApi mapping in both directions. A missing result is reported as “not found”; the Explorer does not replace it with an offline-derived address.</p>
+  <div class="search"><input id="mappingQuery" spellcheck="false" autocomplete="off" aria-label="EVM or SS58 address to map" placeholder="EVM 0x… or native SS58 5…"><button id="mappingLookupButton" type="button">Check runtime mapping</button></div>
+  <div id="mappingResult"><div class="muted">Configure the persistent Explorer API URL to query the Substrate runtime mapping API.</div></div>
+</section>
 <h2>Logs for the resolved block</h2><section class="card" id="logs"><div class="muted">Block logs appear here when the RPC can return the requested block.</div></section><h2>Indexed chain activity</h2><section class="two"><article class="card"><div class="headrow"><h3>Recent indexed blocks</h3><span class="tag" id="blocksSource">Index pending</span></div><div id="recentBlocks" class="rows"><div class="muted">Connect an Explorer API to browse stored blocks.</div></div></article><article class="card"><div class="headrow"><h3>Recent indexed transactions</h3><span class="tag" id="transactionsSource">Index pending</span></div><div id="recentTransactions" class="rows"><div class="muted">Connect an Explorer API to browse stored transactions.</div></div></article></section><h2>Native Substrate activity</h2><section class="substrate-grid"><article class="card"><div class="headrow"><h3>Recent finalized blocks</h3><span class="tag" id="substrateBlocksSource">Index pending</span></div><div id="recentSubstrateBlocks" class="rows"><div class="muted">Connect an Explorer API to browse finalized Substrate blocks.</div></div></article><article class="card"><div class="headrow"><h3>Recent runtime events</h3><span class="tag" id="substrateEventsSource">Index pending</span></div><div id="recentSubstrateEvents" class="rows"><div class="muted">Connect an Explorer API to browse runtime events.</div></div></article><article class="card"><div class="headrow"><h3>Recent extrinsics</h3><span class="tag" id="substrateExtrinsicsSource">Index pending</span></div><div id="recentSubstrateExtrinsics" class="rows"><div class="muted">Connect an Explorer API to browse signed/unsigned extrinsics.</div></div></article></section>
 <h2>Current finalized-state snapshots</h2>
 <section class="substrate-grid">
@@ -352,6 +358,39 @@ async function manageRegisteredContract(action) {
   }
 }
 
+async function lookupRuntimeMapping(input) {
+  const query = String(input || '').trim();
+  if (!query) {
+    $('#mappingResult').innerHTML = status('warn','Enter an EVM or native SS58 address.');
+    return;
+  }
+  $('#mappingQuery').value = query;
+  $('#mappingLookupButton').disabled = true;
+  $('#mappingResult').innerHTML = status('','Querying PortalDot reviveApi…');
+  try {
+    const result = await apiGet('/api/substrate/mapping?q=' + encodeURIComponent(query));
+    const displayStatus = result.status === 'mapped' ? status('good','Runtime mapping confirmed by reviveApi.')
+      : result.status === 'not_found' ? status('warn','The runtime returned no mapping for this address.')
+      : result.status === 'unsupported' ? status('warn','The connected runtime does not expose the requested mapping method.')
+      : status('bad',result.error || result.note || 'Mapping lookup could not be decoded.');
+    $('#mappingResult').innerHTML = displayStatus + rows([
+      ['Result status',esc(result.status || 'unknown')],
+      ['Direction',esc(result.queryType || '—')],
+      ['EVM address',result.evmAddress ? mono(result.evmAddress) + ' ' + copyButton(result.evmAddress) : '—'],
+      ['Native SS58 address',result.ss58Address ? mono(result.ss58Address) + ' ' + copyButton(result.ss58Address) : '—'],
+      ['AccountId32 hex',result.accountIdHex ? mono(result.accountIdHex) + ' ' + copyButton(result.accountIdHex) : '—'],
+      ['Runtime API',esc(result.runtimeApi || 'reviveApi')],
+      ['Spec version',esc(result.specVersion || '—')],
+      ['Genesis hash',result.genesisHash ? mono(result.genesisHash) + ' ' + copyButton(result.genesisHash) : '—'],
+      ['Claim boundary',esc(result.note || (result.runtimeMappingConfirmed ? 'Mapping came from the active runtime API.' : 'No runtime-confirmed mapping returned.'))]
+    ]);
+  } catch (error) {
+    $('#mappingResult').innerHTML = status('bad','Runtime mapping API unavailable: ' + error.message + '. Set the indexer API URL above and confirm the Substrate WebSocket connection.');
+  } finally {
+    $('#mappingLookupButton').disabled = false;
+  }
+}
+
 function renderApiResult(data) {
   if (!data || typeof data !== 'object') return false;
   if (data.source === 'invalid') {
@@ -387,6 +426,7 @@ function renderApiResult(data) {
     const balances = account.data || {};
     $('#result').innerHTML = '<div class="headrow"><h3>Native Substrate account</h3><span class="tag">Live account state + indexed history</span></div>' + rows([
       ['SS58 address',mono(data.address) + ' ' + copyButton(data.address)],
+      ['Runtime mapping','<button type="button" data-map-query="' + esc(data.address) + '">Check EVM ↔ SS58</button>'],
       ['Free balance (raw)',esc(balances.free ?? '—')],
       ['Reserved balance (raw)',esc(balances.reserved ?? '—')],
       ['Nonce',esc(account.nonce ?? '—')],
@@ -453,6 +493,7 @@ function renderApiResult(data) {
     const hasCode = data.code && data.code !== '0x' && data.code !== '0x0';
     $('#result').innerHTML = '<div class="headrow"><h3>' + (hasCode ? 'Contract address' : 'EVM account') + '</h3><span class="tag">Live RPC + persistent history</span></div>' + rows([
       ['Address',mono(data.address) + ' ' + copyButton(data.address)],
+      ['Runtime mapping','<button type="button" data-map-query="' + esc(data.address) + '">Check EVM ↔ SS58</button>'],
       ['Current balance (raw EVM units)',esc(raw(data.balance))],
       ['Transaction count / nonce',esc(raw(data.nonce))],
       ['Runtime code',hasCode ? 'Present' : 'No code at latest block'],
@@ -795,7 +836,14 @@ $('#saveApiBase').addEventListener('click',async()=>{
 });
 $('#searchBtn').addEventListener('click',()=>search($('#query').value));
 $('#query').addEventListener('keydown',event=>{if(event.key==='Enter')search($('#query').value);});
+$('#mappingLookupButton').addEventListener('click',()=>lookupRuntimeMapping($('#mappingQuery').value));
+$('#mappingQuery').addEventListener('keydown',event=>{if(event.key==='Enter')lookupRuntimeMapping($('#mappingQuery').value);});
 document.addEventListener('click',async event=>{
+  const mapButton = event.target.closest('[data-map-query]');
+  if (mapButton) {
+    lookupRuntimeMapping(mapButton.dataset.mapQuery);
+    return;
+  }
   const contractEventsButton = event.target.closest('[data-contract-events]');
   if (contractEventsButton) {
     loadContractEvents(contractEventsButton.dataset.contractEvents);

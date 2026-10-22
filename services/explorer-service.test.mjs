@@ -12,6 +12,7 @@ import {
   getSubstrateIndexerStatus,
   persistStateSnapshot,
   getLatestStateSnapshot,
+  resolveSubstrateMapping,
   createExplorerServer
 } from "./explorer-service.mjs";
 
@@ -458,6 +459,78 @@ test("finalized state snapshots persist native balances, asset holders, NFT owne
 
     const mutation = await fetch(base + "/api/substrate/balances", { method: "POST" });
     assert.equal(mutation.status, 405);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    db.close();
+  }
+});
+
+
+test("runtime address mapping uses reviveApi results and keeps a missing mapping explicit", async () => {
+  const evm = address("e");
+  const native = "5" + "D".repeat(46);
+  const accountHex = "0x" + "a".repeat(64);
+  const mappedAccount = { toString: () => native, toHex: () => accountHex };
+  const mappedEvm = { toHex: () => evm };
+  const runtime = {
+    substrateConnected: true,
+    substrateGenesisHash: hash("f"),
+    substrateApi: {
+      runtimeVersion: { specVersion: { toString: () => "3002" } },
+      call: {
+        reviveApi: {
+          accountId: async (input) => ({ isNone: false, unwrap: () => mappedAccount }),
+          address: async (input) => ({ isSome: true, unwrap: () => mappedEvm })
+        }
+      }
+    }
+  };
+  const forward = await resolveSubstrateMapping(runtime, evm);
+  assert.equal(forward.status, "mapped");
+  assert.equal(forward.queryType, "evm_to_native");
+  assert.equal(forward.evmAddress, evm);
+  assert.equal(forward.ss58Address, native);
+  assert.equal(forward.accountIdHex, accountHex);
+  assert.equal(forward.runtimeMappingConfirmed, true);
+
+  const reverse = await resolveSubstrateMapping(runtime, native);
+  assert.equal(reverse.status, "mapped");
+  assert.equal(reverse.queryType, "native_to_evm");
+  assert.equal(reverse.evmAddress, evm);
+  assert.equal(reverse.ss58Address, native);
+  assert.equal(reverse.runtimeMappingConfirmed, true);
+
+  runtime.substrateApi.call.reviveApi.accountId = async () => ({ isNone: true, unwrap: () => { throw new Error("None has no value"); } });
+  const missing = await resolveSubstrateMapping(runtime, evm);
+  assert.equal(missing.status, "not_found");
+  assert.equal(missing.runtimeMappingConfirmed, false);
+  assert.match(missing.note, /no mapped native AccountId/i);
+});
+
+test("runtime address mapping HTTP route is read-only", async () => {
+  const db = new DatabaseSync(":memory:");
+  initializeDatabase(db);
+  const evm = address("e");
+  const native = "5" + "D".repeat(46);
+  const runtime = {
+    substrateConnected: true,
+    substrateGenesisHash: hash("f"),
+    substrateApi: {
+      runtimeVersion: { specVersion: { toString: () => "3002" } },
+      call: { reviveApi: { accountId: async () => ({ isSome: true, unwrap: () => ({ toString: () => native, toHex: () => "0x" + "a".repeat(64) }) }) } }
+    }
+  };
+  const { server } = await createExplorerServer({ db, runtime });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = "http://127.0.0.1:" + server.address().port;
+  try {
+    const response = await fetch(base + "/api/substrate/mapping?q=" + evm);
+    assert.equal(response.status, 200);
+    const result = await response.json();
+    assert.equal(result.status, "mapped");
+    assert.equal(result.ss58Address, native);
+    const write = await fetch(base + "/api/substrate/mapping?q=" + evm, { method: "POST" });
+    assert.equal(write.status, 405);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     db.close();
