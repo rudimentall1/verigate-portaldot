@@ -9,7 +9,7 @@
   },
   "scripts": {
     "compile": "hardhat build",
-    "test": "hardhat test",
+    "test": "hardhat test && npm run test:explorer",
     "preflight": "node scripts/preflight.js",
     "deploy:portaldot": "npm run preflight && hardhat run scripts/deploy.mjs --network portaldot",
     "deploy:v2:portaldot": "npm run preflight && hardhat run scripts/deploy-v2.mjs --network portaldot",
@@ -24,7 +24,9 @@
     "verify:deployer-address": "node scripts/verify-deployer-address.mjs",
     "verify:deployment": "node scripts/verify-live-deployment.mjs",
     "fund:demo-guard": "node scripts/fund-demo-guard.mjs",
-    "verify:authorized-transfer": "node scripts/verify-authorized-transfer.mjs"
+    "verify:authorized-transfer": "node scripts/verify-authorized-transfer.mjs",
+    "test:explorer": "node --experimental-sqlite --test services/explorer-service.test.mjs",
+    "explorer:service": "node --experimental-sqlite services/explorer-service.mjs"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^4.0.0",
