@@ -25,6 +25,12 @@ services:
         value: "30000"
       - key: SUBSTRATE_BATCH_BLOCKS
         value: "10"
+      - key: SUBSTRATE_SNAPSHOT_INTERVAL_MS
+        value: "900000"
+      - key: SUBSTRATE_SNAPSHOT_PAGE_SIZE
+        value: "500"
+      - key: SUBSTRATE_SNAPSHOT_MAX_ROWS
+        value: "100000"
       - key: EXPLORER_DB_PATH
         value: /var/data/portal-dot-explorer.sqlite
       - key: EXPLORER_START_BLOCK
