@@ -63,6 +63,13 @@ npm run verify:funding:v2
 
 The V2 profile must be configured in the untracked local `.env` before signing or executing a V2 transfer. Do not change the V1 profile until ready to run the V2 flow, and keep the V1 address and hash intact.
 
+## Live Verigate-to-V2 simulation helper
+
+On the configured Gensyn2 host, `python3 scripts/prepare-live-v2-e2e.py` prepares a separate recipient-scoped Verigate policy and capability for the V2 allowlisted address, starts a loopback-only verifier on port 8002 using the same issuer key/database, requests a fresh agent-signed ALLOW, runs the bridge signer and simulates the EVM call. The existing verifier on port 8001 and its original policy are left untouched. It refuses to bypass governed-policy mode, validates the issuer-key pin, and does not print private keys or signatures.
+
+The helper intentionally stops before broadcast. It writes private local artifacts under `/opt/verigate-portaldot-issuer/live-e2e/` with restrictive file permissions and updates only the local project's `VERIGATE_BASE_URL` after Verigate returns ALLOW. Review the simulation JSON and recipient/amount before executing any broadcast command manually. This is a host-specific test harness, not a production deployment workflow.
+
+
 ## Required live checks before calling V2 deployed
 
 1. Independently query `eth_getTransactionReceipt` for the new deployment hash and confirm status `0x1` on chain ID 420420777.
