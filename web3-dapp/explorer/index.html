@@ -186,7 +186,7 @@ async function loadIndexer() {
     const indexer = statusData.indexer || {};
     $('#indexedBlock').textContent = indexer.indexedThrough == null ? 'Starting' : Number(indexer.indexedThrough).toLocaleString('en-US');
     $('#indexerHint').textContent = (indexer.blocksStored || 0).toLocaleString('en-US') + ' blocks · ' + (indexer.transactionsStored || 0).toLocaleString('en-US') + ' transactions · ' + (indexer.logsStored || 0).toLocaleString('en-US') + ' logs';
-    $('#apiBaseNote').textContent = 'Indexer API connected: ' + getApiBase() + (indexer.gaps?.length ? ' · recorded data gaps: ' + indexer.gaps.length : ' · no recorded gaps currently visible');
+    $('#apiBaseNote').textContent = 'Indexer API connected: ' + getApiBase() + ((indexer.gapCount ?? indexer.gaps?.length ?? 0) ? ' · recorded data gaps: ' + (indexer.gapCount ?? indexer.gaps.length) : ' · no recorded gaps currently visible');
     $('#blocksSource').textContent = 'SQLite index';
     $('#transactionsSource').textContent = 'SQLite index';
     $('#recentBlocks').innerHTML = blocksData.items?.length ? blocksData.items.map(item =>
