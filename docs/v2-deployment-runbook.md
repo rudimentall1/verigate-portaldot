@@ -1,6 +1,6 @@
 # PortalDotAgentGuardV2 deployment runbook
 
-Status: the deployment command reported a successful V2 deployment and on-chain readback on 2026-10-22. Address, transaction and runtime code hash are recorded in `docs/evidence/portaldot-v2-deployment-2026-10-22.json`. Independent deployment verification now passed against the configured RPC. The V2 guard was funded with 0.11 POT in block 148577; the read-only funding verifier is `npm run verify:funding:v2`. The signed Verigate ALLOW → V2 `TransferExecuted` demonstration remains pending; do not describe the end-to-end proof as complete before that check passes.
+Status: the deployment command reported a successful V2 deployment and on-chain readback on 2026-10-22. Address, transaction and runtime code hash are recorded in `docs/evidence/portaldot-v2-deployment-2026-10-22.json`. An earlier read-only query to the configured RPC confirmed the deployment receipt and all 15 code/configuration readback checks. A later query no longer returned that historical deployment transaction and receipt. This RPC history limitation does not establish deployment failure and is not a reason to redeploy. The updated `npm run verify:deployment:v2` now checks current runtime bytecode and policy readbacks even when the historical receipt is unavailable, and reports those two verification levels separately. The V2 guard was funded with 0.11 POT in block 148577; `npm run verify:funding:v2` re-queries the recent funding transaction. The signed Verigate ALLOW → V2 `TransferExecuted` demonstration remains pending.
 
 ## Safety model
 
