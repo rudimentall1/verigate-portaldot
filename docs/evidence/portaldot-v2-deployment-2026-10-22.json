@@ -1,5 +1,5 @@
 {
-  "evidenceStatus": "reported_by_deploy_script; independent_read_only_verification_pending",
+  "evidenceStatus": "deployment receipt and 15 readback checks passed in an earlier read-only query on 2026-10-22; subsequent RPC query did not return the historical deployment transaction and receipt; current-state recheck pending",
   "recordedAt": "2026-10-22",
   "network": "PortalDot V3 EVM Testnet",
   "chainId": "420420777",
@@ -34,8 +34,10 @@
     "sufficient": true
   },
   "caveats": [
-    "This record preserves the deploy script output; it is not itself independent verification.",
-    "Actual deployment fee and post-deployment deployer/guard balances have not yet been re-queried.",
+    "A previous read-only query verified the deployment receipt and 15 contract/configuration checks; a later query to the same RPC no longer returned the historical deployment transaction and receipt.",
+    "Run npm run verify:deployment:v2 to check current code and policy readbacks. The result explicitly distinguishes current-state verification from historical receipt availability.",
+    "Funding values are reported by the user's broadcast output. Run npm run verify:funding:v2 to re-query the recent funding transaction, Deposited event, runtime code hash and present balances.",
+    "The configured RPC does not independently authenticate its operator.",
     "PortalDot V3 testnet prototype. Verigate Ed25519 verification remains off-chain."
   ],
   "funding": {
@@ -50,6 +52,28 @@
     "guardBalancePotAfter": "0.11",
     "deployerBalancePotAfter": "416.196502092920504516",
     "verifierCommand": "npm run verify:funding:v2",
-    "note": "Funding receipt output was provided by the user. Run the read-only verifier command to re-query tx, receipt, block, Deposited event, runtime code hash and present balances."
+    "note": "User-provided broadcast output; the verifier re-queries this recent transaction and readback state without signing or broadcasting."
+  },
+  "verificationHistory": {
+    "earlierReadOnlyVerification": {
+      "checkedAtDate": "2026-10-22",
+      "status": "passed",
+      "transactionHash": "0x331c1fc027da51af26ed5ee92ef22a8250fe4efdf0d84526f5fe2203f5d3494b",
+      "receiptStatus": 1,
+      "blockNumber": 148397,
+      "readbackChecksPassed": 15,
+      "note": "Previously reported successful in session from the configured RPC. No separate raw JSON report with block hash was saved."
+    },
+    "latestReadOnlyQuery": {
+      "checkedAtDate": "2026-10-22",
+      "deploymentTransactionReturned": false,
+      "deploymentReceiptReturned": false,
+      "note": "The configured RPC failed to return the historical deployment transaction and receipt. This is an RPC-history availability limitation, not evidence that deployment failed. Do not redeploy."
+    }
+  },
+  "actualDeployment": {
+    "actualFeePot": "295.6052222496556935",
+    "deployerBalanceAfterDeploymentPot": "416.319113018674745671",
+    "source": "Reported in earlier successful verification output from the configured RPC."
   }
 }
