@@ -111,6 +111,31 @@ async function loadLogs(block) {
     $('#logs').innerHTML = status('warn','The RPC could not return EVM logs: ' + error.message);
   }
 }
+function renderSubstrateEvents(items, label='Substrate index') {
+  if (!Array.isArray(items) || !items.length) {
+    $('#logs').innerHTML = '<div class="muted">No Substrate events were stored for this result.</div>';
+    return;
+  }
+  $('#logs').innerHTML = status('good',items.length + ' runtime event(s) · ' + label) + items.slice(0,100).map((item,index) => {
+    const blockNumber = item.blockNumber ?? item.block_number ?? '—';
+    const eventIndex = item.eventIndex ?? item.event_index ?? index;
+    const section = item.section || 'unknown';
+    const method = item.method || 'unknown';
+    const data = item.data ?? item.event?.data ?? item.event ?? {};
+    return '<details class="event"><summary><span>' + esc(section + '.' + method) + '</span><span class="mono">#' + esc(blockNumber) + ':' + esc(eventIndex) + '</span></summary><pre>' + esc(JSON.stringify(data,null,2)) + '</pre></details>';
+  }).join('');
+}
+async function loadSubstrateBlock(number) {
+  $('#query').value = String(number);
+  $('#result').innerHTML = status('','Loading indexed Substrate block ' + number + '…');
+  $('#logs').innerHTML = '<div class="muted">Loading runtime events…</div>';
+  try {
+    const result = await apiGet('/api/substrate/block/' + encodeURIComponent(number));
+    if (!renderApiResult(result)) $('#result').innerHTML = status('warn','Substrate block has not been indexed yet.');
+  } catch (error) {
+    $('#result').innerHTML = status('bad','Could not load the indexed Substrate block: ' + error.message);
+  }
+}
 function renderApiResult(data) {
   if (!data || typeof data !== 'object') return false;
   if (data.source === 'invalid') {
@@ -139,6 +164,52 @@ function renderApiResult(data) {
       ['Transaction record',data.source === 'indexer' ? 'Persisted in the local Explorer index.' : 'Returned by the live RPC, not yet guaranteed to be persisted.']
     ]);
     renderLogs(Array.isArray(data.logs) && data.logs.length ? data.logs : (receipt?.logs || []), data.source === 'indexer' ? 'Persistent index' : 'Live RPC');
+    return true;
+  }
+  if (data.source === 'substrate_indexer+live_rpc' && data.currentAccount) {
+    const account = data.currentAccount || {};
+    const balances = account.data || {};
+    $('#result').innerHTML = '<div class="headrow"><h3>Native Substrate account</h3><span class="tag">Live account state + indexed history</span></div>' + rows([
+      ['SS58 address',mono(data.address) + ' ' + copyButton(data.address)],
+      ['Free balance (raw)',esc(balances.free ?? '—')],
+      ['Reserved balance (raw)',esc(balances.reserved ?? '—')],
+      ['Nonce',esc(account.nonce ?? '—')],
+      ['Indexed events',esc(data.indexedEventsCount ?? 0)],
+      ['Signed extrinsics indexed',esc(data.indexedExtrinsicsCount ?? 0)],
+      ['Indexed through',esc(data.coverage?.indexedThrough ?? 'Not complete')],
+      ['Coverage',esc(data.coverage?.note || 'Current state is live; history depends on indexed range.')]
+    ]) + '<h3>Recent extrinsics</h3>' + (data.recentExtrinsics?.length ? data.recentExtrinsics.map(item =>
+      '<div class="feed-item"><div class="feed-main"><span class="mono">' + esc(short(item.hash)) + '</span><button data-query="' + esc(item.hash) + '">Open</button></div><div class="feed-secondary">#' + esc(item.blockNumber) + ' · ' + esc(item.section + '.' + item.method) + '</div></div>'
+    ).join('') : '<div class="muted">No signer extrinsics from this address were found in indexed history.</div>');
+    renderSubstrateEvents(data.recentEvents || [],'Address event history');
+    return true;
+  }
+  if (data.source === 'substrate_indexer' && Array.isArray(data.extrinsics) && Array.isArray(data.events)) {
+    const block = data.block || {};
+    $('#result').innerHTML = '<div class="headrow"><h3>Substrate block #' + esc(data.blockNumber) + '</h3><span class="tag">Persistent index</span></div>' + rows([
+      ['Block hash',mono(data.blockHash || block.hash) + ' ' + copyButton(data.blockHash || block.hash)],
+      ['Parent hash',mono(block.parentHash || '—')],
+      ['State root',mono(block.stateRoot || '—')],
+      ['Extrinsics root',mono(block.extrinsicsRoot || '—')],
+      ['Timestamp',block.timestampMs ? esc(new Date(Number(block.timestampMs)).toISOString()) : 'Not indexed'],
+      ['Extrinsics',esc(data.extrinsics.length)],
+      ['Runtime events',esc(data.events.length)]
+    ]) + '<h3>Extrinsics</h3>' + (data.extrinsics.length ? data.extrinsics.map(item =>
+      '<div class="feed-item"><div class="feed-main"><span class="mono">' + esc(short(item.hash)) + '</span><button data-query="' + esc(item.hash) + '">Open</button></div><div class="feed-secondary">' + esc(item.signer || 'Unsigned') + ' · ' + esc(item.section + '.' + item.method) + '</div></div>'
+    ).join('') : '<div class="muted">No extrinsics recorded for this block.</div>');
+    renderSubstrateEvents(data.events,'Substrate block events');
+    return true;
+  }
+  if (data.source === 'substrate_indexer' && data.hash && data.extrinsic) {
+    $('#result').innerHTML = '<div class="headrow"><h3>Substrate extrinsic</h3><span class="tag">Persistent index</span></div>' + rows([
+      ['Extrinsic hash',mono(data.hash) + ' ' + copyButton(data.hash)],
+      ['Block',esc(data.blockNumber)],
+      ['Extrinsic index',esc(data.extrinsicIndex)],
+      ['Call',esc((data.section || 'unknown') + '.' + (data.method || 'unknown'))],
+      ['Signer',data.signer ? mono(data.signer) + ' ' + copyButton(data.signer) : 'Unsigned'],
+      ['Call payload','<pre>' + esc(JSON.stringify(data.extrinsic,null,2)) + '</pre>']
+    ]);
+    renderSubstrateEvents(data.events || [],'Events associated with the extrinsic');
     return true;
   }
   if (data.block) {
