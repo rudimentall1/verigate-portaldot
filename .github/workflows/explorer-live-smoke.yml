@@ -15,22 +15,37 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     steps:
-      - name: Check public API health and JSON endpoints
+      - name: Check public API health and live chain connectivity
         shell: bash
         run: |
           set -euo pipefail
           BASE="https://verigate-portaldot-explorer.onrender.com"
+          EXPECTED_GENESIS="0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd"
 
-          curl --retry 3 --retry-delay 5 --retry-all-errors --max-time 25 -fsS "$BASE/health" -o /tmp/health.json
+          # A free Render instance can be asleep, and Substrate reconnects asynchronously.
+          # Retry live state checks instead of failing on the first cold-start response.
+          curl --retry 3 --retry-delay 5 --retry-all-errors --max-time 30 -fsS "$BASE/health" -o /tmp/health.json
           jq -e '.ok == true and .service == "portal-dot-explorer"' /tmp/health.json >/dev/null
 
-          curl --retry 2 --retry-delay 3 --retry-all-errors --max-time 30 -fsS "$BASE/api/status" -o /tmp/evm.json
-          curl --retry 2 --retry-delay 3 --retry-all-errors --max-time 30 -fsS "$BASE/api/substrate/status" -o /tmp/substrate.json
+          READY=false
+          for attempt in $(seq 1 12); do
+            curl --retry 1 --retry-delay 2 --retry-all-errors --max-time 30 -fsS "$BASE/api/status" -o /tmp/evm.json
+            curl --retry 1 --retry-delay 2 --retry-all-errors --max-time 30 -fsS "$BASE/api/substrate/status" -o /tmp/substrate.json
 
-          jq -e 'type == "object"' /tmp/evm.json >/dev/null
-          jq -e 'type == "object" and has("connected") and has("expectedGenesisHash") and has("actualGenesisHash")' /tmp/substrate.json >/dev/null
+            EVM_CHAIN_ID="$(jq -r '.live.chainId // .chainId // empty' /tmp/evm.json)"
+            ACTUAL_GENESIS="$(jq -r '.actualGenesisHash // empty' /tmp/substrate.json)"
+            SUBSTRATE_CONNECTED="$(jq -r '.connected // false' /tmp/substrate.json)"
+
+            if [[ "$EVM_CHAIN_ID" == "420420777" && "$ACTUAL_GENESIS" == "$EXPECTED_GENESIS" && "$SUBSTRATE_CONNECTED" == "true" ]]; then
+              READY=true
+              break
+            fi
+
+            echo "Waiting for live RPC readiness (attempt $attempt/12): EVM chainId=${EVM_CHAIN_ID:-<empty>}; Substrate connected=$SUBSTRATE_CONNECTED; genesis=${ACTUAL_GENESIS:-<empty>}"
+            sleep 5
+          done
 
           echo "=== API health ==="
           jq . /tmp/health.json
@@ -39,19 +54,7 @@ jobs:
           echo "=== Substrate indexer/RPC status ==="
           jq '{connected, expectedGenesisHash, actualGenesisHash, cursor, contiguousThrough, error: (.error // .substrateError // null)}' /tmp/substrate.json
 
-          EXPECTED_GENESIS="0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd"
-          ACTUAL_GENESIS="$(jq -r '.actualGenesisHash // empty' /tmp/substrate.json)"
-          if [[ "$ACTUAL_GENESIS" != "$EXPECTED_GENESIS" ]]; then
-            echo "::error::Substrate RPC genesis mismatch or unavailable. Expected $EXPECTED_GENESIS, got ${ACTUAL_GENESIS:-<empty>}."
-            exit 1
-          fi
-          if [[ "$(jq -r '.connected' /tmp/substrate.json)" != "true" ]]; then
-            echo "::error::Substrate indexer is not connected."
-            exit 1
-          fi
-
-          EVM_CHAIN_ID="$(jq -r '.live.chainId // .chainId // empty' /tmp/evm.json)"
-          if [[ "$EVM_CHAIN_ID" != "420420777" ]]; then
-            echo "::error::EVM RPC chain ID mismatch or unavailable. Expected 420420777, got ${EVM_CHAIN_ID:-<empty>}."
+          if [[ "$READY" != "true" ]]; then
+            echo "::error::Explorer API did not reach a healthy EVM and Substrate RPC state within 60 seconds."
             exit 1
           fi
