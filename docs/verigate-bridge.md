@@ -14,6 +14,10 @@ The bridge signer is the security boundary between Verigate's Ed25519 execution 
 8. Limit the on-chain signature deadline to the earlier of the Verigate authorization expiry and 120 seconds from bridge signing. The signed issued_at and expires_at fields must be safe-integer JSON numbers; string-encoded timestamps are rejected rather than coerced.
 9. Sign EIP-712 data using the dedicated bridge key. The signing CLI outputs JSON and never broadcasts.
 
+## V1/V2 guard profile
+
+The bridge keeps V1 as the default for backward compatibility. Set `PORTALDOT_GUARD_PROFILE=v2` only after independently verifying the V2 deployment. The V2 profile signs the `PortalDotAgentGuardV2` EIP-712 domain with version `2`; V1 uses `PortalDotAgentGuard` with version `1`. For V2, configure `PORTALDOT_V2_GUARD_ADDRESS` and `PORTALDOT_V2_GUARD_CODE_HASH`; the V1 address/hash variables remain intact. The execution command resolves the same active profile as the signer, preventing a V2 signature from being submitted to a V1 contract or vice versa.
+
 ## Required signed intent convention
 
 - action_type: portaldot.native_transfer
