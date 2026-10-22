@@ -457,6 +457,7 @@ def main() -> int:
         identity = storage.identity(plan["identity_id"])
         if identity is None:
             die("Agent identity disappeared from the issuer DB.")
+        from cryptography.hazmat.primitives import serialization
         raw_public = base64.b64decode(identity.public_key_b64, validate=True)
         derived_public = agent_key.public_key().public_bytes(
             encoding=serialization.Encoding.Raw,
