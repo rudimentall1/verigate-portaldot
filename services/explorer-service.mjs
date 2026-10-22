@@ -105,7 +105,17 @@ export function initializeDatabase(db) {
     "CREATE INDEX IF NOT EXISTS logs_address_idx ON logs(contract_address, block_number DESC);\n" +
     "CREATE INDEX IF NOT EXISTS logs_topic0_idx ON logs(topic0, block_number DESC);\n" +
     "CREATE TABLE IF NOT EXISTS indexer_state (state_key TEXT PRIMARY KEY,state_value TEXT NOT NULL,updated_at TEXT NOT NULL);\n" +
-    "CREATE TABLE IF NOT EXISTS indexer_gaps (component TEXT NOT NULL,start_block INTEGER NOT NULL,end_block INTEGER NOT NULL,error_message TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,PRIMARY KEY(component,start_block,end_block));"
+    "CREATE TABLE IF NOT EXISTS indexer_gaps (component TEXT NOT NULL,start_block INTEGER NOT NULL,end_block INTEGER NOT NULL,error_message TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,PRIMARY KEY(component,start_block,end_block)); +
+    "CREATE TABLE IF NOT EXISTS substrate_blocks (block_number INTEGER PRIMARY KEY,block_hash TEXT NOT NULL,parent_hash TEXT,state_root TEXT,extrinsics_root TEXT,timestamp_ms TEXT,extrinsic_count INTEGER NOT NULL DEFAULT 0,event_count INTEGER NOT NULL DEFAULT 0,raw_json TEXT NOT NULL,indexed_at TEXT NOT NULL);" +
+    "CREATE UNIQUE INDEX IF NOT EXISTS substrate_blocks_hash_idx ON substrate_blocks(block_hash);" +
+    "CREATE TABLE IF NOT EXISTS substrate_extrinsics (block_number INTEGER NOT NULL,extrinsic_index INTEGER NOT NULL,extrinsic_hash TEXT NOT NULL,section TEXT,method TEXT,signer TEXT,raw_json TEXT NOT NULL,indexed_at TEXT NOT NULL,PRIMARY KEY(block_number,extrinsic_index));" +
+    "CREATE INDEX IF NOT EXISTS substrate_extrinsics_hash_idx ON substrate_extrinsics(extrinsic_hash);" +
+    "CREATE INDEX IF NOT EXISTS substrate_extrinsics_signer_idx ON substrate_extrinsics(signer,block_number DESC);" +
+    "CREATE TABLE IF NOT EXISTS substrate_events (block_number INTEGER NOT NULL,event_index INTEGER NOT NULL,extrinsic_index INTEGER,section TEXT NOT NULL,method TEXT NOT NULL,data_json TEXT NOT NULL,raw_json TEXT NOT NULL,indexed_at TEXT NOT NULL,PRIMARY KEY(block_number,event_index));" +
+    "CREATE INDEX IF NOT EXISTS substrate_events_section_idx ON substrate_events(section,block_number DESC,event_index DESC);" +
+    "CREATE INDEX IF NOT EXISTS substrate_events_method_idx ON substrate_events(method,block_number DESC,event_index DESC);" +
+    "CREATE TABLE IF NOT EXISTS substrate_event_accounts (block_number INTEGER NOT NULL,event_index INTEGER NOT NULL,address TEXT NOT NULL,PRIMARY KEY(block_number,event_index,address));" +
+    "CREATE INDEX IF NOT EXISTS substrate_event_accounts_address_idx ON substrate_event_accounts(address,block_number DESC,event_index DESC);"
   );
 }
 
