@@ -17,6 +17,14 @@ services:
         value: https://test-evm-rpc-v3.portaldot.dev
       - key: PORTALDOT_CHAIN_ID
         value: "420420777"
+      - key: PORTALDOT_SUBSTRATE_RPC_URL
+        value: wss://test-node-v3.portaldot.dev
+      - key: SUBSTRATE_START_BLOCK
+        value: "110000"
+      - key: SUBSTRATE_BACKFILL_BLOCKS
+        value: "30000"
+      - key: SUBSTRATE_BATCH_BLOCKS
+        value: "10"
       - key: EXPLORER_DB_PATH
         value: /var/data/portal-dot-explorer.sqlite
       - key: EXPLORER_START_BLOCK
