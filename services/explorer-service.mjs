@@ -232,6 +232,216 @@ export function persistBatch(db, { blocks, logs, startBlock, endBlock, blockErro
   }
 }
 
+export function extractSubstrateAccounts(value, result = new Set(), seen = new Set()) {
+  if (typeof value === "string") {
+    if (SUBSTRATE_ACCOUNT_RE.test(value)) result.add(value);
+    return [...result];
+  }
+  if (!value || typeof value !== "object" || seen.has(value)) return [...result];
+  seen.add(value);
+  if (Array.isArray(value)) {
+    for (const item of value) extractSubstrateAccounts(item, result, seen);
+  } else {
+    for (const item of Object.values(value)) extractSubstrateAccounts(item, result, seen);
+  }
+  return [...result];
+}
+
+function cleanSubstrateAccount(value) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return SUBSTRATE_ACCOUNT_RE.test(normalized) ? normalized : null;
+}
+
+function deleteSubstrateBlockRows(db, blockNumber) {
+  db.prepare("DELETE FROM substrate_event_accounts WHERE block_number=?").run(blockNumber);
+  db.prepare("DELETE FROM substrate_events WHERE block_number=?").run(blockNumber);
+  db.prepare("DELETE FROM substrate_extrinsics WHERE block_number=?").run(blockNumber);
+}
+
+export function persistSubstrateBatch(db, { blocks, blockErrors = [], eventErrors = [], startBlock, endBlock, advanceCursor = true }) {
+  const now = new Date().toISOString();
+  const insertBlock = db.prepare(
+    "INSERT INTO substrate_blocks(block_number,block_hash,parent_hash,state_root,extrinsics_root,timestamp_ms,extrinsic_count,event_count,raw_json,indexed_at) VALUES(?,?,?,?,?,?,?,?,?,?) " +
+    "ON CONFLICT(block_number) DO UPDATE SET block_hash=excluded.block_hash,parent_hash=excluded.parent_hash,state_root=excluded.state_root,extrinsics_root=excluded.extrinsics_root,timestamp_ms=excluded.timestamp_ms,extrinsic_count=excluded.extrinsic_count,event_count=excluded.event_count,raw_json=excluded.raw_json,indexed_at=excluded.indexed_at"
+  );
+  const insertExtrinsic = db.prepare(
+    "INSERT INTO substrate_extrinsics(block_number,extrinsic_index,extrinsic_hash,section,method,signer,raw_json,indexed_at) VALUES(?,?,?,?,?,?,?,?) " +
+    "ON CONFLICT(block_number,extrinsic_index) DO UPDATE SET extrinsic_hash=excluded.extrinsic_hash,section=excluded.section,method=excluded.method,signer=excluded.signer,raw_json=excluded.raw_json,indexed_at=excluded.indexed_at"
+  );
+  const insertEvent = db.prepare(
+    "INSERT INTO substrate_events(block_number,event_index,extrinsic_index,section,method,data_json,raw_json,indexed_at) VALUES(?,?,?,?,?,?,?,?) " +
+    "ON CONFLICT(block_number,event_index) DO UPDATE SET extrinsic_index=excluded.extrinsic_index,section=excluded.section,method=excluded.method,data_json=excluded.data_json,raw_json=excluded.raw_json,indexed_at=excluded.indexed_at"
+  );
+  const insertAccount = db.prepare(
+    "INSERT OR IGNORE INTO substrate_event_accounts(block_number,event_index,address) VALUES(?,?,?)"
+  );
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    for (const block of blocks) {
+      if (!block || !Number.isSafeInteger(block.number) || block.number < 0 || !normaliseHash(block.hash)) continue;
+      const existing = db.prepare("SELECT block_hash FROM substrate_blocks WHERE block_number=?").get(block.number);
+      if (existing && existing.block_hash !== block.hash.toLowerCase()) deleteSubstrateBlockRows(db, block.number);
+
+      insertBlock.run(
+        block.number,
+        block.hash.toLowerCase(),
+        normaliseHash(block.parentHash) || null,
+        normaliseHash(block.stateRoot) || null,
+        normaliseHash(block.extrinsicsRoot) || null,
+        block.timestampMs == null ? null : String(block.timestampMs),
+        Array.isArray(block.extrinsics) ? block.extrinsics.length : 0,
+        Array.isArray(block.events) ? block.events.length : 0,
+        JSON.stringify(block.raw || {}),
+        now
+      );
+
+      for (const extrinsic of block.extrinsics || []) {
+        if (!Number.isSafeInteger(extrinsic.index) || extrinsic.index < 0 || typeof extrinsic.hash !== "string") continue;
+        insertExtrinsic.run(
+          block.number, extrinsic.index, extrinsic.hash.toLowerCase(),
+          typeof extrinsic.section === "string" ? extrinsic.section : null,
+          typeof extrinsic.method === "string" ? extrinsic.method : null,
+          cleanSubstrateAccount(extrinsic.signer),
+          JSON.stringify(extrinsic.raw || {}), now
+        );
+      }
+
+      for (const event of block.events || []) {
+        if (!Number.isSafeInteger(event.index) || event.index < 0 ||
+            typeof event.section !== "string" || typeof event.method !== "string") continue;
+        insertEvent.run(
+          block.number, event.index,
+          Number.isSafeInteger(event.extrinsicIndex) ? event.extrinsicIndex : null,
+          event.section, event.method, JSON.stringify(event.data ?? []),
+          JSON.stringify(event.raw || {}), now
+        );
+        const found = new Set([
+          ...extractSubstrateAccounts(event.data ?? []),
+          ...extractSubstrateAccounts(event.raw || {})
+        ]);
+        for (const address of found) insertAccount.run(block.number, event.index, address);
+      }
+
+      deleteGap(db, "substrate_blocks", block.number, block.number);
+      if (block.eventsComplete !== false) deleteGap(db, "substrate_events", block.number, block.number);
+    }
+
+    for (const item of blockErrors) addGap(db, "substrate_blocks", item.block, item.block, item.error);
+    for (const item of eventErrors) addGap(db, "substrate_events", item.block, item.block, item.error);
+
+    if (advanceCursor) upsertState(db, "substrate_cursor", endBlock);
+    upsertState(db, "substrate_last_batch_at", now);
+    upsertState(db, "substrate_last_batch_start", startBlock);
+    upsertState(db, "substrate_last_batch_end", endBlock);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
+export function getSubstrateIndexerStatus(db, runtime = {}) {
+  const cursorText = readState(db, "substrate_cursor");
+  const startedText = readState(db, "substrate_started_from");
+  const cursor = cursorText == null ? null : Number(cursorText);
+  const started = startedText == null ? null : Number(startedText);
+  const gapCount = db.prepare("SELECT COUNT(*) AS count FROM indexer_gaps WHERE component LIKE 'substrate_%'").get().count;
+  const firstGap = db.prepare("SELECT MIN(start_block) AS n FROM indexer_gaps WHERE component LIKE 'substrate_%'").get().n;
+  const contiguousThrough = cursor == null ? null : firstGap == null ? cursor : Math.min(cursor, firstGap - 1);
+  const count = (table) => db.prepare("SELECT COUNT(*) AS count FROM " + table).get().count;
+  return {
+    connected: runtime.substrateConnected === true,
+    websocketOrigin: (() => { try { return new URL(SUBSTRATE_WS_URL).origin; } catch { return null; } })(),
+    expectedGenesisHash: EXPECTED_SUBSTRATE_GENESIS_HASH || null,
+    actualGenesisHash: runtime.substrateGenesisHash || null,
+    latestFinalized: runtime.substrateLatestFinalized ?? null,
+    indexedThrough: contiguousThrough == null || (started != null && contiguousThrough < started) ? null : contiguousThrough,
+    processedThrough: cursor,
+    startedFrom: started,
+    blocksStored: count("substrate_blocks"),
+    extrinsicsStored: count("substrate_extrinsics"),
+    eventsStored: count("substrate_events"),
+    gapCount,
+    lastBatchAt: readState(db, "substrate_last_batch_at"),
+    gaps: db.prepare("SELECT component,start_block AS startBlock,end_block AS endBlock,error_message AS error,attempts,updated_at AS updatedAt FROM indexer_gaps WHERE component LIKE 'substrate_%' ORDER BY updated_at LIMIT 100").all(),
+    error: runtime.substrateError || null
+  };
+}
+
+function readSubstrateBlock(db, ref) {
+  let block;
+  if (/^(0|[1-9][0-9]*)$/.test(String(ref))) {
+    const number = Number(ref);
+    if (!Number.isSafeInteger(number)) return null;
+    block = db.prepare("SELECT * FROM substrate_blocks WHERE block_number=?").get(number);
+  } else {
+    const hash = normaliseHash(ref);
+    if (!hash) return null;
+    block = db.prepare("SELECT * FROM substrate_blocks WHERE block_hash=?").get(hash);
+  }
+  if (!block) return null;
+  const extrinsics = db.prepare("SELECT raw_json FROM substrate_extrinsics WHERE block_number=? ORDER BY extrinsic_index").all(block.block_number).map(row => JSON.parse(row.raw_json));
+  const events = db.prepare("SELECT raw_json FROM substrate_events WHERE block_number=? ORDER BY event_index LIMIT 1000").all(block.block_number).map(row => JSON.parse(row.raw_json));
+  return { source: "substrate_indexer", block: JSON.parse(block.raw_json), blockNumber: block.block_number, blockHash: block.block_hash, extrinsics, events };
+}
+
+function parseSubstrateExtrinsic(extrinsic, index) {
+  const signerText = (() => { try { return extrinsic.isSigned ? extrinsic.signer.toString() : null; } catch { return null; } })();
+  const signer = cleanSubstrateAccount(signerText);
+  const method = extrinsic.method;
+  let raw = {};
+  try { raw = extrinsic.toJSON(); } catch {}
+  return {
+    index,
+    hash: typeof extrinsic.hash?.toHex === "function" ? extrinsic.hash.toHex().toLowerCase() : null,
+    section: method?.section || null,
+    method: method?.method || null,
+    signer,
+    raw
+  };
+}
+
+function parseSubstrateEvent(record, index) {
+  const event = record.event;
+  let extrinsicIndex = null;
+  try {
+    if (record.phase?.isApplyExtrinsic) extrinsicIndex = record.phase.asApplyExtrinsic.toNumber();
+  } catch {}
+  let data = [];
+  try { data = event.data.toJSON(); } catch {}
+  let phase = null;
+  try { phase = record.phase.toJSON(); } catch {}
+  const raw = {
+    phase,
+    section: event.section,
+    method: event.method,
+    data,
+    topics: (record.topics || []).map((topic) => topic.toHex())
+  };
+  return {
+    index,
+    extrinsicIndex,
+    section: event.section || "unknown",
+    method: event.method || "unknown",
+    data,
+    raw
+  };
+}
+
+export async function persistSubstrateBlock(db, block) {
+  persistSubstrateBatch(db, {
+    blocks: [block],
+    blockErrors: [],
+    eventErrors: block.eventsComplete === false
+      ? [{ block: block.number, error: block.eventsError || "Substrate events were not available for this block." }]
+      : [],
+    startBlock: block.number,
+    endBlock: block.number,
+    advanceCursor: false
+  });
+}
+
 export function openExplorerDatabase(path = DB_PATH) {
   mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
