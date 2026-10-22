@@ -25,7 +25,9 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Run local contract and bridge tests
+      - name: Validate Explorer service syntax
+        run: node --check services/explorer-service.mjs
+      - name: Run local contract, bridge and Explorer tests
         run: npm test
       - name: Compile contracts
         run: npm run compile

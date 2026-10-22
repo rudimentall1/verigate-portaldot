@@ -12,8 +12,8 @@
 a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}button,input{font:inherit}button{border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:#18263a;color:var(--text);font-weight:700;cursor:pointer}button:hover{border-color:#4ba9bc}button:disabled{opacity:.5;cursor:wait}
 .wrap{max-width:1180px;margin:auto;padding:0 22px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 0;border-bottom:1px solid var(--line)}.brand{font-weight:900;letter-spacing:.12em;color:var(--text)}.nav{display:flex;gap:20px;flex-wrap:wrap;color:var(--muted)}.pill{font-size:11px;letter-spacing:.09em;font-weight:800;color:var(--green);border:1px solid #275943;border-radius:999px;padding:6px 10px}
 .hero{padding:34px 0 22px}.eyebrow{font-size:11px;font-weight:850;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}h1{font-size:clamp(30px,4.6vw,48px);letter-spacing:-.045em;line-height:1.08;margin:10px 0 12px}.lead{max-width:820px;color:var(--muted);font-size:15px}.search{display:flex;gap:10px;margin:20px 0 10px;max-width:900px}.search input{flex:1;min-width:0;background:#080f1a;border:1px solid #30445d;border-radius:10px;padding:14px 15px;color:var(--text);outline:none}.search input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #58d9ee20}.search button{background:var(--cyan);color:#07101c;border-color:var(--cyan);padding-inline:21px}.presets{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 24px}.presets button{font-size:12px;color:#cfdeef;padding:7px 10px;background:#101b2b}
-.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0 30px}.metric,.card{background:linear-gradient(135deg,#101a2a,#0c1421);border:1px solid var(--line);border-radius:14px;padding:17px}.metric .label,.label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}.metric strong{display:block;font-size:21px;margin:7px 0 2px;overflow-wrap:anywhere}.metric small{color:var(--muted)}
-h2{font-size:18px;margin:25px 0 12px;letter-spacing:-.02em}.card{min-width:0}.muted{color:var(--muted)}.status{padding:12px 14px;border-radius:9px;border:1px solid var(--line);background:#0b1420;color:#c3d5e8;overflow-wrap:anywhere}.status.good{color:var(--green);border-color:#28674b;background:#0b1a16}.status.warn{color:var(--amber);border-color:#66502a;background:#20190d}.status.bad{color:var(--red);border-color:#67313b;background:#201016}.rows{margin-top:14px}.row{display:grid;grid-template-columns:minmax(130px,190px) minmax(0,1fr);gap:14px;padding:11px 0;border-bottom:1px solid #1e2b3c}.row:last-child{border-bottom:0}.key{color:var(--muted)}.val{overflow-wrap:anywhere;word-break:break-word}.mono,code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;word-break:break-all}.copy{font-size:11px;padding:3px 7px;margin-left:7px}.tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:4px 8px;border:1px solid #36516e;border-radius:999px;color:#c4d9f0;white-space:nowrap}.headrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.headrow h3{font-size:16px;margin:0}.event{border:1px solid var(--line);border-radius:9px;margin-top:9px;overflow:hidden}.event summary{cursor:pointer;padding:11px;background:#101b2a;display:flex;gap:12px;justify-content:space-between}.event pre{padding:14px;overflow:auto;white-space:pre-wrap;color:#c7d6e8}.two{display:grid;grid-template-columns:1fr 1fr;gap:13px}.small{color:var(--muted);font-size:12px}.notice{margin:20px 0;padding:14px 16px;border-left:3px solid var(--amber);background:#1a160e;color:#d5c29e;border-radius:0 8px 8px 0}.footer{border-top:1px solid var(--line);margin-top:38px;padding:22px 0 32px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:18px 0 30px}.metric,.card{background:linear-gradient(135deg,#101a2a,#0c1421);border:1px solid var(--line);border-radius:14px;padding:17px}.metric .label,.label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}.metric strong{display:block;font-size:21px;margin:7px 0 2px;overflow-wrap:anywhere}.metric small{color:var(--muted)}
+h2{font-size:18px;margin:25px 0 12px;letter-spacing:-.02em}.card{min-width:0}.muted{color:var(--muted)}.status{padding:12px 14px;border-radius:9px;border:1px solid var(--line);background:#0b1420;color:#c3d5e8;overflow-wrap:anywhere}.status.good{color:var(--green);border-color:#28674b;background:#0b1a16}.status.warn{color:var(--amber);border-color:#66502a;background:#20190d}.status.bad{color:var(--red);border-color:#67313b;background:#201016}.rows{margin-top:14px}.row{display:grid;grid-template-columns:minmax(130px,190px) minmax(0,1fr);gap:14px;padding:11px 0;border-bottom:1px solid #1e2b3c}.row:last-child{border-bottom:0}.key{color:var(--muted)}.val{overflow-wrap:anywhere;word-break:break-word}.mono,code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;word-break:break-all}.copy{font-size:11px;padding:3px 7px;margin-left:7px}.tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:4px 8px;border:1px solid #36516e;border-radius:999px;color:#c4d9f0;white-space:nowrap}.headrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.headrow h3{font-size:16px;margin:0}.event{border:1px solid var(--line);border-radius:9px;margin-top:9px;overflow:hidden}.event summary{cursor:pointer;padding:11px;background:#101b2a;display:flex;gap:12px;justify-content:space-between}.event pre{padding:14px;overflow:auto;white-space:pre-wrap;color:#c7d6e8}.two{display:grid;grid-template-columns:1fr 1fr;gap:13px}.small{color:var(--muted);font-size:12px}.notice{margin:20px 0;padding:14px 16px;border-left:3px solid var(--amber);background:#1a160e;color:#d5c29e;border-radius:0 8px 8px 0}.footer{border-top:1px solid var(--line);margin-top:38px;padding:22px 0 32px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px}.api-config{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;max-width:900px;margin:15px 0}.api-config input{min-width:0;background:#080f1a;border:1px solid #30445d;border-radius:9px;padding:10px 12px;color:var(--text)}.api-config button{background:#15263a}.api-note{font-size:12px;color:var(--muted);grid-column:1/-1}.feed-item{padding:11px 0;border-bottom:1px solid #1e2b3c}.feed-item:last-child{border-bottom:0}.feed-main{display:flex;align-items:center;justify-content:space-between;gap:10px}.feed-main button{padding:4px 7px;font-size:11px}.feed-secondary{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 @media(max-width:700px){.wrap{padding:0 14px}.nav{gap:10px}.search{flex-direction:column}.metrics{grid-template-columns:1fr}.two{grid-template-columns:1fr}.row{grid-template-columns:1fr;gap:4px}.metric strong{font-size:19px}}
 </style>
 </head>
@@ -23,10 +23,10 @@ h2{font-size:18px;margin:25px 0 12px;letter-spacing:-.02em}.card{min-width:0}.mu
 <main>
 <section class="hero" id="search"><div class="eyebrow">Independent PortalDot V3 Explorer</div><h1>Search the chain. Verify the evidence.</h1><p class="lead">Look up an EVM transaction, block, or address using the PortalDot V3 RPC. Results from the live endpoint are kept separate from saved Verigate deployment records. This first version does not claim full historical indexing or address-wide transaction history.</p>
 <div class="search"><input id="query" spellcheck="false" autocomplete="off" aria-label="Transaction hash, block number, block hash, or EVM address" placeholder="Transaction hash, block number, block hash, or EVM address"><button id="searchBtn">Search</button></div>
-<div class="presets"><button data-query="0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c">Our deployment transaction</button><button data-query="0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c">Saved TransferExecuted</button><button data-query="0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b">V1 guard contract</button><button data-query="116872">Recorded deployment block</button><button data-query="132475">Recorded transfer block</button></div></section>
-<section class="metrics" aria-label="Live network status"><article class="metric"><div class="label">Network</div><strong>PortalDot V3</strong><small>Expected chain ID 420420777</small></article><article class="metric"><div class="label">RPC connection</div><strong id="rpcStatus">Checking…</strong><small id="rpcHint">Read-only request in progress</small></article><article class="metric"><div class="label">Latest EVM block</div><strong id="latestBlock">—</strong><small id="refreshed">Not refreshed yet</small></article></section>
+<div class="presets"><button data-query="0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c">Our deployment transaction</button><button data-query="0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c">Saved TransferExecuted</button><button data-query="0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b">V1 guard contract</button><button data-query="116872">Recorded deployment block</button><button data-query="132475">Recorded transfer block</button></div><div class="api-config"><input id="apiBaseInput" placeholder="Optional indexer API URL, e.g. https://your-service.onrender.com" aria-label="Indexer API base URL"><button id="saveApiBase">Connect indexer</button><div class="api-note" id="apiBaseNote">Persistent transaction history requires the Explorer API. Direct RPC lookup continues to work without it.</div></div></section>
+<section class="metrics" aria-label="Live network status"><article class="metric"><div class="label">Network</div><strong>PortalDot V3</strong><small>Expected chain ID 420420777</small></article><article class="metric"><div class="label">RPC connection</div><strong id="rpcStatus">Checking…</strong><small id="rpcHint">Read-only request in progress</small></article><article class="metric"><div class="label">Latest EVM block</div><strong id="latestBlock">—</strong><small id="refreshed">Not refreshed yet</small></article><article class="metric"><div class="label">Indexed through</div><strong id="indexedBlock">Not connected</strong><small id="indexerHint">Configure the indexer API to browse stored history</small></article></section>
 <h2>Lookup result</h2><section class="card" id="result"><div class="status">Connecting to the PortalDot V3 EVM RPC…</div></section>
-<h2>Logs for the resolved block</h2><section class="card" id="logs"><div class="muted">Block logs appear here when the RPC can return the requested block.</div></section>
+<h2>Logs for the resolved block</h2><section class="card" id="logs"><div class="muted">Block logs appear here when the RPC can return the requested block.</div></section><h2>Indexed chain activity</h2><section class="two"><article class="card"><div class="headrow"><h3>Recent indexed blocks</h3><span class="tag" id="blocksSource">Index pending</span></div><div id="recentBlocks" class="rows"><div class="muted">Connect an Explorer API to browse stored blocks.</div></div></article><article class="card"><div class="headrow"><h3>Recent indexed transactions</h3><span class="tag" id="transactionsSource">Index pending</span></div><div id="recentTransactions" class="rows"><div class="muted">Connect an Explorer API to browse stored transactions.</div></div></article></section>
 <h2 id="evidence">Saved Verigate evidence</h2><section class="two"><article class="card"><div class="headrow"><h3>PortalDotAgentGuard V1 deployment</h3><span class="tag">Historical record</span></div><div id="deployEvidence"></div></article><article class="card"><div class="headrow"><h3>TransferExecuted</h3><span class="tag">Historical record</span></div><div id="transferEvidence"></div></article></section>
 <div class="notice">Evidence boundary: a saved transaction record is not a fresh RPC confirmation. If the node has pruned a historical receipt, this Explorer says so instead of fabricating a successful live lookup. Full address history, native-account mapping, token-holder rankings, NFT ownership, and ABI event indexing require a separate indexer and database.</div>
 </main>
@@ -44,6 +44,20 @@ const SAVED = {
   [DEPLOY_TX.toLowerCase()]: {label:'PortalDotAgentGuard V1 deployment',block:'116872',contract:GUARD},
   [TRANSFER_TX.toLowerCase()]: {label:'TransferExecuted',block:'132475',event:'TransferExecuted'}
 };
+const params = new URLSearchParams(location.search);
+let apiBaseOverride = params.get('api') || localStorage.getItem('portalDotExplorerApi') || '';
+function getApiBase() {
+  const value = (apiBaseOverride || location.origin).trim().replace(/\/+$/, '');
+  const url = new URL(value);
+  if (!['https:', 'http:'].includes(url.protocol)) throw new Error('The API URL must use HTTPS.');
+  if (url.protocol === 'http:' && !['localhost','127.0.0.1','[::1]'].includes(url.hostname)) throw new Error('Use HTTPS for remote API services.');
+  return url.origin;
+}
+async function apiGet(path) {
+  const response = await fetch(getApiBase() + path, {headers:{accept:'application/json'}, signal:AbortSignal.timeout(5000)});
+  if (!response.ok) throw new Error('Indexer API HTTP ' + response.status);
+  return response.json();
+}
 const $ = selector => document.querySelector(selector);
 const esc = value => String(value ?? '—').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const short = value => value && value.length > 24 ? value.slice(0,10) + '…' + value.slice(-8) : value || '—';
@@ -62,7 +76,7 @@ const rpc = async (method, params=[]) => {
 function renderRows(pairs, label='Live RPC') {
   return '<div class="headrow"><h3>Lookup details</h3><span class="tag">' + esc(label) + '</span></div>' + rows(pairs);
 }
-function renderBlock(block, label='Live RPC') {
+function renderBlock(block, label='Live RPC', indexedLogs=null) {
   const number = BigInt(block.number).toString();
   const txs = Array.isArray(block.transactions) ? block.transactions : [];
   const txList = txs.length ? txs.slice(0,80).map(tx => {
@@ -76,19 +90,121 @@ function renderBlock(block, label='Live RPC') {
     ['Timestamp',esc(block.timestamp ? new Date(Number(BigInt(block.timestamp))*1000).toISOString() : '—')],
     ['Transactions',esc(txs.length)]
   ]) + (txs.length ? '<h3>Transactions (up to 80)</h3>' + txList : '');
-  loadLogs(block);
+  if (Array.isArray(indexedLogs)) renderLogs(indexedLogs,label); else loadLogs(block);
+}
+function renderLogs(logs, label='Live RPC') {
+  if (!Array.isArray(logs) || !logs.length) {
+    $('#logs').innerHTML = status('warn',label === 'Persistent index' ? 'No EVM logs were stored for this block in the index.' : 'No EVM logs were returned for this block. This does not mean the block has no Substrate events.');
+    return;
+  }
+  $('#logs').innerHTML = status('good',logs.length + ' EVM log(s) · ' + label) + logs.slice(0,200).map((log,index) =>
+    '<details class="event"><summary><span>Log ' + (index+1) + ' · ' + esc(short(log.address)) + '</span><span class="mono">' + esc(short(log.transactionHash)) + '</span></summary><pre>' + esc(JSON.stringify(log,null,2)) + '</pre></details>'
+  ).join('');
 }
 async function loadLogs(block) {
   $('#logs').innerHTML = '<div class="status">Requesting EVM logs from the live RPC…</div>';
   try {
     const filter = block.hash ? {blockHash:block.hash} : {fromBlock:block.number,toBlock:block.number};
     const logs = await rpc('eth_getLogs',[filter]);
-    if (!logs.length) { $('#logs').innerHTML = status('warn','The RPC returned no EVM logs for this block. This does not mean the block has no Substrate events.'); return; }
-    $('#logs').innerHTML = status('good',logs.length + ' EVM log(s) returned by the live RPC.') + logs.map((log,index) =>
-      '<details class="event"><summary><span>Log ' + (index+1) + ' · ' + esc(short(log.address)) + '</span><span class="mono">' + esc(short(log.transactionHash)) + '</span></summary><pre>' + esc(JSON.stringify(log,null,2)) + '</pre></details>'
-    ).join('');
+    renderLogs(logs,'Live RPC');
   } catch (error) {
     $('#logs').innerHTML = status('warn','The RPC could not return EVM logs: ' + error.message);
+  }
+}
+function renderApiResult(data) {
+  if (!data || typeof data !== 'object') return false;
+  if (data.source === 'invalid') {
+    $('#result').innerHTML = status('warn',data.error || 'The search input is invalid.');
+    return true;
+  }
+  if (data.transaction) {
+    const tx = data.transaction;
+    const receipt = data.receipt;
+    const blockNumber = receipt?.blockNumber || tx.blockNumber;
+    const blockHash = receipt?.blockHash || tx.blockHash;
+    const receiptLabel = receipt
+      ? (receipt.status === '0x1' ? status('good','0x1 · successful receipt') : receipt.status === '0x0' ? status('bad','0x0 · reverted') : status('warn',receipt.status || 'Receipt returned without status'))
+      : status('warn','Receipt unavailable from the current RPC.');
+    const origin = data.source === 'indexer' ? 'Persistent index' : 'Live RPC';
+    $('#result').innerHTML = '<div class="headrow"><h3>Transaction</h3><span class="tag">' + origin + '</span></div>' + rows([
+      ['Transaction hash',mono(tx.hash) + ' ' + copyButton(tx.hash)],
+      ['Receipt status',receiptLabel],
+      ['Block number',blockNumber ? esc(BigInt(blockNumber).toString()) : 'Not supplied'],
+      ['Block hash',blockHash ? mono(blockHash) + ' ' + copyButton(blockHash) : '—'],
+      ['From',tx.from ? mono(tx.from) + ' ' + copyButton(tx.from) : '—'],
+      ['To',tx.to ? mono(tx.to) + ' ' + copyButton(tx.to) : 'Contract creation'],
+      ['Value (raw EVM units)',esc(raw(tx.value))],
+      ['Gas used',receipt?.gasUsed ? esc(raw(receipt.gasUsed)) : '—'],
+      ['Receipt note',esc(data.receiptNote || 'A receipt lookup has not been confirmed.')],
+      ['Transaction record',data.source === 'indexer' ? 'Persisted in the local Explorer index.' : 'Returned by the live RPC, not yet guaranteed to be persisted.']
+    ]);
+    renderLogs(Array.isArray(data.logs) && data.logs.length ? data.logs : (receipt?.logs || []), data.source === 'indexer' ? 'Persistent index' : 'Live RPC');
+    return true;
+  }
+  if (data.block) {
+    const block = data.source === 'indexer'
+      ? {...data.block,transactions:Array.isArray(data.transactions) ? data.transactions : []}
+      : data.block;
+    renderBlock(block,data.source === 'indexer' ? 'Persistent index' : 'Live RPC',data.source === 'indexer' ? (data.logs || []) : null);
+    return true;
+  }
+  if (data.address) {
+    const hasCode = data.code && data.code !== '0x' && data.code !== '0x0';
+    $('#result').innerHTML = '<div class="headrow"><h3>' + (hasCode ? 'Contract address' : 'EVM account') + '</h3><span class="tag">Live RPC + persistent history</span></div>' + rows([
+      ['Address',mono(data.address) + ' ' + copyButton(data.address)],
+      ['Current balance (raw EVM units)',esc(raw(data.balance))],
+      ['Transaction count / nonce',esc(raw(data.nonce))],
+      ['Runtime code',hasCode ? 'Present' : 'No code at latest block'],
+      ['Runtime code size',esc(data.codeBytes + ' bytes')],
+      ['Transactions in index',esc(data.indexedTransactionCount)],
+      ['Coverage note','Address history only covers the indexed block range shown above.']
+    ]) + (Array.isArray(data.indexedTransactions) && data.indexedTransactions.length
+      ? '<h3>Recent indexed transactions</h3>' + data.indexedTransactions.map(tx => '<div class="row"><div class="key">Block ' + esc(tx.blockNumber ? BigInt(tx.blockNumber).toString() : '—') + '</div><div class="val">' + mono(short(tx.hash)) + ' ' + copyButton(tx.hash) + '</div></div>').join('')
+      : '<p class="muted">No transactions for this address have been captured in the current index range.</p>');
+    $('#logs').innerHTML = '<div class="muted">Search a transaction or block to view its EVM logs.</div>';
+    return true;
+  }
+  if (data.source === 'not_found') {
+    const known = data.knownEvidence;
+    const details = [['Searched hash',mono($('#query').value)] , ['Current RPC',esc(data.rpcNote || data.note || 'No matching object returned.')]];
+    if (known) details.push(['Saved project record',esc(known.label)],['Recorded block',esc(known.recordedBlock)],['Evidence note',esc(known.provenance)]);
+    $('#result').innerHTML = '<div class="headrow"><h3>No live object found</h3><span class="tag">Historical status kept separate</span></div>' + status('warn',known ? 'The saved project record is known, but the current RPC did not confirm the transaction.' : 'No transaction or block was found in the index or current RPC.') + rows(details);
+    $('#logs').innerHTML = '<div class="muted">No EVM block was resolved, so no logs were displayed.</div>';
+    return true;
+  }
+  if (data.source === 'rpc_error') {
+    $('#result').innerHTML = status('warn','RPC lookup failed: ' + (data.error || 'Unknown error.'));
+    return true;
+  }
+  return false;
+}
+async function loadIndexer() {
+  try {
+    const [statusData,blocksData,txData] = await Promise.all([
+      apiGet('/api/status'),apiGet('/api/blocks?limit=8'),apiGet('/api/transactions?limit=8')
+    ]);
+    const indexer = statusData.indexer || {};
+    $('#indexedBlock').textContent = indexer.indexedThrough == null ? 'Starting' : Number(indexer.indexedThrough).toLocaleString('en-US');
+    $('#indexerHint').textContent = (indexer.blocksStored || 0).toLocaleString('en-US') + ' blocks · ' + (indexer.transactionsStored || 0).toLocaleString('en-US') + ' transactions · ' + (indexer.logsStored || 0).toLocaleString('en-US') + ' logs';
+    $('#apiBaseNote').textContent = 'Indexer API connected: ' + getApiBase() + ((indexer.gapCount ?? indexer.gaps?.length ?? 0) ? ' · recorded data gaps: ' + (indexer.gapCount ?? indexer.gaps.length) : ' · no recorded gaps currently visible');
+    $('#blocksSource').textContent = 'SQLite index';
+    $('#transactionsSource').textContent = 'SQLite index';
+    $('#recentBlocks').innerHTML = blocksData.items?.length ? blocksData.items.map(item =>
+      '<div class="feed-item"><div class="feed-main"><span>Block #' + esc(item.blockNumber) + '</span><button data-query="' + esc(item.blockNumber) + '">Open</button></div><div class="feed-secondary">' + esc(short(item.blockHash)) + ' · ' + esc(item.transactionCount) + ' transactions</div></div>'
+    ).join('') : '<div class="muted">No blocks indexed yet. Check /api/status and indexer.gaps.</div>';
+    $('#recentTransactions').innerHTML = txData.items?.length ? txData.items.map(item =>
+      '<div class="feed-item"><div class="feed-main"><span class="mono">' + esc(short(item.hash)) + '</span><button data-query="' + esc(item.hash) + '">Open</button></div><div class="feed-secondary">Block #' + esc(item.blockNumber) + ' · ' + esc(short(item.from)) + ' → ' + esc(short(item.to || 'contract creation')) + '</div></div>'
+    ).join('') : '<div class="muted">No transactions indexed yet.</div>';
+    return true;
+  } catch (error) {
+    $('#indexedBlock').textContent = 'Not connected';
+    $('#indexerHint').textContent = 'Configure the persistent API URL to enable indexed history.';
+    $('#apiBaseNote').textContent = 'Indexer API unavailable at ' + (apiBaseOverride || location.origin) + '. Direct RPC search remains enabled. ' + error.message;
+    $('#blocksSource').textContent = 'Not connected';
+    $('#transactionsSource').textContent = 'Not connected';
+    $('#recentBlocks').innerHTML = '<div class="muted">Connect the deployed Explorer API URL above to browse persistent blocks.</div>';
+    $('#recentTransactions').innerHTML = '<div class="muted">Connect the deployed Explorer API URL above to browse persistent transactions.</div>';
+    return false;
   }
 }
 async function search(queryText) {
@@ -99,6 +215,10 @@ async function search(queryText) {
   $('#result').innerHTML = status('','Querying PortalDot V3…');
   $('#logs').innerHTML = '<div class="muted">Waiting for a resolved transaction or block.</div>';
   try {
+    try {
+      const indexed = await apiGet('/api/search?q=' + encodeURIComponent(query));
+      if (renderApiResult(indexed)) return;
+    } catch {}
     const isHash = /^0x[0-9a-fA-F]{64}$/.test(query);
     const isAddress = /^0x[0-9a-fA-F]{40}$/.test(query);
     const isNumber = /^\d+$/.test(query);
@@ -230,11 +350,39 @@ async function init() {
     ['Recorded receipt','Previously recorded status 0x1; not a live re-confirmation']
   ];
   $('#transferEvidence').innerHTML = rows(transferPairs);
+  const configuredApi = params.get('api') || localStorage.getItem('portalDotExplorerApi') || '';
+  $('#apiBaseInput').value = configuredApi;
+  await loadIndexer();
 }
+$('#saveApiBase').addEventListener('click',async()=>{
+  const value = $('#apiBaseInput').value.trim().replace(/\/+$/,'');
+  if (!value) {
+    apiBaseOverride = '';
+    localStorage.removeItem('portalDotExplorerApi');
+    $('#apiBaseNote').textContent = 'Using this page origin. If the API is hosted elsewhere, paste its HTTPS base URL above.';
+    await loadIndexer();
+    return;
+  }
+  try {
+    const url = new URL(value);
+    if (!['https:','http:'].includes(url.protocol) || (url.protocol === 'http:' && !['localhost','127.0.0.1','[::1]'].includes(url.hostname))) throw new Error('Use HTTPS for a remote API.');
+    apiBaseOverride = url.origin;
+    localStorage.setItem('portalDotExplorerApi',apiBaseOverride);
+    $('#apiBaseNote').textContent = 'Connecting to ' + apiBaseOverride + '…';
+    const connected = await loadIndexer();
+    if (connected) $('#apiBaseNote').textContent = 'Connected to ' + apiBaseOverride + '.';
+  } catch (error) {
+    $('#apiBaseNote').textContent = error.message;
+  }
+});
 $('#searchBtn').addEventListener('click',()=>search($('#query').value));
 $('#query').addEventListener('keydown',event=>{if(event.key==='Enter')search($('#query').value);});
-document.querySelectorAll('[data-query]').forEach(button=>button.addEventListener('click',()=>search(button.dataset.query)));
 document.addEventListener('click',async event=>{
+  const queryButton = event.target.closest('[data-query]');
+  if (queryButton) {
+    search(queryButton.dataset.query);
+    return;
+  }
   const button = event.target.closest('[data-copy]');
   if (!button) return;
   try { await navigator.clipboard.writeText(button.dataset.copy); button.textContent='Copied'; setTimeout(()=>button.textContent='Copy',1100); }
