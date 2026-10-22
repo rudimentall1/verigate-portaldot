@@ -68,7 +68,7 @@ async function main() {
     await rpcResult(rpcUrl, "eth_getBalance", [deployerAddress, "latest"]), "deployer balance"
   );
   const budget = calculateDeploymentCost({
-    gasUnits: estimatedGas, gasPriceWei: maxFee, balanceWei: balance, safetyMarginBps: 2000
+    gasUnits: estimatedGas, gasPriceWei: maxFee, balanceWei: balance, safetyMarginBps: 1500
   });
   console.log(JSON.stringify({
     preBroadcastBudgetCheck: true,
@@ -82,11 +82,11 @@ async function main() {
     estimatedGasUnits: estimatedGas.toString(),
     maxFeePerGasWei: maxFee.toString(),
     estimatedCostPot: formatUnitsExact(budget.estimatedCostWei, 18, 6),
-    requiredWith20PercentMarginPot: formatUnitsExact(budget.costWithMarginWei, 18, 6),
+    requiredWith15PercentMarginPot: formatUnitsExact(budget.costWithMarginWei, 18, 6),
     balancePot: formatUnitsExact(balance, 18, 6),
     sufficient: budget.isSufficient
   }, null, 2));
-  if (!budget.isSufficient) throw new Error("Insufficient balance for estimated deployment plus 20% margin; no transaction sent.");
+  if (!budget.isSufficient) throw new Error("Insufficient balance for estimated deployment plus 15% margin; no transaction sent.");
 
   const guard = await factory.deploy(admin, authoritySigner, initialRecipient, maxPerTransfer, windowLimit, windowSeconds,
     buildDeploymentTransactionOverrides({
