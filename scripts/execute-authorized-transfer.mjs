@@ -114,7 +114,8 @@ async function main() {
       expectedChainId: config.expectedChainId,
       guardAddress,
       authoritySigner,
-      now: latestBlock.timestamp
+      now: latestBlock.timestamp,
+      guardProfile: activeGuardConfig.profile
     });
     assertDeadlineStillUsable(authorization, latestBlock.timestamp);
 
