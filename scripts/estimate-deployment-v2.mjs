@@ -28,22 +28,28 @@ async function main() {
     privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`
   ).address);
 
-  const required = [
+  const v2ParameterKeys = [
     "ADMIN_ADDRESS", "AUTHORITY_SIGNER_ADDRESS", "V2_INITIAL_RECIPIENT",
     "V2_MAX_PER_TRANSFER_WEI", "V2_WINDOW_LIMIT_WEI", "V2_WINDOW_SECONDS"
   ];
-  for (const key of required) {
-    if (!(process.env[key] || "").trim()) {
-      throw new Error(`${key} is required for a V2 estimate; no transaction sent.`);
-    }
-  }
+  const missingV2Parameters = v2ParameterKeys.filter(key => !(process.env[key] || "").trim());
+  const v2DeploymentParametersConfigured = missingV2Parameters.length === 0;
 
-  const admin = ethersLib.getAddress(process.env.ADMIN_ADDRESS);
-  const authoritySigner = ethersLib.getAddress(process.env.AUTHORITY_SIGNER_ADDRESS);
-  const initialRecipient = ethersLib.getAddress(process.env.V2_INITIAL_RECIPIENT);
-  const maxPerTransfer = BigInt(process.env.V2_MAX_PER_TRANSFER_WEI);
-  const windowLimit = BigInt(process.env.V2_WINDOW_LIMIT_WEI);
-  const windowSeconds = Number(process.env.V2_WINDOW_SECONDS);
+  // When the V2 policy isn't configured yet, use valid probe-only constructor
+  // arguments so the user can still get a current fee quote. This script never
+  // broadcasts; deploy-v2.mjs independently requires the real values.
+  const admin = ethersLib.getAddress(v2DeploymentParametersConfigured
+    ? process.env.ADMIN_ADDRESS : "0x1000000000000000000000000000000000000001");
+  const authoritySigner = ethersLib.getAddress(v2DeploymentParametersConfigured
+    ? process.env.AUTHORITY_SIGNER_ADDRESS : "0x2000000000000000000000000000000000000002");
+  const initialRecipient = ethersLib.getAddress(v2DeploymentParametersConfigured
+    ? process.env.V2_INITIAL_RECIPIENT : "0x3000000000000000000000000000000000000003");
+  const maxPerTransfer = BigInt(v2DeploymentParametersConfigured
+    ? process.env.V2_MAX_PER_TRANSFER_WEI : "100000000000000000");
+  const windowLimit = BigInt(v2DeploymentParametersConfigured
+    ? process.env.V2_WINDOW_LIMIT_WEI : "1000000000000000000");
+  const windowSeconds = Number(v2DeploymentParametersConfigured
+    ? process.env.V2_WINDOW_SECONDS : "86400");
 
   if ([admin, authoritySigner, initialRecipient].some(a => a === ethersLib.ZeroAddress)) {
     throw new Error("V2 role addresses must not be zero.");
@@ -111,6 +117,9 @@ async function main() {
     admin,
     authoritySigner,
     initialRecipient,
+    v2DeploymentParametersConfigured,
+    missingV2Parameters,
+    estimateUsesProbeOnlyParameters: !v2DeploymentParametersConfigured,
     maxPerTransferWei: maxPerTransfer.toString(),
     windowLimitWei: windowLimit.toString(),
     windowSeconds,
@@ -123,7 +132,9 @@ async function main() {
     deployerBalancePot: formatUnitsExact(balance, 18, 6),
     budgetStatus: budget.isSufficient ? "sufficient_with_20_percent_margin" : "insufficient_for_20_percent_margin",
     shortfallPot: formatUnitsExact(budget.shortfallWei, 18, 6),
-    note: "An estimate is not proof of successful deployment. Compare reported EVM balance with the recently transferred native tPOT before broadcasting."
+    note: v2DeploymentParametersConfigured
+      ? "Read-only estimate using configured V2 policy values. No transaction is signed or sent."
+      : "Read-only preliminary cost estimate using probe-only V2 constructor values because these env vars are missing. Configure and re-estimate before deployment; deploy-v2.mjs refuses to broadcast without all real values."
   }, null, 2));
 
   if (!budget.isSufficient) process.exitCode = 2;
