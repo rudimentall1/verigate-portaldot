@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: verigate-portaldot-explorer
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --no-audit --no-fund
+    startCommand: npm run explorer:service
+    healthCheckPath: /health
+    disk:
+      name: explorer-data
+      mountPath: /var/data
+      sizeGB: 2
+    envVars:
+      - key: NODE_VERSION
+        value: "22.16.0"
+      - key: PORTALDOT_RPC_URL
+        value: https://test-evm-rpc-v3.portaldot.dev
+      - key: PORTALDOT_CHAIN_ID
+        value: "420420777"
+      - key: EXPLORER_DB_PATH
+        value: /var/data/portal-dot-explorer.sqlite
+      - key: EXPLORER_START_BLOCK
+        value: "110000"
+      - key: EXPLORER_BATCH_BLOCKS
+        value: "20"
+      - key: EXPLORER_CONFIRMATIONS
+        value: "6"
+      - key: EXPLORER_POLL_MS
+        value: "6000"
+      - key: EXPLORER_ALLOWED_ORIGINS
+        value: https://rudimentall1.github.io
