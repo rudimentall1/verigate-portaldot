@@ -19,6 +19,8 @@ services:
         value: "420420777"
       - key: PORTALDOT_SUBSTRATE_RPC_URL
         value: wss://test-node-v3.portaldot.dev
+      - key: PORTALDOT_SUBSTRATE_GENESIS_HASH
+        value: "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd"
       - key: SUBSTRATE_START_BLOCK
         value: "110000"
       - key: SUBSTRATE_BACKFILL_BLOCKS
