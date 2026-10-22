@@ -68,11 +68,14 @@ Registered contract logs already present in the EVM index are decoded at registr
 - GET /api/substrate/extrinsic/<extrinsic-hash>
 - GET /api/substrate/events?fromBlock=110000&toBlock=110100&section=balances&method=Transfer&address=5...&limit=50
 - GET /api/substrate/address/<ss58-address>
+- GET /api/substrate/mapping?q=<evm-address-or-ss58-address>
 - GET /api/substrate/state-snapshot
 - GET /api/substrate/balances?limit=20
 - GET /api/substrate/assets?limit=50
 - GET /api/substrate/assets/<asset-id>/holders?limit=50
 - GET /api/substrate/nfts?owner=5...&collectionId=4&pallet=nfts&limit=50
+
+The mapping endpoint calls the connected runtime's `reviveApi.accountId` (EVM H160 to native AccountId32) or `reviveApi.address` (native AccountId32 to H160) when the runtime exposes them. A result is labelled confirmed only when the current runtime returns a value. Missing/unsupported mappings remain explicit; no offline-derived address is substituted.
 
 The state snapshot captures `System.Account` entries and, when the runtime metadata exposes them, asset metadata/account entries and `nfts.account` / `uniques.account` entries. A snapshot is published only after the bounded scan completes and database transaction commits. If the runtime doesn't expose a storage item or the node can't serve its entries, snapshot status shows a failure while the last successful snapshot remains available. Native account data queried directly is live; historical balance/asset/NFT display uses the timestamped finalized-state snapshot.
 
