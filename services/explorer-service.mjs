@@ -455,7 +455,7 @@ export function getLatestStateSnapshot(db) {
   ).get(block) || null;
 }
 
-function persistStateSnapshot(db, snapshot) {
+export function persistStateSnapshot(db, snapshot) {
   const {
     block, capturedAt, startedAt, nativeSymbol, nativeDecimals,
     nativeBalances, assets, assetHolders, nftOwners
