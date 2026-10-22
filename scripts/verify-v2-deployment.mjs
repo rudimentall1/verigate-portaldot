@@ -63,11 +63,8 @@ async function main() {
       provider.getBalance(guardAddress)
     ]);
 
-    if (!tx || !receipt) {
-      throw new Error("RPC has not returned both the deployment transaction and receipt. Do not redeploy; inspect the same hash again.");
-    }
-
-    const block = await provider.getBlock(receipt.blockNumber);
+    const receiptAvailable = Boolean(tx && receipt);
+    const block = receiptAvailable ? await provider.getBlock(receipt.blockNumber) : null;
     const guard = new Contract(guardAddress, ABI, provider);
     const [admin, authoritySigner, maxPerTransfer, windowLimit, windowSeconds, initialRecipientAllowed] =
       await Promise.all([
@@ -80,16 +77,10 @@ async function main() {
       ]);
 
     const observedCodeHash = code === "0x" ? null : keccak256(code);
-    const receiptContractAddress = receipt.contractAddress ? getAddress(receipt.contractAddress) : null;
-    const actualFeeWei = receipt.gasUsed * receipt.gasPrice;
-    const checks = {
+    const receiptContractAddress = receipt?.contractAddress ? getAddress(receipt.contractAddress) : null;
+    const actualFeeWei = receipt ? receipt.gasUsed * receipt.gasPrice : null;
+    const stateChecks = {
       chainIdMatches: network.chainId === EXPECTED_CHAIN_ID,
-      transactionAndReceiptAvailable: true,
-      receiptSucceeded: receipt.status === 1,
-      receiptContractAddressMatches: receiptContractAddress === guardAddress,
-      expectedBlockMatches: receipt.blockNumber === DEPLOYMENT.blockNumber,
-      receiptBlockHashMatchesBlock: Boolean(block && block.hash.toLowerCase() === receipt.blockHash.toLowerCase()),
-      deployerMatchesExpected: getAddress(tx.from) === getAddress(EXPECTED_DEPLOYER),
       runtimeCodePresent: code !== "0x",
       runtimeCodeHashMatches: observedCodeHash !== null && observedCodeHash.toLowerCase() === expectedCodeHash,
       adminMatches: getAddress(admin) === getAddress(DEPLOYMENT.admin),
@@ -99,27 +90,42 @@ async function main() {
       windowSecondsMatches: BigInt(windowSeconds) === DEPLOYMENT.windowSeconds,
       initialRecipientIsAllowed: initialRecipientAllowed === true
     };
-
+    const receiptChecks = {
+      transactionAndReceiptAvailable: receiptAvailable,
+      receiptSucceeded: receipt ? receipt.status === 1 : null,
+      receiptContractAddressMatches: receipt ? receiptContractAddress === guardAddress : null,
+      expectedBlockMatches: receipt ? receipt.blockNumber === DEPLOYMENT.blockNumber : null,
+      receiptBlockHashMatchesBlock: receipt ? Boolean(block && block.hash.toLowerCase() === receipt.blockHash.toLowerCase()) : null,
+      deployerMatchesExpected: tx ? getAddress(tx.from) === getAddress(EXPECTED_DEPLOYER) : null
+    };
+    const currentStateOk = Object.values(stateChecks).every(Boolean);
+    const receiptHistoryVerified = Object.values(receiptChecks).every(value => value === true);
     const result = {
       checkedAt: new Date().toISOString(),
       mode: "read-only",
+      verificationStatus: !currentStateOk
+        ? "current_state_check_failed"
+        : receiptHistoryVerified
+          ? "deployment_receipt_and_current_state_verified"
+          : "current_state_verified_historical_receipt_unavailable",
       rpcOrigin: new URL(rpcUrl).origin,
       network: "PortalDot V3 EVM Testnet",
       chainId: network.chainId.toString(),
       latestBlock,
-      transactionHash: receipt.hash,
-      receiptStatus: receipt.status,
-      blockNumber: receipt.blockNumber,
-      blockHash: receipt.blockHash,
-      from: getAddress(tx.from),
+      transactionHash: tx?.hash || txHash,
+      receiptAvailable,
+      receiptStatus: receipt?.status ?? null,
+      blockNumber: receipt?.blockNumber ?? DEPLOYMENT.blockNumber,
+      blockHash: receipt?.blockHash ?? null,
+      from: tx ? getAddress(tx.from) : null,
       contractAddress: guardAddress,
       receiptContractAddress,
       runtimeCodeBytes: code === "0x" ? 0 : (code.length - 2) / 2,
       expectedRuntimeBytecodeHash: expectedCodeHash,
       observedRuntimeBytecodeHash: observedCodeHash,
-      gasUsed: receipt.gasUsed.toString(),
-      effectiveGasPriceWei: receipt.gasPrice.toString(),
-      actualDeploymentFeePot: formatEther(actualFeeWei),
+      gasUsed: receipt ? receipt.gasUsed.toString() : null,
+      effectiveGasPriceWei: receipt ? receipt.gasPrice.toString() : null,
+      actualDeploymentFeePot: actualFeeWei === null ? null : formatEther(actualFeeWei),
       deployerCurrentBalancePot: formatEther(deployerBalance),
       guardCurrentBalancePot: formatEther(guardBalance),
       readback: {
@@ -133,15 +139,19 @@ async function main() {
         initialRecipient: DEPLOYMENT.initialRecipient,
         initialRecipientAllowed
       },
-      checks,
-      ok: Object.values(checks).every(Boolean),
+      checks: stateChecks,
+      receiptChecks,
+      currentStateOk,
+      receiptHistoryVerified,
+      ok: currentStateOk,
       limitations: [
-        "Reads are from the configured RPC; this does not independently authenticate its operator.",
+        "State and any available receipt are returned by the configured RPC; this does not independently authenticate its operator.",
+        "If the RPC prunes old transaction history, a matching runtime code hash and configuration readback verify current state but do not replace the missing historical deployment receipt.",
         "This check is read-only and does not fund the guard or execute a transfer."
       ]
     };
     console.log(JSON.stringify(result, null, 2));
-    if (!result.ok) process.exitCode = 1;
+    if (!currentStateOk || (receiptAvailable && !receiptHistoryVerified)) process.exitCode = 1;
   } finally {
     await provider.destroy();
   }
