@@ -47,10 +47,10 @@ jobs:
           from pathlib import Path
           import re
           html = Path("web3-dapp/explorer/index.html").read_text()
-          scripts = re.findall(r"<script(?:\\s[^>]*)?>(.*?)</script>", html, re.IGNORECASE | re.DOTALL)
+          scripts = re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>", html, re.IGNORECASE | re.DOTALL)
           if not scripts:
               raise SystemExit("No inline JavaScript found in Explorer")
-          Path("/tmp/portal-dot-explorer-inline.js").write_text("\\n\\n".join(scripts))
+          Path("/tmp/portal-dot-explorer-inline.js").write_text("\n\n".join(scripts))
           PY
           node --check /tmp/portal-dot-explorer-inline.js
       - name: Configure GitHub Pages
