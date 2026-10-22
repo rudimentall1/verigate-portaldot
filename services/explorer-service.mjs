@@ -1264,7 +1264,113 @@ async function apiRoute(req, res, url, db, runtime) {
         live,
         indexer: getIndexerStatus(db),
         substrate: getSubstrateIndexerStatus(db, runtime),
+        registeredContracts: db.prepare("SELECT COUNT(*) AS count FROM registered_contracts").get().count,
         knownEvidence: KNOWN_EVIDENCE
+      }, origin);
+    }
+    if (path === "/api/contracts") {
+      if (req.method === "GET") {
+        const contracts = db.prepare(
+          "SELECT slug,address,name,registered_at,indexed_from_block,last_decoded_block,event_count,decode_error FROM registered_contracts ORDER BY registered_at DESC LIMIT 200"
+        ).all();
+        return jsonResponse(res, 200, { items: contracts.map(publicContractRecord), limit: 200 }, origin);
+      }
+      if (req.method === "POST") {
+        const body = await readJsonBody(req);
+        const address = normaliseAddress(body.address);
+        if (!address) return jsonResponse(res, 400, { error: "address must be a 20-byte EVM contract address." }, origin);
+        let name = null;
+        if (body.name != null) {
+          if (typeof body.name !== "string" || body.name.trim().length > 80) {
+            return jsonResponse(res, 400, { error: "name must be a string of at most 80 characters." }, origin);
+          }
+          name = body.name.trim() || null;
+        }
+        let abiInput = body.abi;
+        if (typeof abiInput === "string") {
+          try { abiInput = JSON.parse(abiInput); }
+          catch { return jsonResponse(res, 400, { error: "abi string must contain valid JSON." }, origin); }
+        }
+        const parsedAbi = parseContractAbi(abiInput);
+        return jsonResponse(res, 201, registerContract(db, address, name, parsedAbi), origin);
+      }
+    }
+    const contractEventsMatch = /^\/api\/contracts\/([^/]+)\/events$/.exec(path);
+    if (contractEventsMatch && req.method === "GET") {
+      const slug = decodeURIComponent(contractEventsMatch[1]);
+      const contract = getRegisteredContract(db, slug);
+      if (!contract) return jsonResponse(res, 404, { error: "Unknown contract slug." }, origin);
+      const cursor = Number(readState(db, "cursor") ?? -1);
+      const defaultFrom = contract.indexed_from_block == null ? 0 : Math.min(Number(contract.indexed_from_block), Math.max(0, cursor));
+      const fromBlock = queryInteger(url, "from_block", defaultFrom, Number.MAX_SAFE_INTEGER);
+      const toBlock = queryInteger(url, "to_block", Math.max(0, cursor), Number.MAX_SAFE_INTEGER);
+      if (toBlock < fromBlock) return jsonResponse(res, 200, { slug, items: [], from_block: fromBlock, to_block: toBlock, note: "No indexed range is available for this contract yet." }, origin);
+      if (toBlock - fromBlock > 10000) return jsonResponse(res, 400, { error: "Contract event range is limited to 10000 blocks per request." }, origin);
+      const name = url.searchParams.get("name");
+      const orderInput = (url.searchParams.get("order") || "desc").toLowerCase();
+      if (!["asc", "desc"].includes(orderInput)) return jsonResponse(res, 400, { error: "order must be asc or desc." }, origin);
+      const limit = boundedLimit(url.searchParams.get("limit"), 50, 200);
+      let sql = "SELECT block_number,log_index,tx_hash,event_name,event_signature,args_json,raw_json,decoded_at FROM decoded_contract_events WHERE slug=? AND block_number BETWEEN ? AND ?";
+      const args = [slug, fromBlock, toBlock];
+      if (name) { sql += " AND event_name=?"; args.push(name.slice(0,100)); }
+      sql += " ORDER BY block_number " + orderInput.toUpperCase() + ",log_index " + orderInput.toUpperCase() + " LIMIT ?";
+      args.push(limit);
+      const items = db.prepare(sql).all(...args).map((row) => ({
+        block_number: row.block_number, log_index: row.log_index, transaction_hash: row.tx_hash,
+        event_name: row.event_name, event_signature: row.event_signature, args: JSON.parse(row.args_json),
+        raw_log: JSON.parse(row.raw_json), decoded_at: row.decoded_at
+      }));
+      return jsonResponse(res, 200, {
+        slug, address: contract.address, name: contract.name, indexed_from_block: contract.indexed_from_block,
+        last_decoded_block: contract.last_decoded_block, event_count: contract.event_count,
+        decode_error: contract.decode_error || null, from_block: fromBlock, to_block: toBlock, order: orderInput, items
+      }, origin);
+    }
+    const contractResyncMatch = /^\/api\/contracts\/([^/]+)\/resync$/.exec(path);
+    if (contractResyncMatch && req.method === "POST") {
+      const slug = decodeURIComponent(contractResyncMatch[1]);
+      const contract = getRegisteredContract(db, slug);
+      if (!contract) return jsonResponse(res, 404, { error: "Unknown contract slug." }, origin);
+      if (!hasManagerAccess(req, contract.manager_token_hash)) return jsonResponse(res, 403, { error: "Valid Bearer manage_token required." }, origin);
+      const cursor = Number(readState(db, "cursor") ?? -1);
+      const start = contract.indexed_from_block == null ? 0 : Number(contract.indexed_from_block);
+      let decoded = 0;
+      if (cursor >= start && cursor >= 0) decoded = decodeContractLogsForSlug(db, slug, start, cursor);
+      const updated = getRegisteredContract(db, slug);
+      return jsonResponse(res, 200, {
+        ...publicContractRecord(updated), redecoded_events: decoded,
+        note: "Resync re-decodes logs already stored by the EVM indexer; it does not backfill missing RPC history."
+      }, origin);
+    }
+    const contractDeleteMatch = /^\/api\/contracts\/([^/]+)$/.exec(path);
+    if (contractDeleteMatch && req.method === "DELETE") {
+      const slug = decodeURIComponent(contractDeleteMatch[1]);
+      const contract = getRegisteredContract(db, slug);
+      if (!contract) return jsonResponse(res, 404, { error: "Unknown contract slug." }, origin);
+      if (!hasManagerAccess(req, contract.manager_token_hash)) return jsonResponse(res, 403, { error: "Valid Bearer manage_token required." }, origin);
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        db.prepare("DELETE FROM decoded_contract_events WHERE slug=?").run(slug);
+        db.prepare("DELETE FROM registered_contracts WHERE slug=?").run(slug);
+        db.exec("COMMIT");
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
+      return jsonResponse(res, 200, { deleted: true, slug }, origin);
+    }
+    const contractDetailMatch = /^\/api\/contracts\/([^/]+)$/.exec(path);
+    if (contractDetailMatch && req.method === "GET") {
+      const slug = decodeURIComponent(contractDetailMatch[1]);
+      const contract = getRegisteredContract(db, slug);
+      if (!contract) return jsonResponse(res, 404, { error: "Unknown contract slug." }, origin);
+      const iface = new Interface(JSON.parse(contract.abi_json));
+      return jsonResponse(res, 200, {
+        ...publicContractRecord(contract),
+        events: iface.fragments.filter((fragment) => fragment.type === "event").map((fragment) => ({
+          name: fragment.name, signature: fragment.format(), topic: fragment.topicHash
+        })),
+        events_url: "/api/contracts/" + slug + "/events"
       }, origin);
     }
     if (path === "/api/known-evidence") return jsonResponse(res, 200, KNOWN_EVIDENCE, origin);
