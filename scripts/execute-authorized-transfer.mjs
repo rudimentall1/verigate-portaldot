@@ -43,6 +43,15 @@ function requireConfiguredAddress(value, label) {
   return address;
 }
 
+function readMaximumApprovedFeeWei() {
+  const raw = (process.env.PORTALDOT_MAX_FEE_WITH_MARGIN_WEI || "").trim();
+  if (!raw) return null;
+  if (!/^(0|[1-9][0-9]*)$/.test(raw)) {
+    throw new Error("PORTALDOT_MAX_FEE_WITH_MARGIN_WEI must be a canonical non-negative integer.");
+  }
+  return BigInt(raw);
+}
+
 function assertDeadlineStillUsable(authorization, blockTimestamp) {
   const now = BigInt(blockTimestamp);
   const deadline = authorization.transfer.deadline;
@@ -75,6 +84,7 @@ async function main() {
     process.env.AUTHORITY_SIGNER_ADDRESS,
     "AUTHORITY_SIGNER_ADDRESS"
   );
+  const maximumApprovedFeeWei = readMaximumApprovedFeeWei();
 
   const privateKey = (process.env.DEPLOYER_PRIVATE_KEY || "").trim();
   if (broadcast && !privateKey) {
@@ -180,9 +190,20 @@ async function main() {
       relayerBalancePot: formatUnitsExact(relayerBalanceWei, 18, 6),
       feeBudgetStatus: budget.isSufficient ? "sufficient_with_20_percent_margin" : "insufficient_for_20_percent_margin",
       shortfallWei: budget.shortfallWei.toString(),
+      maximumApprovedFeeWithMarginWei: maximumApprovedFeeWei?.toString() ?? null,
       broadcastRequested: broadcast,
       transactionBroadcast: false
     };
+
+    if (maximumApprovedFeeWei !== null && budget.costWithMarginWei > maximumApprovedFeeWei) {
+      console.log(JSON.stringify({
+        ...result,
+        status: "approved_fee_ceiling_exceeded",
+        note: "The estimated fee with safety margin exceeds PORTALDOT_MAX_FEE_WITH_MARGIN_WEI; no transaction was signed or broadcast."
+      }, null, 2));
+      process.exitCode = 2;
+      return;
+    }
 
     if (!budget.isSufficient) {
       console.log(JSON.stringify({
@@ -243,6 +264,12 @@ async function main() {
         `required with margin: ${formatUnitsExact(currentBudget.costWithMarginWei, 18, 6)} POT.`
       );
     }
+    if (maximumApprovedFeeWei !== null && currentBudget.costWithMarginWei > maximumApprovedFeeWei) {
+      throw new Error(
+        `Fresh fee quote ${formatUnitsExact(currentBudget.costWithMarginWei, 18, 6)} POT including margin ` +
+        `exceeds the approved ceiling ${formatUnitsExact(maximumApprovedFeeWei, 18, 6)} POT; no transaction sent.`
+      );
+    }
     const preBroadcastGasLimit =
       (preBroadcastGasUnits * BigInt(10000 + SAFETY_MARGIN_BPS) + 9999n) / 10000n;
 
@@ -252,7 +279,7 @@ async function main() {
     );
     let receipt;
     try {
-      receipt = await tx.wait();
+      receipt = await tx.wait(1, 90000);
     } catch {
       // A timeout or dropped RPC connection after broadcast does not prove that
       // the transaction failed. Preserve the hash so callers do not resubmit blindly.
