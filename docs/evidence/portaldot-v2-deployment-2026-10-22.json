@@ -37,5 +37,19 @@
     "This record preserves the deploy script output; it is not itself independent verification.",
     "Actual deployment fee and post-deployment deployer/guard balances have not yet been re-queried.",
     "PortalDot V3 testnet prototype. Verigate Ed25519 verification remains off-chain."
-  ]
+  ],
+  "funding": {
+    "evidenceStatus": "reported_in_server_output; independent_read_only_verification_script_added",
+    "transactionHash": "0x3670b42ad718232b572ba06542ffaebd713db6852a215c8acffc471f0eab5019",
+    "blockNumber": 148577,
+    "receiptStatus": 1,
+    "from": "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
+    "to": "0x87C494a5e4B0A8E055F283767579667E10E046C6",
+    "amountPot": "0.11",
+    "actualFeePot": "0.012610925754241155",
+    "guardBalancePotAfter": "0.11",
+    "deployerBalancePotAfter": "416.196502092920504516",
+    "verifierCommand": "npm run verify:funding:v2",
+    "note": "Funding receipt output was provided by the user. Run the read-only verifier command to re-query tx, receipt, block, Deposited event, runtime code hash and present balances."
+  }
 }
