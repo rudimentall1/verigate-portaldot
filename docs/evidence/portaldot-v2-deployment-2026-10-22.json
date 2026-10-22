@@ -1,5 +1,5 @@
 {
-  "evidenceStatus": "deployment receipt and 15 readback checks passed in an earlier read-only query on 2026-10-22; subsequent RPC query did not return the historical deployment transaction and receipt; current-state recheck pending",
+  "evidenceStatus": "current V2 contract state verified; historical deployment receipt unavailable from configured RPC; V2 funding transaction independently re-queried successfully from configured RPC",
   "recordedAt": "2026-10-22",
   "network": "PortalDot V3 EVM Testnet",
   "chainId": "420420777",
@@ -34,25 +34,49 @@
     "sufficient": true
   },
   "caveats": [
-    "A previous read-only query verified the deployment receipt and 15 contract/configuration checks; a later query to the same RPC no longer returned the historical deployment transaction and receipt.",
-    "Run npm run verify:deployment:v2 to check current code and policy readbacks. The result explicitly distinguishes current-state verification from historical receipt availability.",
-    "Funding values are reported by the user's broadcast output. Run npm run verify:funding:v2 to re-query the recent funding transaction, Deposited event, runtime code hash and present balances.",
-    "The configured RPC does not independently authenticate its operator.",
+    "All read-only reads use the configured PortalDot EVM RPC; they do not independently authenticate the RPC operator.",
+    "The deployment transaction and receipt were confirmed in an earlier read-only query on 2026-10-22, but the configured RPC later stopped returning that historical deployment transaction and receipt.",
+    "Current runtime code and every V2 policy readback check passed at block 148800.",
+    "The recent 0.11 POT funding transaction was re-queried successfully, including receipt block hash, Deposited event and runtime code hash.",
     "PortalDot V3 testnet prototype. Verigate Ed25519 verification remains off-chain."
   ],
   "funding": {
-    "evidenceStatus": "reported_in_server_output; independent_read_only_verification_script_added",
+    "evidenceStatus": "independently_requeried_from_configured_RPC; RPC operator not independently authenticated",
     "transactionHash": "0x3670b42ad718232b572ba06542ffaebd713db6852a215c8acffc471f0eab5019",
     "blockNumber": 148577,
+    "blockHash": "0x1ca12d2b7e2085f57d8d8f1498e3452b7f41add7f36a8809c486fb66643fa5d4",
     "receiptStatus": 1,
     "from": "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
     "to": "0x87C494a5e4B0A8E055F283767579667E10E046C6",
+    "valueWei": "110000000000000000",
     "amountPot": "0.11",
+    "gasUsed": "365693076823",
+    "effectiveGasPriceWei": "34485",
     "actualFeePot": "0.012610925754241155",
-    "guardBalancePotAfter": "0.11",
-    "deployerBalancePotAfter": "416.196502092920504516",
-    "verifierCommand": "npm run verify:funding:v2",
-    "note": "User-provided broadcast output; the verifier re-queries this recent transaction and readback state without signing or broadcasting."
+    "guardBalancePotAtCheck": "0.11",
+    "deployerBalancePotAtCheck": "416.196502092920504516",
+    "runtimeCodeHash": "0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859",
+    "depositedEvents": [
+      {
+        "sender": "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
+        "amountWei": "110000000000000000",
+        "amountPot": "0.11",
+        "logIndex": 4
+      }
+    ],
+    "checks": {
+      "chainIdMatches": true,
+      "receiptSucceeded": true,
+      "transactionTargetsV2Guard": true,
+      "senderMatchesExpectedDeployer": true,
+      "fundingValueMatches": true,
+      "expectedBlockMatches": true,
+      "receiptBlockHashMatchesBlock": true,
+      "guardRuntimeCodeHashMatches": true,
+      "oneMatchingDepositedEvent": true
+    },
+    "checkedAt": "2026-10-22T17:13:34.412Z",
+    "verifierCommand": "npm run verify:funding:v2"
   },
   "verificationHistory": {
     "earlierReadOnlyVerification": {
@@ -75,5 +99,37 @@
     "actualFeePot": "295.6052222496556935",
     "deployerBalanceAfterDeploymentPot": "416.319113018674745671",
     "source": "Reported in earlier successful verification output from the configured RPC."
+  },
+  "currentStateVerification": {
+    "checkedAt": "2026-10-22T17:13:31.334Z",
+    "status": "passed",
+    "latestBlock": 148800,
+    "contractAddress": "0x87C494a5e4B0A8E055F283767579667E10E046C6",
+    "observedRuntimeCodeBytes": 3370,
+    "observedRuntimeBytecodeHash": "0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859",
+    "receiptAvailable": false,
+    "currentStateOk": true,
+    "receiptHistoryVerified": false,
+    "checks": {
+      "chainIdMatches": true,
+      "runtimeCodePresent": true,
+      "runtimeCodeHashMatches": true,
+      "adminMatches": true,
+      "authoritySignerMatches": true,
+      "maxPerTransferMatches": true,
+      "windowLimitMatches": true,
+      "windowSecondsMatches": true,
+      "initialRecipientIsAllowed": true
+    },
+    "readback": {
+      "admin": "0x4F714813407Efa8084189e58374F7Ce9CF2249b5",
+      "authoritySigner": "0x48F9B07d37b5AF744BA8195c4d6740145b593ea6",
+      "maxPerTransferWei": "100000000000000000",
+      "windowLimitWei": "500000000000000000",
+      "windowSeconds": "3600",
+      "initialRecipient": "0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4",
+      "initialRecipientAllowed": true
+    },
+    "note": "Current code/configuration checks confirm the deployed guard remains present and configured as expected. The configured RPC did not return the historical deployment transaction or receipt."
   }
 }
