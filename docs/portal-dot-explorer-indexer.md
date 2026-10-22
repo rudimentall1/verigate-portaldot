@@ -32,7 +32,7 @@ Defaults:
 - Poll interval: six seconds when caught up.
 - State snapshot interval: 15 minutes; page size 500; maximum 100,000 combined account/asset/NFT rows. These can be adjusted with SUBSTRATE_SNAPSHOT_INTERVAL_MS, SUBSTRATE_SNAPSHOT_PAGE_SIZE and SUBSTRATE_SNAPSHOT_MAX_ROWS.
 
-The Render Blueprint sets both indexers to start at block 110000 so the service attempts to cover the recorded Verigate deployment/transfer heights. That does not prove those historical ranges are readable. Runtime state-history retention varies, and inaccessible blocks/events are stored as gaps. The expected Substrate genesis hash is deliberately not pinned in the template; configure PORTALDOT_SUBSTRATE_GENESIS_HASH only after checking the canonical genesis hash for the target endpoint.
+The Render Blueprint sets both indexers to start at block 110000 so the service attempts to cover the recorded Verigate deployment/transfer heights. That does not prove those historical ranges are readable. Runtime state-history retention varies, and inaccessible blocks/events are stored as gaps. The blueprint pins `PORTALDOT_SUBSTRATE_GENESIS_HASH` to the PortalDot V3 testnet genesis hash confirmed by the PortalDot team on 19 October 2026. The Substrate indexer refuses to index if the endpoint reports a different genesis hash. This guards against accidental endpoint misconfiguration; it does not cryptographically authenticate the RPC operator.
 
 ## API routes
 
