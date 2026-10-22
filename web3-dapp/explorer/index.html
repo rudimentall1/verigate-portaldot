@@ -644,7 +644,29 @@ async function init() {
   const configuredApi = params.get('api') || localStorage.getItem('portalDotExplorerApi') || '';
   $('#apiBaseInput').value = configuredApi;
   await loadIndexer();
+  await loadContractRegistry();
 }
+$('#contractRegisterForm').addEventListener('submit', registerContractFromForm);
+$('#contractAbiFile').addEventListener('change', async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (file.size > 256 * 1024) {
+    $('#contractRegistrationResult').innerHTML = status('warn','ABI file exceeds 256 KiB. Select a smaller JSON ABI/artifact.');
+    event.target.value = '';
+    return;
+  }
+  try {
+    const text = await file.text();
+    JSON.parse(text);
+    $('#contractAbi').value = text;
+    $('#contractRegistrationResult').textContent = 'JSON file loaded. The API will validate the Solidity ABI when registered.';
+  } catch {
+    $('#contractRegistrationResult').innerHTML = status('bad','Could not parse the selected file as JSON.');
+  }
+});
+$('#refreshContractRegistry').addEventListener('click', loadContractRegistry);
+$('#resyncContractButton').addEventListener('click', () => manageRegisteredContract('resync'));
+$('#deleteContractButton').addEventListener('click', () => manageRegisteredContract('delete'));
 $('#saveApiBase').addEventListener('click',async()=>{
   const value = $('#apiBaseInput').value.trim().replace(/\/+$/,'');
   if (!value) {
@@ -652,6 +674,7 @@ $('#saveApiBase').addEventListener('click',async()=>{
     localStorage.removeItem('portalDotExplorerApi');
     $('#apiBaseNote').textContent = 'Using this page origin. If the API is hosted elsewhere, paste its HTTPS base URL above.';
     await loadIndexer();
+    await loadContractRegistry();
     return;
   }
   try {
@@ -661,6 +684,7 @@ $('#saveApiBase').addEventListener('click',async()=>{
     localStorage.setItem('portalDotExplorerApi',apiBaseOverride);
     $('#apiBaseNote').textContent = 'Connecting to ' + apiBaseOverride + '…';
     const connected = await loadIndexer();
+    await loadContractRegistry();
     if (connected) $('#apiBaseNote').textContent = 'Connected to ' + apiBaseOverride + '.';
   } catch (error) {
     $('#apiBaseNote').textContent = error.message;
@@ -669,6 +693,11 @@ $('#saveApiBase').addEventListener('click',async()=>{
 $('#searchBtn').addEventListener('click',()=>search($('#query').value));
 $('#query').addEventListener('keydown',event=>{if(event.key==='Enter')search($('#query').value);});
 document.addEventListener('click',async event=>{
+  const contractEventsButton = event.target.closest('[data-contract-events]');
+  if (contractEventsButton) {
+    loadContractEvents(contractEventsButton.dataset.contractEvents);
+    return;
+  }
   const substrateBlockButton = event.target.closest('[data-substrate-block]');
   if (substrateBlockButton) {
     loadSubstrateBlock(substrateBlockButton.dataset.substrateBlock);
