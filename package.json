@@ -28,7 +28,8 @@
     "test:explorer": "node --experimental-sqlite --test services/explorer-service.test.mjs",
     "explorer:service": "node --experimental-sqlite services/explorer-service.mjs",
     "estimate:deployment:v2": "npm run compile && node scripts/estimate-deployment-v2.mjs",
-    "verify:deployment:v2": "node scripts/verify-v2-deployment.mjs"
+    "verify:deployment:v2": "node scripts/verify-v2-deployment.mjs",
+    "fund:guard:v2": "node scripts/fund-v2-guard.mjs"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^4.0.0",
