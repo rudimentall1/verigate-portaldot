@@ -1,0 +1,53 @@
+{
+  "evidenceStatus": "user-reported_live_verigate_allow_bridge_signature_and_read_only_evm_simulation_passed; no transaction broadcast",
+  "recordedAt": "2026-10-22",
+  "network": {
+    "name": "PortalDot V3 EVM Testnet",
+    "chainId": "420420777",
+    "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev"
+  },
+  "flow": {
+    "verigateVerifier": "http://127.0.0.1:8002",
+    "priorVerifierPreserved": "http://127.0.0.1:8001",
+    "decision": "ALLOW",
+    "executionAuthorizationIssued": true,
+    "intentId": "portaldot-live-v2-209efe5c10ca4cfe9aabedda86970a93",
+    "agentId": "portaldot-live-proof-agent-1ae14879503d",
+    "capabilityId": "portaldot-live-proof-cap-v2-a0fc1a7248955a15",
+    "recipient": "0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4",
+    "amountWei": "100000000000000000",
+    "amountPot": "0.1",
+    "authorizationResponsePath": "/opt/verigate-portaldot-issuer/live-e2e/authorization-response-portaldot-live-v2-209efe5c10ca4cfe9aabedda86970a93.json",
+    "signedAuthorizationPath": "/opt/verigate-portaldot-issuer/live-e2e/signed-authorization-portaldot-live-v2-209efe5c10ca4cfe9aabedda86970a93.json",
+    "simulationPath": "/opt/verigate-portaldot-issuer/live-e2e/simulation-portaldot-live-v2-209efe5c10ca4cfe9aabedda86970a93.json"
+  },
+  "guard": {
+    "profile": "v2",
+    "address": "0x87C494a5e4B0A8E055F283767579667E10E046C6",
+    "runtimeCodeHash": "0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859",
+    "authoritySigner": "0x48F9B07d37b5AF744BA8195c4d6740145b593ea6",
+    "recoveredSignerMatches": true,
+    "balancePotAtSimulation": "0.110000"
+  },
+  "simulation": {
+    "status": "simulation_passed",
+    "staticCallPassed": true,
+    "estimateGasUnits": "344180565792055",
+    "gasPriceWei": "34435",
+    "estimatedRelayerFeeWei": "11851857783049413925",
+    "estimatedRelayerFeePot": "11.851857783049413925",
+    "feeWith20PercentSafetyMarginWei": "14222229339659296710",
+    "feeWith20PercentSafetyMarginPot": "14.222229339659296710",
+    "relayerBalancePot": "416.196502",
+    "feeBudgetStatus": "sufficient_with_20_percent_margin",
+    "broadcastRequested": false,
+    "transactionBroadcast": false
+  },
+  "caveats": [
+    "This is simulation evidence copied from user-provided terminal output, not a mined-transfer receipt.",
+    "No transaction hash, block number, recipient balance delta, or TransferExecuted receipt exists for this simulated action yet.",
+    "The estimated fee is unusually high relative to the 0.1 POT transfer; the relayer is funded, but an on-chain transfer still requires explicit operator approval.",
+    "The RPC supplies the reported chain state; this does not independently authenticate the RPC operator.",
+    "Testnet prototype only. Verigate Ed25519 signatures are verified off-chain by the bridge; the guard verifies the bridge's EIP-712 authorization."
+  ]
+}
