@@ -36,7 +36,9 @@ services:
       - key: EXPLORER_DB_PATH
         value: /var/data/portal-dot-explorer.sqlite
       - key: EXPLORER_START_BLOCK
-        value: "110000"
+        value: latest
+      - key: EXPLORER_LIVE_WINDOW_BLOCKS
+        value: "15"
       - key: EXPLORER_BATCH_BLOCKS
         value: "20"
       - key: EXPLORER_CONFIRMATIONS
