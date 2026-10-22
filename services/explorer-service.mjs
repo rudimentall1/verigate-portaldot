@@ -382,8 +382,14 @@ function readSubstrateBlock(db, ref) {
     block = db.prepare("SELECT * FROM substrate_blocks WHERE block_hash=?").get(hash);
   }
   if (!block) return null;
-  const extrinsics = db.prepare("SELECT raw_json FROM substrate_extrinsics WHERE block_number=? ORDER BY extrinsic_index").all(block.block_number).map(row => JSON.parse(row.raw_json));
-  const events = db.prepare("SELECT raw_json FROM substrate_events WHERE block_number=? ORDER BY event_index LIMIT 1000").all(block.block_number).map(row => JSON.parse(row.raw_json));
+  const extrinsics = db.prepare("SELECT extrinsic_index,extrinsic_hash,section,method,signer,raw_json FROM substrate_extrinsics WHERE block_number=? ORDER BY extrinsic_index").all(block.block_number).map(row => ({
+    extrinsicIndex: row.extrinsic_index, hash: row.extrinsic_hash, section: row.section, method: row.method,
+    signer: row.signer, extrinsic: JSON.parse(row.raw_json)
+  }));
+  const events = db.prepare("SELECT event_index,extrinsic_index,section,method,data_json,raw_json FROM substrate_events WHERE block_number=? ORDER BY event_index LIMIT 1000").all(block.block_number).map(row => ({
+    eventIndex: row.event_index, extrinsicIndex: row.extrinsic_index, section: row.section, method: row.method,
+    data: JSON.parse(row.data_json), event: JSON.parse(row.raw_json)
+  }));
   return { source: "substrate_indexer", block: JSON.parse(block.raw_json), blockNumber: block.block_number, blockHash: block.block_hash, extrinsics, events };
 }
 
@@ -868,6 +874,10 @@ async function handleSearch(db, q, runtime) {
   if (parsed.type === "hash") {
     const tx = await resolveTransaction(db, parsed.value);
     if (tx.source !== "not_found") return tx;
+    const substrateExtrinsic = readSubstrateExtrinsic(db, parsed.value);
+    if (substrateExtrinsic) return substrateExtrinsic;
+    const substrateBlock = readSubstrateBlock(db, parsed.value);
+    if (substrateBlock) return substrateBlock;
     const block = await resolveBlock(db, parsed.value);
     if (block.source !== "not_found") return block;
     return tx;
