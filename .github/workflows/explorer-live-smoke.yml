@@ -31,19 +31,20 @@ jobs:
 
           READY=false
           for attempt in $(seq 1 12); do
-            curl --retry 1 --retry-delay 2 --retry-all-errors --max-time 30 -fsS "$BASE/api/status" -o /tmp/evm.json
-            curl --retry 1 --retry-delay 2 --retry-all-errors --max-time 30 -fsS "$BASE/api/substrate/status" -o /tmp/substrate.json
+            if curl --max-time 12 -fsS "$BASE/api/status" -o /tmp/evm.json && curl --max-time 12 -fsS "$BASE/api/substrate/status" -o /tmp/substrate.json; then
+              EVM_CHAIN_ID="$(jq -r '.live.chainId // .chainId // empty' /tmp/evm.json)"
+              ACTUAL_GENESIS="$(jq -r '.actualGenesisHash // empty' /tmp/substrate.json)"
+              SUBSTRATE_CONNECTED="$(jq -r '.connected // false' /tmp/substrate.json)"
 
-            EVM_CHAIN_ID="$(jq -r '.live.chainId // .chainId // empty' /tmp/evm.json)"
-            ACTUAL_GENESIS="$(jq -r '.actualGenesisHash // empty' /tmp/substrate.json)"
-            SUBSTRATE_CONNECTED="$(jq -r '.connected // false' /tmp/substrate.json)"
+              if [[ "$EVM_CHAIN_ID" == "420420777" && "$ACTUAL_GENESIS" == "$EXPECTED_GENESIS" && "$SUBSTRATE_CONNECTED" == "true" ]]; then
+                READY=true
+                break
+              fi
 
-            if [[ "$EVM_CHAIN_ID" == "420420777" && "$ACTUAL_GENESIS" == "$EXPECTED_GENESIS" && "$SUBSTRATE_CONNECTED" == "true" ]]; then
-              READY=true
-              break
+              echo "Waiting for live RPC readiness (attempt $attempt/12): EVM chainId=${EVM_CHAIN_ID:-<empty>}; Substrate connected=$SUBSTRATE_CONNECTED; genesis=${ACTUAL_GENESIS:-<empty>}"
+            else
+              echo "Explorer API request failed during readiness attempt $attempt/12."
             fi
-
-            echo "Waiting for live RPC readiness (attempt $attempt/12): EVM chainId=${EVM_CHAIN_ID:-<empty>}; Substrate connected=$SUBSTRATE_CONNECTED; genesis=${ACTUAL_GENESIS:-<empty>}"
             sleep 5
           done
 
