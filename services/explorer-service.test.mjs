@@ -247,3 +247,50 @@ test("records missing Substrate history as a gap and does not claim full coverag
     db.close();
   }
 });
+
+
+test("Substrate HTTP routes expose indexed blocks, extrinsics and events read-only", async () => {
+  const db = new DatabaseSync(":memory:");
+  initializeDatabase(db);
+  db.prepare("INSERT INTO indexer_state(state_key,state_value,updated_at) VALUES(?,?,?)").run("substrate_started_from", "110000", new Date().toISOString());
+  persistSubstrateBatch(db, {
+    blocks: [fakeSubstrateBlock(110000, hash("8"), hash("9"))],
+    startBlock: 110000, endBlock: 110000, blockErrors: [], eventErrors: []
+  });
+  const runtime = { lastRpcError: null, lastHead: null, stopping: false, substrateConnected: false };
+  const { server } = await createExplorerServer({ db, runtime });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = "http://127.0.0.1:" + server.address().port;
+  try {
+    const statusResponse = await fetch(base + "/api/substrate/status");
+    assert.equal(statusResponse.status, 200);
+    const status = await statusResponse.json();
+    assert.equal(status.indexedThrough, 110000);
+    assert.equal(status.blocksStored, 1);
+
+    const blockResponse = await fetch(base + "/api/substrate/block/110000");
+    assert.equal(blockResponse.status, 200);
+    const block = await blockResponse.json();
+    assert.equal(block.source, "substrate_indexer");
+    assert.equal(block.extrinsics[0].hash, hash("9"));
+    assert.equal(block.events[0].method, "Transfer");
+
+    const eventsResponse = await fetch(base + "/api/substrate/events?limit=5");
+    assert.equal(eventsResponse.status, 200);
+    const events = await eventsResponse.json();
+    assert.equal(events.items.length, 1);
+    assert.equal(events.items[0].section, "balances");
+
+    const extrinsicResponse = await fetch(base + "/api/substrate/extrinsic/" + hash("9"));
+    assert.equal(extrinsicResponse.status, 200);
+    const extrinsic = await extrinsicResponse.json();
+    assert.equal(extrinsic.source, "substrate_indexer");
+    assert.equal(extrinsic.signer, ss58);
+
+    const write = await fetch(base + "/api/substrate/events", { method: "POST" });
+    assert.equal(write.status, 405);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    db.close();
+  }
+});
