@@ -24,27 +24,31 @@ jobs:
           BASE="https://verigate-portaldot-explorer.onrender.com"
           EXPECTED_GENESIS="0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd"
 
+          # Keep valid fallback JSON so diagnostics still print if every status request fails.
+          printf '{}' > /tmp/evm.json
+          printf '{}' > /tmp/substrate.json
+
           # A free Render instance can be asleep, and Substrate reconnects asynchronously.
-          # Retry live state checks instead of failing on the first cold-start response.
           curl --retry 3 --retry-delay 5 --retry-all-errors --max-time 30 -fsS "$BASE/health" -o /tmp/health.json
           jq -e '.ok == true and .service == "portal-dot-explorer"' /tmp/health.json >/dev/null
 
           READY=false
           for attempt in $(seq 1 12); do
-            if curl --max-time 12 -fsS "$BASE/api/status" -o /tmp/evm.json && curl --max-time 12 -fsS "$BASE/api/substrate/status" -o /tmp/substrate.json; then
-              EVM_CHAIN_ID="$(jq -r '.live.chainId // .chainId // empty' /tmp/evm.json)"
-              ACTUAL_GENESIS="$(jq -r '.actualGenesisHash // empty' /tmp/substrate.json)"
-              SUBSTRATE_CONNECTED="$(jq -r '.connected // false' /tmp/substrate.json)"
+            EVM_OK=false
+            SUBSTRATE_OK=false
+            if curl --max-time 12 -fsS "$BASE/api/status" -o /tmp/evm.json; then EVM_OK=true; fi
+            if curl --max-time 12 -fsS "$BASE/api/substrate/status" -o /tmp/substrate.json; then SUBSTRATE_OK=true; fi
 
-              if [[ "$EVM_CHAIN_ID" == "420420777" && "$ACTUAL_GENESIS" == "$EXPECTED_GENESIS" && "$SUBSTRATE_CONNECTED" == "true" ]]; then
-                READY=true
-                break
-              fi
+            EVM_CHAIN_ID="$(jq -r '.live.chainId // .chainId // empty' /tmp/evm.json)"
+            ACTUAL_GENESIS="$(jq -r '.actualGenesisHash // empty' /tmp/substrate.json)"
+            SUBSTRATE_CONNECTED="$(jq -r '.connected // false' /tmp/substrate.json)"
 
-              echo "Waiting for live RPC readiness (attempt $attempt/12): EVM chainId=${EVM_CHAIN_ID:-<empty>}; Substrate connected=$SUBSTRATE_CONNECTED; genesis=${ACTUAL_GENESIS:-<empty>}"
-            else
-              echo "Explorer API request failed during readiness attempt $attempt/12."
+            if [[ "$EVM_OK" == "true" && "$SUBSTRATE_OK" == "true" && "$EVM_CHAIN_ID" == "420420777" && "$ACTUAL_GENESIS" == "$EXPECTED_GENESIS" && "$SUBSTRATE_CONNECTED" == "true" ]]; then
+              READY=true
+              break
             fi
+
+            echo "Waiting for live RPC readiness (attempt $attempt/12): EVM HTTP=$EVM_OK chainId=${EVM_CHAIN_ID:-<empty>}; Substrate HTTP=$SUBSTRATE_OK connected=$SUBSTRATE_CONNECTED; genesis=${ACTUAL_GENESIS:-<empty>}"
             sleep 5
           done
 
@@ -53,9 +57,9 @@ jobs:
           echo "=== EVM indexer/RPC status ==="
           jq '{connected: (.live.connected // .connected // null), chainId: (.live.chainId // .chainId // null), latestBlock: (.live.latestBlock // .latestBlock // null), error: (.live.error // .error // null)}' /tmp/evm.json
           echo "=== Substrate indexer/RPC status ==="
-          jq '{connected, expectedGenesisHash, actualGenesisHash, cursor, contiguousThrough, error: (.error // .substrateError // null)}' /tmp/substrate.json
+          jq '{connected, expectedGenesisHash, actualGenesisHash, cursor, processedThrough, contiguousThrough, indexedThrough, error: (.error // .substrateError // null)}' /tmp/substrate.json
 
           if [[ "$READY" != "true" ]]; then
-            echo "::error::Explorer API did not reach a healthy EVM and Substrate RPC state within 60 seconds."
+            echo "::error::Explorer API did not reach a healthy EVM and Substrate RPC state within the retry window."
             exit 1
           fi
