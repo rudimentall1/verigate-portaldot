@@ -27,8 +27,40 @@ h2{font-size:18px;margin:25px 0 12px;letter-spacing:-.02em}.card{min-width:0}.mu
 <section class="metrics" aria-label="Live network status"><article class="metric"><div class="label">Network</div><strong>PortalDot V3</strong><small>Expected chain ID 420420777</small></article><article class="metric"><div class="label">RPC connection</div><strong id="rpcStatus">Checking…</strong><small id="rpcHint">Read-only request in progress</small></article><article class="metric"><div class="label">Latest EVM block</div><strong id="latestBlock">—</strong><small id="refreshed">Not refreshed yet</small></article><article class="metric"><div class="label">EVM indexed through</div><strong id="indexedBlock">Not connected</strong><small id="indexerHint">Configure the indexer API to browse stored history</small></article><article class="metric"><div class="label">Substrate finalized through</div><strong id="substrateIndexedBlock">Not connected</strong><small id="substrateIndexerHint">Finalized native-chain history</small></article></section>
 <h2>Lookup result</h2><section class="card" id="result"><div class="status">Connecting to the PortalDot V3 EVM RPC…</div></section>
 <h2>Logs for the resolved block</h2><section class="card" id="logs"><div class="muted">Block logs appear here when the RPC can return the requested block.</div></section><h2>Indexed chain activity</h2><section class="two"><article class="card"><div class="headrow"><h3>Recent indexed blocks</h3><span class="tag" id="blocksSource">Index pending</span></div><div id="recentBlocks" class="rows"><div class="muted">Connect an Explorer API to browse stored blocks.</div></div></article><article class="card"><div class="headrow"><h3>Recent indexed transactions</h3><span class="tag" id="transactionsSource">Index pending</span></div><div id="recentTransactions" class="rows"><div class="muted">Connect an Explorer API to browse stored transactions.</div></div></article></section><h2>Native Substrate activity</h2><section class="substrate-grid"><article class="card"><div class="headrow"><h3>Recent finalized blocks</h3><span class="tag" id="substrateBlocksSource">Index pending</span></div><div id="recentSubstrateBlocks" class="rows"><div class="muted">Connect an Explorer API to browse finalized Substrate blocks.</div></div></article><article class="card"><div class="headrow"><h3>Recent runtime events</h3><span class="tag" id="substrateEventsSource">Index pending</span></div><div id="recentSubstrateEvents" class="rows"><div class="muted">Connect an Explorer API to browse runtime events.</div></div></article><article class="card"><div class="headrow"><h3>Recent extrinsics</h3><span class="tag" id="substrateExtrinsicsSource">Index pending</span></div><div id="recentSubstrateExtrinsics" class="rows"><div class="muted">Connect an Explorer API to browse signed/unsigned extrinsics.</div></div></article></section>
+<h2 id="contract-indexer">Decode your contract events</h2>
+<section class="two">
+  <article class="card">
+    <div class="headrow"><h3>Register an EVM contract</h3><span class="tag">ABI · no chain writes</span></div>
+    <p class="small">The indexer decodes logs already stored for this contract and automatically decodes future indexed logs. Registration does not deploy a contract or submit a transaction.</p>
+    <form id="contractRegisterForm" class="contract-form">
+      <div class="field"><label for="contractName">Name (optional)</label><input id="contractName" maxlength="80" placeholder="My token"></div>
+      <div class="field"><label for="contractAddress">EVM contract address</label><input id="contractAddress" spellcheck="false" placeholder="0x… (40 hex characters)" required></div>
+      <div class="field full"><label for="contractAbiFile">Upload ABI JSON</label><input id="contractAbiFile" type="file" accept=".json,application/json"></div>
+      <div class="field full"><label for="contractAbi">Solidity JSON ABI or Hardhat/Foundry artifact</label><textarea id="contractAbi" spellcheck="false" placeholder='[{"type":"event","name":"Transfer","inputs":[...]}]' required></textarea></div>
+      <div class="form-actions"><button id="registerContractButton" type="submit">Get my event URL</button></div>
+    </form>
+    <div id="contractRegistrationResult" class="small" role="status" aria-live="polite">Connect the persistent indexer API above to register a contract.</div>
+    <div class="rule"></div>
+    <div class="headrow"><h3>Manage a registered contract</h3><span class="tag">Bearer token</span></div>
+    <div class="contract-form">
+      <div class="field"><label for="manageContractSlug">Contract slug</label><input id="manageContractSlug" spellcheck="false" placeholder="my-token-a1b2c3d4"></div>
+      <div class="field"><label for="manageContractToken">Manage token</label><input id="manageContractToken" type="password" autocomplete="off" spellcheck="false" placeholder="Shown once on registration"></div>
+      <div class="form-actions"><button id="resyncContractButton" type="button">Re-decode stored logs</button><button id="deleteContractButton" type="button">Delete registry entry</button></div>
+    </div>
+    <div id="contractManageResult" class="small" role="status" aria-live="polite"></div>
+  </article>
+  <article class="card">
+    <div class="headrow"><h3>Registered contracts</h3><button id="refreshContractRegistry" type="button">Refresh</button></div>
+    <p class="small">The ABI registry is public. The manage token is private and is never included in registry listings.</p>
+    <div id="contractRegistry" class="registry-list"><div class="muted">Loading registered contracts…</div></div>
+  </article>
+</section>
+<section class="card" style="margin-top:14px" id="contractEvents">
+  <div class="headrow"><h3>Decoded event results</h3><span class="tag" id="contractEventsTag">Waiting for selection</span></div>
+  <div id="contractEventsList" class="rows"><div class="muted">Select “View events” on a registered contract to inspect decoded event arguments.</div></div>
+</section>
 <h2 id="evidence">Saved Verigate evidence</h2><section class="two"><article class="card"><div class="headrow"><h3>PortalDotAgentGuard V1 deployment</h3><span class="tag">Historical record</span></div><div id="deployEvidence"></div></article><article class="card"><div class="headrow"><h3>TransferExecuted</h3><span class="tag">Historical record</span></div><div id="transferEvidence"></div></article></section>
-<div class="notice">Evidence boundary: a saved transaction record is not a fresh RPC confirmation. If the node has pruned a historical receipt, this Explorer says so instead of fabricating a successful live lookup. The index stores EVM transactions/logs and finalized Substrate events only for the ranges it can read. Complete native-account mapping, token-holder rankings, NFT ownership, and arbitrary ABI-decoded events still need runtime-specific state reconstruction and decoders.</div>
+<div class="notice">Evidence boundary: a saved transaction record is not a fresh RPC confirmation. If the node has pruned a historical receipt, this Explorer says so instead of fabricating a successful live lookup. The index stores EVM transactions/logs and finalized Substrate events only for the ranges it can read. Registered EVM contract logs can be decoded with a supplied Solidity ABI. Complete native-account mapping, token-holder rankings, and NFT ownership still require runtime-specific state reconstruction.</div>
 </main>
 <footer class="footer"><span>PortalDot Explorer · Independent implementation · Read-only testnet queries</span><span><a href="https://node-console.portaldot.dev/" target="_blank" rel="noopener noreferrer">PortalDot node console ↗</a> · <a href="https://github.com/rudimentall1/verigate-portaldot" target="_blank" rel="noopener noreferrer">Project source ↗</a></span></footer>
 </div>
