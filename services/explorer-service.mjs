@@ -584,7 +584,7 @@ async function indexRange(db, startBlock, endBlock, advanceCursor = true) {
 }
 
 async function retryOneGap(db) {
-  const gap = db.prepare("SELECT component,start_block,end_block FROM indexer_gaps ORDER BY start_block LIMIT 1").get();
+  const gap = db.prepare("SELECT component,start_block,end_block FROM indexer_gaps ORDER BY updated_at ASC LIMIT 1").get();
   if (!gap) return;
   const from = gap.start_block;
   const to = gap.end_block;
