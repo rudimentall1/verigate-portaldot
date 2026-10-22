@@ -917,7 +917,7 @@ async function handleSearch(db, q, runtime) {
     const substrateBlock = readSubstrateBlock(db, parsed.value);
     if (substrateBlock) return substrateBlock;
     const block = await resolveBlock(db, parsed.value);
-    if (block.source !== "not_found") return block;
+    if (block.source === "live_rpc" || block.source === "indexer") return block;
     return tx;
   }
   return { source: "invalid", error: "Enter a transaction or block hash, decimal block number, or 20-byte EVM address." };
