@@ -59,6 +59,8 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
+      - name: Validate host-specific V2 runner Python syntax
+        run: python -m py_compile scripts/prepare-live-v2-e2e.py
       - name: Install bridge dependencies
         run: npm ci --no-audit --no-fund
       - name: Install isolated Verigate API dependencies
