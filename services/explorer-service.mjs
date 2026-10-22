@@ -900,10 +900,38 @@ export async function resolveSubstrateAddress(db, runtime, address) {
   const totalExtrinsics = db.prepare(
     "SELECT COUNT(*) AS count FROM substrate_extrinsics WHERE signer=?"
   ).get(normalized).count;
+  const snapshot = getLatestStateSnapshot(db);
+  let stateSnapshot = null;
+  if (snapshot) {
+    const native = db.prepare(
+      "SELECT free,reserved,frozen,nonce FROM native_balance_snapshots WHERE snapshot_block=? AND address=?"
+    ).get(snapshot.block, normalized) || null;
+    const assetRows = db.prepare(
+      "SELECT h.asset_id,h.balance,h.status,m.name,m.symbol,m.decimals FROM asset_holder_snapshots h " +
+      "LEFT JOIN asset_metadata_snapshots m ON m.snapshot_block=h.snapshot_block AND m.asset_id=h.asset_id " +
+      "WHERE h.snapshot_block=? AND h.address=? ORDER BY h.asset_id LIMIT 100"
+    ).all(snapshot.block, normalized);
+    const nftRows = db.prepare(
+      "SELECT pallet,collection_id,item_id,raw_json FROM nft_owner_snapshots WHERE snapshot_block=? AND owner=? ORDER BY pallet,collection_id,item_id LIMIT 100"
+    ).all(snapshot.block, normalized);
+    stateSnapshot = {
+      block: snapshot.block,
+      capturedAt: snapshot.completedAt,
+      nativeSymbol: snapshot.nativeSymbol,
+      nativeDecimals: snapshot.nativeDecimals,
+      nativeBalance: native,
+      assetBalances: assetRows,
+      ownedNfts: nftRows.map((row) => ({
+        pallet: row.pallet, collectionId: row.collection_id, itemId: row.item_id, raw: JSON.parse(row.raw_json)
+      })),
+      note: "State values come from the last complete finalized-state snapshot; they may be older than the live current account query."
+    };
+  }
   return {
     source: "substrate_indexer+live_rpc",
     address: normalized,
     currentAccount: account,
+    stateSnapshot,
     indexedEventsCount: totalEvents,
     indexedExtrinsicsCount: totalExtrinsics,
     recentEvents: eventRows.map((row) => ({
