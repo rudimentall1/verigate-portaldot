@@ -66,12 +66,12 @@ async function main() {
   }
 
   const networkConfig = await (async () => {
-    const { ethers } = await hre.network.create();
+    const { ethers } = await hre.network.create("portaldot");
     return { ethers, network: await ethers.provider.getNetwork() };
   })();
   const rpcChainId = parseHexQuantity(await rpcResult(rpcUrl, "eth_chainId", []), "eth_chainId");
   if (networkConfig.network.chainId !== 420420777n || rpcChainId !== 420420777n) {
-    throw new Error("Provider and configured RPC must both report chain ID 420420777; no transaction sent.");
+    throw new Error(`Chain ID mismatch; Hardhat portaldot provider reports ${networkConfig.network.chainId.toString()}, configured RPC reports ${rpcChainId.toString()}, expected 420420777. No transaction sent.`);
   }
   const substrateRpcUrl = validateSubstrateRpcUrl(process.env.PORTALDOT_SUBSTRATE_RPC_URL);
   const expectedGenesis = parseExpectedSubstrateGenesisHash(process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH);
