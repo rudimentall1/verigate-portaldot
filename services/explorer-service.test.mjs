@@ -10,6 +10,8 @@ import {
   persistSubstrateBatch,
   extractSubstrateAccounts,
   getSubstrateIndexerStatus,
+  persistStateSnapshot,
+  getLatestStateSnapshot,
   createExplorerServer
 } from "./explorer-service.mjs";
 
@@ -384,6 +386,78 @@ test("ABI registry decodes stored contract logs and protects resync/delete with 
     assert.equal((await deleteResult.json()).deleted, true);
     const missing = await fetch(base + "/api/contracts/" + slug);
     assert.equal(missing.status, 404);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    db.close();
+  }
+});
+
+
+test("finalized state snapshots persist native balances, asset holders, NFT owners and are served through read-only routes", async () => {
+  const db = new DatabaseSync(":memory:");
+  initializeDatabase(db);
+  const now = new Date().toISOString();
+  const rich = "5" + "A".repeat(46);
+  const other = "5" + "B".repeat(46);
+  persistStateSnapshot(db, {
+    block: 120000,
+    startedAt: now,
+    capturedAt: now,
+    nativeSymbol: "tPOT",
+    nativeDecimals: 14,
+    nativeBalances: [
+      { address: rich, free: "900000000000000", reserved: "100", frozen: "0", nonce: "2", raw: { nonce: "2" } },
+      { address: other, free: "90000000000000", reserved: "0", frozen: "0", nonce: "0", raw: { nonce: "0" } }
+    ],
+    assets: [
+      { assetId: "7", name: "Example Asset", symbol: "EXA", decimals: 12, supply: "1000", owner: rich, raw: { symbol: "EXA" } }
+    ],
+    assetHolders: [
+      { assetId: "7", address: rich, balance: "500", status: "Liquid", raw: { balance: "500" } },
+      { assetId: "7", address: other, balance: "100", status: "Liquid", raw: { balance: "100" } }
+    ],
+    nftOwners: [
+      { pallet: "nfts", collectionId: "4", itemId: "12", owner: rich, raw: { item: "12" } },
+      { pallet: "uniques", collectionId: "2", itemId: "9", owner: other, raw: { item: "9" } }
+    ]
+  });
+  const snapshot = getLatestStateSnapshot(db);
+  assert.equal(snapshot.block, 120000);
+  assert.equal(snapshot.nativeSymbol, "tPOT");
+  assert.equal(snapshot.nativeAccounts, 2);
+  assert.equal(snapshot.assetCount, 1);
+  assert.equal(snapshot.assetHolderCount, 2);
+  assert.equal(snapshot.nftCount, 2);
+
+  const { server } = await createExplorerServer({
+    db, runtime: { lastRpcError: null, lastHead: null, stopping: false, substrateConnected: false }
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = "http://127.0.0.1:" + server.address().port;
+  try {
+    const balances = await (await fetch(base + "/api/substrate/balances?limit=5")).json();
+    assert.equal(balances.snapshot.block, 120000);
+    assert.equal(balances.items[0].address, rich);
+    assert.equal(balances.items[0].free, "900000000000000");
+
+    const assets = await (await fetch(base + "/api/substrate/assets")).json();
+    assert.equal(assets.items.length, 1);
+    assert.equal(assets.items[0].symbol, "EXA");
+
+    const holders = await (await fetch(base + "/api/substrate/assets/7/holders")).json();
+    assert.equal(holders.items.length, 2);
+    assert.equal(holders.items[0].balance, "500");
+
+    const nfts = await (await fetch(base + "/api/substrate/nfts?owner=" + rich)).json();
+    assert.equal(nfts.items.length, 1);
+    assert.equal(nfts.items[0].collectionId, "4");
+
+    const snapshotStatus = await (await fetch(base + "/api/substrate/state-snapshot")).json();
+    assert.equal(snapshotStatus.latest.block, 120000);
+    assert.equal(snapshotStatus.latest.status, "complete");
+
+    const mutation = await fetch(base + "/api/substrate/balances", { method: "POST" });
+    assert.equal(mutation.status, 405);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     db.close();

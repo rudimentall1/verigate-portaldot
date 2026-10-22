@@ -9,7 +9,8 @@ One long-running Node.js service serves a read-only HTTP API and the Explorer st
 - EVM indexer: blocks, transactions and EVM logs from https://test-evm-rpc-v3.portaldot.dev.
 - Substrate indexer: finalized blocks, extrinsics, runtime events, and SS58-like addresses extracted from decoded event payloads via wss://test-node-v3.portaldot.dev.
 - Both indexers persist independent cursors and record gaps. EVM retry jobs do not consume Substrate gaps, and vice versa.
-- A six-block EVM confirmation lag is used. The Substrate indexer reads only the finalized head.
+- A six-block EVM confirmation lag is used. The Substrate event indexer reads only the finalized head.
+- A separate bounded state-snapshot worker captures current native balances, standard assets/account balances, and standard nfts/uniques ownership at a finalized Substrate height every 15 minutes by default. It keeps the last three complete snapshots and retains failed run records. Snapshot failures do not replace the last complete snapshot.
 - Historical Verigate deployment and TransferExecuted records are shown separately as project evidence. They are not fabricated into database rows when a historical RPC lookup returns null.
 
 ## Start locally
@@ -29,6 +30,7 @@ Defaults:
 - Substrate batch size: 10 blocks; EVM batch size: 20 blocks.
 - EVM confirmation lag: six blocks.
 - Poll interval: six seconds when caught up.
+- State snapshot interval: 15 minutes; page size 500; maximum 100,000 combined account/asset/NFT rows. These can be adjusted with SUBSTRATE_SNAPSHOT_INTERVAL_MS, SUBSTRATE_SNAPSHOT_PAGE_SIZE and SUBSTRATE_SNAPSHOT_MAX_ROWS.
 
 The Render Blueprint sets both indexers to start at block 110000 so the service attempts to cover the recorded Verigate deployment/transfer heights. That does not prove those historical ranges are readable. Runtime state-history retention varies, and inaccessible blocks/events are stored as gaps. The expected Substrate genesis hash is deliberately not pinned in the template; configure PORTALDOT_SUBSTRATE_GENESIS_HASH only after checking the canonical genesis hash for the target endpoint.
 
@@ -66,6 +68,13 @@ Registered contract logs already present in the EVM index are decoded at registr
 - GET /api/substrate/extrinsic/<extrinsic-hash>
 - GET /api/substrate/events?fromBlock=110000&toBlock=110100&section=balances&method=Transfer&address=5...&limit=50
 - GET /api/substrate/address/<ss58-address>
+- GET /api/substrate/state-snapshot
+- GET /api/substrate/balances?limit=20
+- GET /api/substrate/assets?limit=50
+- GET /api/substrate/assets/<asset-id>/holders?limit=50
+- GET /api/substrate/nfts?owner=5...&collectionId=4&pallet=nfts&limit=50
+
+The state snapshot captures `System.Account` entries and, when the runtime metadata exposes them, asset metadata/account entries and `nfts.account` / `uniques.account` entries. A snapshot is published only after the bounded scan completes and database transaction commits. If the runtime doesn't expose a storage item or the node can't serve its entries, snapshot status shows a failure while the last successful snapshot remains available. Native account data queried directly is live; historical balance/asset/NFT display uses the timestamped finalized-state snapshot.
 
 The API accepts read-only GET requests and uses CORS allowlisting from EXPLORER_ALLOWED_ORIGINS. No transaction-submission route is implemented.
 
@@ -81,6 +90,10 @@ In Render, create a Blueprint from this repository, review the plan, apply it, a
     GET /api/blocks?limit=5
     GET /api/substrate/blocks?limit=5
     GET /api/substrate/events?limit=5
+    GET /api/substrate/state-snapshot
+    GET /api/substrate/balances?limit=5
+    GET /api/substrate/assets?limit=5
+    GET /api/substrate/nfts?limit=5
 
 Set the assigned HTTPS service URL in the Explorer's “Indexer API URL” field on GitHub Pages. Do not claim the persistent index is live until both indexer statuses have been checked against the deployed service.
 
@@ -88,7 +101,8 @@ Set the assigned HTTPS service URL in the Explorer's “Indexer API URL” field
 
 - Substrate account lookup returns live system.account data and historical events/extrinsics found by this indexer. It is not an all-history guarantee.
 - The first Substrate implementation records runtime events and string-like SS58 accounts found in decoded event payloads. It does not yet provide a universal account reference decoder for every runtime type.
-- Token-holder rankings and NFT owner/balance views are not yet implemented. Those require their own storage snapshot/baseline and gap-aware state reconstruction; they must not be inferred from a partial event range.
+- Native holder, asset-holder, and NFT-owner views are derived from the latest complete periodic storage snapshot, not reconstructed historical ownership/balances. They show the snapshot block/time and are not real-time between snapshot runs. A failed snapshot doesn't overwrite the previous complete snapshot.
+- The state snapshot uses standard `assets.asset/account` and `nfts.account` / `uniques.account` storage when available. Non-standard runtime storage or unavailable state-history may cause a snapshot to fail; inspect /api/substrate/state-snapshot before claiming coverage.
 - Solidity ABI decoding is supported for registered EVM contracts, limited to the EVM logs actually captured by the indexer. It does not fill unavailable history or decode Substrate runtime events using contract ABIs.
 - EVM native token balance units and Substrate native-account data are distinct sources and are not automatically converted/mapped into one another.
 - The saved V1 deployment transaction and TransferExecuted record are project-supplied historical evidence; the indexer only stores the real blocks/events that the RPC actually serves.
