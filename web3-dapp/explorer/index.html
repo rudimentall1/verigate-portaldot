@@ -27,6 +27,25 @@ h2{font-size:18px;margin:25px 0 12px;letter-spacing:-.02em}.card{min-width:0}.mu
 <section class="metrics" aria-label="Live network status"><article class="metric"><div class="label">Network</div><strong>PortalDot V3</strong><small>Expected chain ID 420420777</small></article><article class="metric"><div class="label">RPC connection</div><strong id="rpcStatus">Checking…</strong><small id="rpcHint">Read-only request in progress</small></article><article class="metric"><div class="label">Latest EVM block</div><strong id="latestBlock">—</strong><small id="refreshed">Not refreshed yet</small></article><article class="metric"><div class="label">EVM indexed through</div><strong id="indexedBlock">Not connected</strong><small id="indexerHint">Configure the indexer API to browse stored history</small></article><article class="metric"><div class="label">Substrate finalized through</div><strong id="substrateIndexedBlock">Not connected</strong><small id="substrateIndexerHint">Finalized native-chain history</small></article></section>
 <h2>Lookup result</h2><section class="card" id="result"><div class="status">Connecting to the PortalDot V3 EVM RPC…</div></section>
 <h2>Logs for the resolved block</h2><section class="card" id="logs"><div class="muted">Block logs appear here when the RPC can return the requested block.</div></section><h2>Indexed chain activity</h2><section class="two"><article class="card"><div class="headrow"><h3>Recent indexed blocks</h3><span class="tag" id="blocksSource">Index pending</span></div><div id="recentBlocks" class="rows"><div class="muted">Connect an Explorer API to browse stored blocks.</div></div></article><article class="card"><div class="headrow"><h3>Recent indexed transactions</h3><span class="tag" id="transactionsSource">Index pending</span></div><div id="recentTransactions" class="rows"><div class="muted">Connect an Explorer API to browse stored transactions.</div></div></article></section><h2>Native Substrate activity</h2><section class="substrate-grid"><article class="card"><div class="headrow"><h3>Recent finalized blocks</h3><span class="tag" id="substrateBlocksSource">Index pending</span></div><div id="recentSubstrateBlocks" class="rows"><div class="muted">Connect an Explorer API to browse finalized Substrate blocks.</div></div></article><article class="card"><div class="headrow"><h3>Recent runtime events</h3><span class="tag" id="substrateEventsSource">Index pending</span></div><div id="recentSubstrateEvents" class="rows"><div class="muted">Connect an Explorer API to browse runtime events.</div></div></article><article class="card"><div class="headrow"><h3>Recent extrinsics</h3><span class="tag" id="substrateExtrinsicsSource">Index pending</span></div><div id="recentSubstrateExtrinsics" class="rows"><div class="muted">Connect an Explorer API to browse signed/unsigned extrinsics.</div></div></article></section>
+<h2>Current finalized-state snapshots</h2>
+<section class="substrate-grid">
+  <article class="card">
+    <div class="headrow"><h3>Native token holders</h3><span class="tag" id="nativeSnapshotTag">Snapshot pending</span></div>
+    <p class="small">Current free/reserved balances from a complete finalized-state snapshot, ordered with exact integer comparison.</p>
+    <div id="nativeHolders" class="rows"><div class="muted">Connect the indexer API to load native holders.</div></div>
+  </article>
+  <article class="card">
+    <div class="headrow"><h3>Assets and top holders</h3><span class="tag" id="assetSnapshotTag">Snapshot pending</span></div>
+    <p class="small">Asset metadata and account balances from current storage at a finalized block.</p>
+    <div id="assetSnapshotList" class="rows"><div class="muted">Connect the indexer API to load assets.</div></div>
+    <div id="assetHolderResults" class="rows"></div>
+  </article>
+  <article class="card">
+    <div class="headrow"><h3>NFT owners</h3><span class="tag" id="nftSnapshotTag">Snapshot pending</span></div>
+    <p class="small">Owners reported by supported nfts/uniques storage. This is a snapshot, not historical ownership.</p>
+    <div id="nftSnapshotList" class="rows"><div class="muted">Connect the indexer API to load NFT ownership.</div></div>
+  </article>
+</section>
 <h2 id="contract-indexer">Decode your contract events</h2>
 <section class="two">
   <article class="card">
