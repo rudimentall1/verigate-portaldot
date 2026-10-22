@@ -1462,6 +1462,7 @@ async function indexRange(db, startBlock, endBlock, advanceCursor = true) {
     logs = result;
   } catch (error) { logsError = error.message; }
   persistBatch(db, { blocks, logs, startBlock, endBlock, blockErrors, logsError, advanceCursor });
+  decodeRegisteredContractLogs(db, startBlock, endBlock);
   return { blocks: blocks.length, missingBlocks: blockErrors.length, logs: logs.length, logsError };
 }
 
