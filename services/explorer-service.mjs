@@ -793,7 +793,7 @@ function getIndexerStatus(db) {
   const started = readState(db, "started_from");
   const cursorNumber = cursor == null ? null : Number(cursor);
   const startedNumber = started == null ? null : Number(started);
-  const gapCount = db.prepare("SELECT COUNT(*) AS count FROM indexer_gaps").get().count;
+  const gapCount = db.prepare("SELECT COUNT(*) AS count FROM indexer_gaps WHERE component IN ('blocks','logs')").get().count;
   return {
     indexedThrough: cursorNumber == null || (startedNumber != null && cursorNumber < startedNumber) ? null : cursorNumber,
     startedFrom: startedNumber,
@@ -804,7 +804,7 @@ function getIndexerStatus(db) {
     blocksStored: getCount(db, "blocks"),
     transactionsStored: getCount(db, "transactions"),
     logsStored: getCount(db, "logs"),
-    gaps: db.prepare("SELECT component,start_block AS startBlock,end_block AS endBlock,error_message AS error,attempts,updated_at AS updatedAt FROM indexer_gaps ORDER BY start_block LIMIT 200").all()
+    gaps: db.prepare("SELECT component,start_block AS startBlock,end_block AS endBlock,error_message AS error,attempts,updated_at AS updatedAt FROM indexer_gaps WHERE component IN ('blocks','logs') ORDER BY start_block LIMIT 200").all()
   };
 }
 
