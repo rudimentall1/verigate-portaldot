@@ -358,6 +358,39 @@ async function manageRegisteredContract(action) {
   }
 }
 
+async function lookupRuntimeMapping(input) {
+  const query = String(input || '').trim();
+  if (!query) {
+    $('#mappingResult').innerHTML = status('warn','Enter an EVM or native SS58 address.');
+    return;
+  }
+  $('#mappingQuery').value = query;
+  $('#mappingLookupButton').disabled = true;
+  $('#mappingResult').innerHTML = status('','Querying PortalDot reviveApi…');
+  try {
+    const result = await apiGet('/api/substrate/mapping?q=' + encodeURIComponent(query));
+    const displayStatus = result.status === 'mapped' ? status('good','Runtime mapping confirmed by reviveApi.')
+      : result.status === 'not_found' ? status('warn','The runtime returned no mapping for this address.')
+      : result.status === 'unsupported' ? status('warn','The connected runtime does not expose the requested mapping method.')
+      : status('bad',result.error || result.note || 'Mapping lookup could not be decoded.');
+    $('#mappingResult').innerHTML = displayStatus + rows([
+      ['Result status',esc(result.status || 'unknown')],
+      ['Direction',esc(result.queryType || '—')],
+      ['EVM address',result.evmAddress ? mono(result.evmAddress) + ' ' + copyButton(result.evmAddress) : '—'],
+      ['Native SS58 address',result.ss58Address ? mono(result.ss58Address) + ' ' + copyButton(result.ss58Address) : '—'],
+      ['AccountId32 hex',result.accountIdHex ? mono(result.accountIdHex) + ' ' + copyButton(result.accountIdHex) : '—'],
+      ['Runtime API',esc(result.runtimeApi || 'reviveApi')],
+      ['Spec version',esc(result.specVersion || '—')],
+      ['Genesis hash',result.genesisHash ? mono(result.genesisHash) + ' ' + copyButton(result.genesisHash) : '—'],
+      ['Claim boundary',esc(result.note || (result.runtimeMappingConfirmed ? 'Mapping came from the active runtime API.' : 'No runtime-confirmed mapping returned.'))]
+    ]);
+  } catch (error) {
+    $('#mappingResult').innerHTML = status('bad','Runtime mapping API unavailable: ' + error.message + '. Set the indexer API URL above and confirm the Substrate WebSocket connection.');
+  } finally {
+    $('#mappingLookupButton').disabled = false;
+  }
+}
+
 function renderApiResult(data) {
   if (!data || typeof data !== 'object') return false;
   if (data.source === 'invalid') {
@@ -393,6 +426,7 @@ function renderApiResult(data) {
     const balances = account.data || {};
     $('#result').innerHTML = '<div class="headrow"><h3>Native Substrate account</h3><span class="tag">Live account state + indexed history</span></div>' + rows([
       ['SS58 address',mono(data.address) + ' ' + copyButton(data.address)],
+      ['Runtime mapping','<button type="button" data-map-query="' + esc(data.address) + '">Check EVM ↔ SS58</button>'],
       ['Free balance (raw)',esc(balances.free ?? '—')],
       ['Reserved balance (raw)',esc(balances.reserved ?? '—')],
       ['Nonce',esc(account.nonce ?? '—')],
@@ -459,6 +493,7 @@ function renderApiResult(data) {
     const hasCode = data.code && data.code !== '0x' && data.code !== '0x0';
     $('#result').innerHTML = '<div class="headrow"><h3>' + (hasCode ? 'Contract address' : 'EVM account') + '</h3><span class="tag">Live RPC + persistent history</span></div>' + rows([
       ['Address',mono(data.address) + ' ' + copyButton(data.address)],
+      ['Runtime mapping','<button type="button" data-map-query="' + esc(data.address) + '">Check EVM ↔ SS58</button>'],
       ['Current balance (raw EVM units)',esc(raw(data.balance))],
       ['Transaction count / nonce',esc(raw(data.nonce))],
       ['Runtime code',hasCode ? 'Present' : 'No code at latest block'],
@@ -801,7 +836,14 @@ $('#saveApiBase').addEventListener('click',async()=>{
 });
 $('#searchBtn').addEventListener('click',()=>search($('#query').value));
 $('#query').addEventListener('keydown',event=>{if(event.key==='Enter')search($('#query').value);});
+$('#mappingLookupButton').addEventListener('click',()=>lookupRuntimeMapping($('#mappingQuery').value));
+$('#mappingQuery').addEventListener('keydown',event=>{if(event.key==='Enter')lookupRuntimeMapping($('#mappingQuery').value);});
 document.addEventListener('click',async event=>{
+  const mapButton = event.target.closest('[data-map-query]');
+  if (mapButton) {
+    lookupRuntimeMapping(mapButton.dataset.mapQuery);
+    return;
+  }
   const contractEventsButton = event.target.closest('[data-contract-events]');
   if (contractEventsButton) {
     loadContractEvents(contractEventsButton.dataset.contractEvents);
