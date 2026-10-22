@@ -1,0 +1,84 @@
+{
+  "evidenceStatus": "user_reported_live_v2_transfer_executed_and_receipt_reverified_via_configured_rpc",
+  "recordedAt": "2026-10-22",
+  "verification": {
+    "checkedAt": "2026-10-22T17:58:05.687Z",
+    "mode": "read-only follow-up receipt verification",
+    "source": "Configured PortalDot V3 RPC; separate post-broadcast verifier",
+    "ok": true
+  },
+  "network": {
+    "name": "PortalDot V3 EVM Testnet",
+    "chainId": "420420777",
+    "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev"
+  },
+  "verigate": {
+    "verifier": "http://127.0.0.1:8002",
+    "priorVerifierPreserved": "http://127.0.0.1:8001",
+    "decision": "ALLOW",
+    "executionAuthorizationIssued": true,
+    "capabilityId": "portaldot-live-proof-cap-v2-a0fc1a7248955a15",
+    "intentId": "portaldot-live-v2-459a7dceba864e43b86091b5d3ac0dbe",
+    "authorizationId": "d8b9b9219b0a57866453ea501fe074adc098011041e1acf849302d46ab31eb09"
+  },
+  "guard": {
+    "profile": "v2",
+    "contractName": "PortalDotAgentGuardV2",
+    "address": "0x87C494a5e4B0A8E055F283767579667E10E046C6",
+    "runtimeCodeHash": "0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859",
+    "authoritySigner": "0x48F9B07d37b5AF744BA8195c4d6740145b593ea6",
+    "recoveredSignerMatches": true
+  },
+  "transaction": {
+    "broadcastRequested": true,
+    "transactionBroadcast": true,
+    "hash": "0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e",
+    "blockNumber": 149241,
+    "blockHash": "0x45766dc84a011fdfa1b4bda60540afbd68c823e5a7417ea95124d42e56502713",
+    "blockTimestamp": 1792691880,
+    "receiptStatus": 1,
+    "from": "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
+    "to": "0x87C494a5e4B0A8E055F283767579667E10E046C6",
+    "gasUsed": "227354675614157",
+    "effectiveGasPriceWei": "34430",
+    "actualFeeWei": "7827821481395425510",
+    "actualFeePot": "7.82782148139542551",
+    "logsCount": 1,
+    "guardBalanceAfterWei": "10000000000000000",
+    "guardBalanceAfterPot": "0.01",
+    "guardBalanceAfterReadSucceeded": true
+  },
+  "transferExecutedEvent": {
+    "confirmed": true,
+    "eventCountFromGuard": 1,
+    "actionId": "0xff2cc7690a604a51db85b1e5c43d02bc7cee12277754ccbf6295e78a7b75f38e",
+    "recipient": "0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4",
+    "amountBaseUnits": "100000000000000000",
+    "amountPot": "0.1",
+    "nonce": "98027719730049596877103897672715619390281039715111138617915200794366886144777",
+    "logIndex": 7
+  },
+  "preBroadcastBudgetCheck": {
+    "estimatedFeePot": "11.851857777667611907",
+    "feeWith20PercentSafetyMarginPot": "14.222229332011342884",
+    "approvedFeeWithMarginCapPot": "14.23",
+    "budgetStatus": "sufficient_with_20_percent_margin",
+    "preBroadcastResimulationPassed": true,
+    "preBroadcastGasQuoteRefreshed": true,
+    "relayerBalancePotBeforeBroadcast": "416.196502092920504516"
+  },
+  "checks": {
+    "chainIdMatches": true,
+    "transactionAndReceiptAvailable": true,
+    "receiptSucceeded": true,
+    "receiptBlockHashMatchesBlock": true,
+    "transactionTargetsConfiguredGuard": true,
+    "exactlyOneTransferExecutedEventFromGuard": true
+  },
+  "limitations": [
+    "Evidence is recorded from operator-provided terminal output. The follow-up verifier queried the configured RPC separately, but both queries rely on that RPC and do not independently authenticate its operator.",
+    "The verified event confirms the guard call and the emitted recipient and amount. Recipient balance delta was not measured by the reported verifier.",
+    "This is testnet execution evidence, not a security audit or a production-readiness claim.",
+    "Historical lookup limitations previously affected the V2 deployment transaction; this transfer receipt was available and matched the reported block hash at the time of verification."
+  ]
+}
