@@ -106,12 +106,32 @@ async function search(queryText) {
       let transaction = null;
       let receipt = null;
       let transactionError = '';
+      const saved = SAVED[query.toLowerCase()];
       try {
         transaction = await rpc('eth_getTransactionByHash',[query]);
         if (transaction) {
           try { receipt = await rpc('eth_getTransactionReceipt',[query]); } catch (error) { transactionError = error.message; }
         }
       } catch (error) { transactionError = error.message; }
+      // A provider may miss an old hash lookup while still serving the known block.
+      if (!transaction && saved) {
+        try {
+          const recordedBlock = await rpc('eth_getBlockByNumber',['0x' + BigInt(saved.block).toString(16),true]);
+          if (recordedBlock) {
+            const found = (recordedBlock.transactions || []).find(tx => typeof tx === 'object' && tx.hash && tx.hash.toLowerCase() === query.toLowerCase());
+            if (found) {
+              transaction = found;
+              try { receipt = await rpc('eth_getTransactionReceipt',[query]); } catch (error) { transactionError = error.message; }
+            } else {
+              renderBlock(recordedBlock,'Live RPC at recorded block');
+              $('#result').innerHTML += status('warn','The live RPC returned the recorded block, but its transaction list did not contain this exact hash. The saved record remains historical evidence only.');
+              return;
+            }
+          }
+        } catch (error) {
+          transactionError = transactionError || ('Recorded block fallback: ' + error.message);
+        }
+      }
       if (transaction) {
         const blockNumber = receipt?.blockNumber || transaction.blockNumber;
         const blockHash = receipt?.blockHash || transaction.blockHash;
@@ -141,7 +161,6 @@ async function search(queryText) {
       let block = null;
       try { block = await rpc('eth_getBlockByHash',[query,false]); } catch {}
       if (block) { renderBlock(block); return; }
-      const saved = SAVED[query.toLowerCase()];
       const details = [
         ['Searched hash',mono(query) + ' ' + copyButton(query)],
         ['Current RPC',esc(transactionError || 'No transaction or block was returned for this hash.')],
