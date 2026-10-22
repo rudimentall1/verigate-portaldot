@@ -347,8 +347,8 @@ export function getSubstrateIndexerStatus(db, runtime = {}) {
   const startedText = readState(db, "substrate_started_from");
   const cursor = cursorText == null ? null : Number(cursorText);
   const started = startedText == null ? null : Number(startedText);
-  const gapCount = db.prepare("SELECT COUNT(*) AS count FROM indexer_gaps WHERE component LIKE 'substrate_%'").get().count;
-  const firstGap = db.prepare("SELECT MIN(start_block) AS n FROM indexer_gaps WHERE component LIKE 'substrate_%'").get().n;
+  const gapCount = db.prepare("SELECT COUNT(*) AS count FROM indexer_gaps WHERE component IN ('substrate_blocks','substrate_events')").get().count;
+  const firstGap = db.prepare("SELECT MIN(start_block) AS n FROM indexer_gaps WHERE component IN ('substrate_blocks','substrate_events')").get().n;
   const contiguousThrough = cursor == null ? null : firstGap == null ? cursor : Math.min(cursor, firstGap - 1);
   const count = (table) => db.prepare("SELECT COUNT(*) AS count FROM " + table).get().count;
   return {
@@ -365,7 +365,7 @@ export function getSubstrateIndexerStatus(db, runtime = {}) {
     eventsStored: count("substrate_events"),
     gapCount,
     lastBatchAt: readState(db, "substrate_last_batch_at"),
-    gaps: db.prepare("SELECT component,start_block AS startBlock,end_block AS endBlock,error_message AS error,attempts,updated_at AS updatedAt FROM indexer_gaps WHERE component LIKE 'substrate_%' ORDER BY updated_at LIMIT 100").all(),
+    gaps: db.prepare("SELECT component,start_block AS startBlock,end_block AS endBlock,error_message AS error,attempts,updated_at AS updatedAt FROM indexer_gaps WHERE component IN ('substrate_blocks','substrate_events') ORDER BY updated_at LIMIT 100").all(),
     error: runtime.substrateError || null
   };
 }
@@ -565,7 +565,7 @@ async function indexSubstrateRange(db, runtime, startBlock, endBlock, advanceCur
 
 async function retryOneSubstrateGap(db, runtime) {
   const gap = db.prepare(
-    "SELECT component,start_block,end_block FROM indexer_gaps WHERE component LIKE 'substrate_%' ORDER BY updated_at ASC LIMIT 1"
+    "SELECT component,start_block,end_block FROM indexer_gaps WHERE component IN ('substrate_blocks','substrate_events') ORDER BY updated_at ASC LIMIT 1"
   ).get();
   if (!gap) return;
   const from = gap.start_block;
@@ -1018,7 +1018,7 @@ async function apiRoute(req, res, url, db, runtime) {
       const limit = boundedLimit(url.searchParams.get("limit"), 50);
       const cursor = Number(readState(db, "substrate_cursor") || 0);
       const started = Number(readState(db, "substrate_started_from") || 0);
-      const fromBlock = queryInteger(url, "fromBlock", Math.max(started, cursor - 1000), Number.MAX_SAFE_INTEGER);
+      const fromBlock = queryInteger(url, "fromBlock", Math.max(0, cursor - 1000), Number.MAX_SAFE_INTEGER);
       const toBlock = queryInteger(url, "toBlock", cursor, Number.MAX_SAFE_INTEGER);
       if (toBlock < fromBlock || toBlock - fromBlock > 10000) return jsonResponse(res, 400, { error: "Invalid Substrate event range; maximum range is 10000 blocks." }, origin);
       const section = url.searchParams.get("section");
