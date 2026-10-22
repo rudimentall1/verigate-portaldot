@@ -1,6 +1,6 @@
 # PortalDotAgentGuardV2 deployment runbook
 
-Status: source, tests and a guarded deployment script are on the working branch. This is not deployment evidence. Do not publish a V2 address or claim V2 is live until a real PortalDot receipt is confirmed and the readback values below are saved.
+Status: the deployment command reported a successful V2 deployment and on-chain readback on 2026-10-22. Address, transaction and runtime code hash are recorded in `docs/evidence/portaldot-v2-deployment-2026-10-22.json`. Independent receipt/runtime verification and the signed Verigate ALLOW → V2 `TransferExecuted` demonstration remain pending; do not describe the end-to-end proof as complete before those checks pass.
 
 ## Safety model
 
@@ -27,6 +27,10 @@ Required values:
 - `V2_MAX_PER_TRANSFER_WEI`: positive integer in EVM base units
 - `V2_WINDOW_LIMIT_WEI`: integer greater than or equal to max per transfer
 - `V2_WINDOW_SECONDS`: positive integer seconds
+- `PORTALDOT_V2_GUARD_ADDRESS=0x87C494a5e4B0A8E055F283767579667E10E046C6`
+- `PORTALDOT_V2_GUARD_CODE_HASH=0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859`
+- `PORTALDOT_V2_DEPLOYMENT_TX_HASH=0x331c1fc027da51af26ed5ee92ef22a8250fe4efdf0d84526f5fe2203f5d3494b`
+- For the V2 bridge flow, set `PORTALDOT_GUARD_PROFILE=v2`. The bridge selects `PortalDotAgentGuardV2` / EIP-712 version `2` and uses the V2-specific address and code-hash variables. V1 remains the default when the profile is unset or `v1`.
 
 Do not reuse the V1 contract's deployed address as a V2 address. The deployer script checks chain ID, Substrate genesis pin, address separation, policy consistency and an estimated deployment budget before broadcast.
 
