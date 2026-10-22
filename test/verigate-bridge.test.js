@@ -669,7 +669,9 @@ describe("Verigate bridge binding", function () {
       "AUTHORITY_SIGNER_ADDRESS",
       "PORTALDOT_GUARD_ADDRESS",
       "PORTALDOT_GUARD_CODE_HASH",
-      "PORTALDOT_GUARD_PROFILE"
+      "PORTALDOT_GUARD_PROFILE",
+      "PORTALDOT_V2_GUARD_ADDRESS",
+      "PORTALDOT_V2_GUARD_CODE_HASH"
     ];
     const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
     const originalFetch = global.fetch;
@@ -770,7 +772,9 @@ describe("Verigate bridge binding", function () {
       "AUTHORITY_SIGNER_ADDRESS",
       "PORTALDOT_GUARD_ADDRESS",
       "PORTALDOT_GUARD_CODE_HASH",
-      "PORTALDOT_GUARD_PROFILE"
+      "PORTALDOT_GUARD_PROFILE",
+      "PORTALDOT_V2_GUARD_ADDRESS",
+      "PORTALDOT_V2_GUARD_CODE_HASH"
     ];
     const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
     const originalFetch = global.fetch;
@@ -822,6 +826,8 @@ describe("Verigate bridge binding", function () {
       process.env.PORTALDOT_GUARD_ADDRESS = guardAddress;
       process.env.PORTALDOT_GUARD_CODE_HASH = ethers.keccak256(await ethers.provider.getCode(guardAddress));
       process.env.PORTALDOT_GUARD_PROFILE = "v2";
+      process.env.PORTALDOT_V2_GUARD_ADDRESS = guardAddress;
+      process.env.PORTALDOT_V2_GUARD_CODE_HASH = ethers.keccak256(await ethers.provider.getCode(guardAddress));
       process.env.VERIGATE_PUBLIC_KEY_FILE = publicKeyFile;
       global.fetch = async (url, options) => {
         verifierCalls += 1;
