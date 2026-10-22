@@ -200,7 +200,9 @@ def public_key_der(key) -> bytes:
     )
 
 
-def check_public_key_binding(server_env: dict[str, str], cwd: Path, client_env: dict[str, str]) -> None:
+def check_public_key_binding(
+    server_env: dict[str, str], cwd: Path, client_env: dict[str, str], *, check_remote: bool = True
+) -> None:
     from cryptography.hazmat.primitives import serialization
     expected_path = client_env.get("VERIGATE_PUBLIC_KEY_FILE", "").strip()
     expected_fp = client_env.get("VERIGATE_PUBLIC_KEY_SHA256", "").strip().lower()
@@ -224,6 +226,8 @@ def check_public_key_binding(server_env: dict[str, str], cwd: Path, client_env: 
     if public_key_der(server_key) != pinned_der:
         die("Verigate issuer key does not match the bridge's pinned public key.")
 
+    if not check_remote:
+        return
     status, remote_pem = http_json(f"{BASE_URL}/v1/public-key")
     if status != 200 or not isinstance(remote_pem, str):
         die("The V2 verifier endpoint did not return its public key.")
@@ -369,9 +373,10 @@ def main() -> int:
     plan_key_path = resolve_key_path(private_key_value, server_cwd)
     if not plan_key_path.is_file():
         die("The agent private-key file referenced by the plan does not exist.")
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     agent_key = load_ed25519_private_key(plan_key_path)
+
+    # Match the pinned issuer key locally before creating policy or capability state.
+    check_public_key_binding(server_env, server_cwd, client_env, check_remote=False)
 
     # Build the V2-only policy as a sibling file; the active policy at 8001 is not edited.
     import yaml
@@ -405,9 +410,6 @@ def main() -> int:
     from core.policy import Policy
     Policy.load(str(POLICY_V2_PATH))
     cap_status = validate_or_create_capability(server_cwd, Path(db_env), plan)
-
-    # Verify that the operator's pinned issuer key matches the active Verigate key.
-    check_public_key_binding(server_env, server_cwd, client_env)
 
     if not existing_new_pids:
         log_path = LIVE_E2E_DIR / "verigate-v2-8002.log"
