@@ -504,7 +504,7 @@ test("runtime address mapping uses reviveApi results and keeps a missing mapping
   const missing = await resolveSubstrateMapping(runtime, evm);
   assert.equal(missing.status, "not_found");
   assert.equal(missing.runtimeMappingConfirmed, false);
-  assert.match(missing.note, /No offline-derived mapping/);
+  assert.match(missing.note, /no mapped native AccountId/i);
 });
 
 test("runtime address mapping HTTP route is read-only", async () => {
