@@ -40,15 +40,17 @@ jobs:
             if curl --max-time 12 -fsS "$BASE/api/substrate/status" -o /tmp/substrate.json; then SUBSTRATE_OK=true; fi
 
             EVM_CHAIN_ID="$(jq -r '.live.chainId // .chainId // empty' /tmp/evm.json)"
+            EVM_CONNECTED="$(jq -r '.live.connected // false' /tmp/evm.json)"
+            CHAIN_MATCHES="$(jq -r '.chainMatches // false' /tmp/evm.json)"
             ACTUAL_GENESIS="$(jq -r '.actualGenesisHash // empty' /tmp/substrate.json)"
             SUBSTRATE_CONNECTED="$(jq -r '.connected // false' /tmp/substrate.json)"
 
-            if [[ "$EVM_OK" == "true" && "$SUBSTRATE_OK" == "true" && "$EVM_CHAIN_ID" == "420420777" && "$ACTUAL_GENESIS" == "$EXPECTED_GENESIS" && "$SUBSTRATE_CONNECTED" == "true" ]]; then
+            if [[ "$EVM_OK" == "true" && "$SUBSTRATE_OK" == "true" && "$EVM_CHAIN_ID" == "420420777" && "$EVM_CONNECTED" == "true" && "$CHAIN_MATCHES" == "true" && "$ACTUAL_GENESIS" == "$EXPECTED_GENESIS" && "$SUBSTRATE_CONNECTED" == "true" ]]; then
               READY=true
               break
             fi
 
-            echo "Waiting for live RPC readiness (attempt $attempt/12): EVM HTTP=$EVM_OK chainId=${EVM_CHAIN_ID:-<empty>}; Substrate HTTP=$SUBSTRATE_OK connected=$SUBSTRATE_CONNECTED; genesis=${ACTUAL_GENESIS:-<empty>}"
+            echo "Waiting for live RPC readiness (attempt $attempt/12): EVM HTTP=$EVM_OK connected=$EVM_CONNECTED chainId=${EVM_CHAIN_ID:-<empty>} chainMatches=$CHAIN_MATCHES; Substrate HTTP=$SUBSTRATE_OK connected=$SUBSTRATE_CONNECTED; genesis=${ACTUAL_GENESIS:-<empty>}"
             sleep 5
           done
 
