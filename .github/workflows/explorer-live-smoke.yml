@@ -54,10 +54,10 @@ jobs:
 
           echo "=== API health ==="
           jq . /tmp/health.json
-          echo "=== EVM indexer/RPC status ==="
-          jq '{connected: (.live.connected // .connected // null), chainId: (.live.chainId // .chainId // null), latestBlock: (.live.latestBlock // .latestBlock // null), error: (.live.error // .error // null)}' /tmp/evm.json
-          echo "=== Substrate indexer/RPC status ==="
-          jq '{connected, expectedGenesisHash, actualGenesisHash, cursor, processedThrough, contiguousThrough, indexedThrough, error: (.error // .substrateError // null)}' /tmp/substrate.json
+          echo "=== EVM RPC and indexer status ==="
+          jq '{connected: .live.connected, chainId: .live.chainId, chainMatches: .chainMatches, latestBlock: .live.latestBlock, indexer: {indexedThrough: .indexer.indexedThrough, startedFrom: .indexer.startedFrom, blocksStored: .indexer.blocksStored, transactionsStored: .indexer.transactionsStored, logsStored: .indexer.logsStored, gapCount: .indexer.gapCount, lastBatchAt: .indexer.lastBatchAt}, error: .live.error}' /tmp/evm.json
+          echo "=== Substrate RPC and indexer status ==="
+          jq '{connected, expectedGenesisHash, actualGenesisHash, latestFinalized, indexedThrough, processedThrough, startedFrom, blocksStored, extrinsicsStored, eventsStored, gapCount, lastBatchAt, error}' /tmp/substrate.json
 
           if [[ "$READY" != "true" ]]; then
             echo "::error::Explorer API did not reach a healthy EVM and Substrate RPC state within the retry window."
