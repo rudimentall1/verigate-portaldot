@@ -69,6 +69,9 @@ const EXPECTED_SUBSTRATE_GENESIS_HASH = (process.env.PORTALDOT_SUBSTRATE_GENESIS
 const SUBSTRATE_START_BLOCK_ENV = (process.env.SUBSTRATE_START_BLOCK || "").trim();
 const SUBSTRATE_BACKFILL_BLOCKS = positiveInteger(process.env.SUBSTRATE_BACKFILL_BLOCKS, 30000, 1, 2000000);
 const SUBSTRATE_BATCH_BLOCKS = positiveInteger(process.env.SUBSTRATE_BATCH_BLOCKS, 10, 1, 50);
+const SUBSTRATE_SNAPSHOT_INTERVAL_MS = positiveInteger(process.env.SUBSTRATE_SNAPSHOT_INTERVAL_MS, 900000, 60000, 86400000);
+const SUBSTRATE_SNAPSHOT_PAGE_SIZE = positiveInteger(process.env.SUBSTRATE_SNAPSHOT_PAGE_SIZE, 500, 25, 1000);
+const SUBSTRATE_SNAPSHOT_MAX_ROWS = positiveInteger(process.env.SUBSTRATE_SNAPSHOT_MAX_ROWS, 100000, 1000, 500000);
 const SUBSTRATE_ACCOUNT_RE = /^[1-9A-HJ-NP-Za-km-z]{46,50}$/;
 
 export function classifyLookup(input) {
@@ -123,7 +126,15 @@ export function initializeDatabase(db) {
     "CREATE INDEX IF NOT EXISTS substrate_events_section_idx ON substrate_events(section,block_number DESC,event_index DESC);" +
     "CREATE INDEX IF NOT EXISTS substrate_events_method_idx ON substrate_events(method,block_number DESC,event_index DESC);" +
     "CREATE TABLE IF NOT EXISTS substrate_event_accounts (block_number INTEGER NOT NULL,event_index INTEGER NOT NULL,address TEXT NOT NULL,PRIMARY KEY(block_number,event_index,address));" +
-    "CREATE INDEX IF NOT EXISTS substrate_event_accounts_address_idx ON substrate_event_accounts(address,block_number DESC,event_index DESC);"
+    "CREATE INDEX IF NOT EXISTS substrate_event_accounts_address_idx ON substrate_event_accounts(address,block_number DESC,event_index DESC);" +
+    "CREATE TABLE IF NOT EXISTS state_snapshot_runs (snapshot_block INTEGER PRIMARY KEY,status TEXT NOT NULL,started_at TEXT NOT NULL,completed_at TEXT,native_symbol TEXT,native_decimals INTEGER,native_accounts INTEGER NOT NULL DEFAULT 0,asset_count INTEGER NOT NULL DEFAULT 0,asset_holder_count INTEGER NOT NULL DEFAULT 0,nft_count INTEGER NOT NULL DEFAULT 0,error_message TEXT);" +
+    "CREATE TABLE IF NOT EXISTS native_balance_snapshots (snapshot_block INTEGER NOT NULL,address TEXT NOT NULL,free TEXT NOT NULL,reserved TEXT NOT NULL,frozen TEXT NOT NULL,nonce TEXT NOT NULL,raw_json TEXT NOT NULL,captured_at TEXT NOT NULL,PRIMARY KEY(snapshot_block,address));" +
+    "CREATE INDEX IF NOT EXISTS native_balances_rank_idx ON native_balance_snapshots(snapshot_block,free DESC);" +
+    "CREATE TABLE IF NOT EXISTS asset_metadata_snapshots (snapshot_block INTEGER NOT NULL,asset_id TEXT NOT NULL,name TEXT,symbol TEXT,decimals INTEGER,supply TEXT,owner TEXT,raw_json TEXT NOT NULL,captured_at TEXT NOT NULL,PRIMARY KEY(snapshot_block,asset_id));" +
+    "CREATE TABLE IF NOT EXISTS asset_holder_snapshots (snapshot_block INTEGER NOT NULL,asset_id TEXT NOT NULL,address TEXT NOT NULL,balance TEXT NOT NULL,status TEXT,raw_json TEXT NOT NULL,captured_at TEXT NOT NULL,PRIMARY KEY(snapshot_block,asset_id,address));" +
+    "CREATE INDEX IF NOT EXISTS asset_holders_rank_idx ON asset_holder_snapshots(snapshot_block,asset_id,balance DESC);" +
+    "CREATE TABLE IF NOT EXISTS nft_owner_snapshots (snapshot_block INTEGER NOT NULL,pallet TEXT NOT NULL,collection_id TEXT NOT NULL,item_id TEXT NOT NULL,owner TEXT NOT NULL,raw_json TEXT NOT NULL,captured_at TEXT NOT NULL,PRIMARY KEY(snapshot_block,pallet,collection_id,item_id));" +
+    "CREATE INDEX IF NOT EXISTS nft_owner_addr_idx ON nft_owner_snapshots(snapshot_block,owner,pallet);"
   );
 }
 
