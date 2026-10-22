@@ -85,10 +85,24 @@ function getApiBase() {
   if (url.protocol === 'http:' && !['localhost','127.0.0.1','[::1]'].includes(url.hostname)) throw new Error('Use HTTPS for remote API services.');
   return url.origin;
 }
+async function apiRequest(path, options={}) {
+  const headers = {accept:'application/json'};
+  if (options.body !== undefined) headers['content-type'] = 'application/json';
+  if (options.token) headers.authorization = 'Bearer ' + options.token;
+  const response = await fetch(getApiBase() + path, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    signal: AbortSignal.timeout(20000)
+  });
+  let payload;
+  try { payload = await response.json(); }
+  catch { payload = {error:'The API returned a non-JSON response.'}; }
+  if (!response.ok) throw new Error(payload.error || ('Indexer API HTTP ' + response.status));
+  return payload;
+}
 async function apiGet(path) {
-  const response = await fetch(getApiBase() + path, {headers:{accept:'application/json'}, signal:AbortSignal.timeout(5000)});
-  if (!response.ok) throw new Error('Indexer API HTTP ' + response.status);
-  return response.json();
+  return apiRequest(path);
 }
 const $ = selector => document.querySelector(selector);
 const esc = value => String(value ?? '—').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
