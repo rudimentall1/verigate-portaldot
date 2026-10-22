@@ -54,6 +54,18 @@ jobs:
             sleep 5
           done
 
+          echo "=== Direct PortalDot EVM historical-availability probe ==="
+          RPC="https://test-evm-rpc-v3.portaldot.dev"
+          HEAD_HEX="$(curl --max-time 15 -fsS -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}' "$RPC" | jq -r '.result')"
+          HEAD=$((HEAD_HEX))
+          for BLOCK in "$HEAD" "$((HEAD - 6))" "$((HEAD - 20))" "$((HEAD - 1000))" 110000; do
+            (( BLOCK < 0 )) && continue
+            printf -v BLOCK_HEX '0x%x' "$BLOCK"
+            PAYLOAD="$(jq -nc --arg block "$BLOCK_HEX" '{jsonrpc:"2.0",id:1,method:"eth_getBlockByNumber",params:[$block,true]}')"
+            RESULT="$(curl --max-time 15 -sS -H 'content-type: application/json' --data "$PAYLOAD" "$RPC" | jq -c '{result: (if .result == null then null else {number:.result.number,hash:.result.hash,transactions:(.result.transactions|length)} end),error:(.error.message // null)}')"
+            echo "block=$BLOCK $RESULT"
+          done
+
           echo "=== API health ==="
           jq . /tmp/health.json
           echo "=== EVM RPC and indexer status ==="
