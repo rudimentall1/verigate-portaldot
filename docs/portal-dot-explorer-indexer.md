@@ -46,6 +46,16 @@ The Render Blueprint sets both indexers to start at block 110000 so the service 
 - GET /api/transactions?limit=30
 - GET /api/logs?fromBlock=110000&toBlock=110100&address=0x...&topic0=0x...&limit=100
 - GET /api/known-evidence
+- GET /api/contracts
+- POST /api/contracts with JSON { "address": "0x…", "abi": [ … ], "name": "optional" }
+- GET /api/contracts/<slug>
+- GET /api/contracts/<slug>/events?name=Transfer&from_block=110000&to_block=120000&limit=50&order=asc
+- POST /api/contracts/<slug>/resync (Authorization: Bearer <manage_token>)
+- DELETE /api/contracts/<slug> (Authorization: Bearer <manage_token>)
+
+Contract registration accepts a Solidity JSON ABI array or a Hardhat/Foundry artifact with an abi array. The API validates the ABI, requires at least one event, limits each ABI to 256 KiB/1000 entries, caps the global registry at 200 contracts, and rejects duplicate addresses. Successful registration returns a random manage token exactly once; only its SHA-256 hash is stored. Save it if resync/delete access is needed. The token is never returned by public contract listing/detail endpoints. ABI metadata is public, so do not include secrets in a contract name or ABI.
+
+Registered contract logs already present in the EVM index are decoded at registration. Future logs are decoded after each successful EVM batch. Resync re-decodes logs in SQLite only; it does not backfill RPC history gaps. Event query responses are capped and limited to ranges of 10,000 blocks per request. ABI management is the only mutable API feature; it changes the indexer's local registry and decoded projection, never the blockchain.
 
 ### Substrate
 
@@ -79,7 +89,7 @@ Set the assigned HTTPS service URL in the Explorer's “Indexer API URL” field
 - Substrate account lookup returns live system.account data and historical events/extrinsics found by this indexer. It is not an all-history guarantee.
 - The first Substrate implementation records runtime events and string-like SS58 accounts found in decoded event payloads. It does not yet provide a universal account reference decoder for every runtime type.
 - Token-holder rankings and NFT owner/balance views are not yet implemented. Those require their own storage snapshot/baseline and gap-aware state reconstruction; they must not be inferred from a partial event range.
-- This phase does not decode event arguments using arbitrary user-supplied contract ABI.
+- Solidity ABI decoding is supported for registered EVM contracts, limited to the EVM logs actually captured by the indexer. It does not fill unavailable history or decode Substrate runtime events using contract ABIs.
 - EVM native token balance units and Substrate native-account data are distinct sources and are not automatically converted/mapped into one another.
 - The saved V1 deployment transaction and TransferExecuted record are project-supplied historical evidence; the indexer only stores the real blocks/events that the RPC actually serves.
 - A gap means a specific block or event range was unavailable at a query attempt. Read the gap list before claiming complete coverage.

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
+import { Interface } from "ethers";
 import {
   classifyLookup,
   quantityToInteger,
@@ -289,6 +290,100 @@ test("Substrate HTTP routes expose indexed blocks, extrinsics and events read-on
 
     const write = await fetch(base + "/api/substrate/events", { method: "POST" });
     assert.equal(write.status, 405);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    db.close();
+  }
+});
+
+
+test("ABI registry decodes stored contract logs and protects resync/delete with one-time tokens", async () => {
+  const db = new DatabaseSync(":memory:");
+  initializeDatabase(db);
+  const contractAddress = address("c");
+  const fromAddress = address("a");
+  const toAddress = address("b");
+  const blockHash = hash("8");
+  const txHash = hash("9");
+  const abi = [{
+    type: "event",
+    name: "Transfer",
+    anonymous: false,
+    inputs: [
+      { name: "from", type: "address", indexed: true },
+      { name: "to", type: "address", indexed: true },
+      { name: "value", type: "uint256", indexed: false }
+    ]
+  }];
+  const iface = new Interface(abi);
+  const encoded = iface.encodeEventLog(iface.getEvent("Transfer"), [fromAddress, toAddress, 123n]);
+  const rawLog = {
+    address: contractAddress,
+    blockNumber: "0x1",
+    blockHash,
+    transactionHash: txHash,
+    transactionIndex: "0x0",
+    logIndex: "0x0",
+    topics: encoded.topics,
+    data: encoded.data,
+    removed: false
+  };
+  persistBatch(db, {
+    blocks: [fakeBlock(1, blockHash, txHash, fromAddress, toAddress)],
+    logs: [rawLog], startBlock: 1, endBlock: 1, blockErrors: [], logsError: null
+  });
+  const runtime = { lastRpcError: null, lastHead: null, stopping: false, substrateConnected: false };
+  const { server } = await createExplorerServer({ db, runtime });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = "http://127.0.0.1:" + server.address().port;
+  let managerToken = "";
+  let slug = "";
+  try {
+    const registration = await fetch(base + "/api/contracts", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Example Token", address: contractAddress, abi })
+    });
+    assert.equal(registration.status, 201);
+    const created = await registration.json();
+    assert.match(created.slug, /^example-token-/);
+    assert.match(created.manage_token, /^[a-f0-9]{64}$/);
+    managerToken = created.manage_token;
+    slug = created.slug;
+
+    const detailsResponse = await fetch(base + "/api/contracts/" + slug);
+    assert.equal(detailsResponse.status, 200);
+    const details = await detailsResponse.json();
+    assert.equal(details.event_count, 1);
+    assert.equal(details.events[0].name, "Transfer");
+
+    const eventsResponse = await fetch(base + "/api/contracts/" + slug + "/events?name=Transfer");
+    assert.equal(eventsResponse.status, 200);
+    const events = await eventsResponse.json();
+    assert.equal(events.items.length, 1);
+    assert.equal(events.items[0].event_name, "Transfer");
+    assert.equal(events.items[0].args.value, "123");
+    assert.equal(events.items[0].args.from.toLowerCase(), fromAddress.toLowerCase());
+
+    const noToken = await fetch(base + "/api/contracts/" + slug, { method: "DELETE" });
+    assert.equal(noToken.status, 403);
+
+    const resync = await fetch(base + "/api/contracts/" + slug + "/resync", {
+      method: "POST",
+      headers: { authorization: "Bearer " + managerToken }
+    });
+    assert.equal(resync.status, 200);
+    const resyncResult = await resync.json();
+    assert.equal(resyncResult.event_count, 1);
+
+    const deleteResult = await fetch(base + "/api/contracts/" + slug, {
+      method: "DELETE",
+      headers: { authorization: "Bearer " + managerToken }
+    });
+    assert.equal(deleteResult.status, 200);
+    assert.equal((await deleteResult.json()).deleted, true);
+    const missing = await fetch(base + "/api/contracts/" + slug);
+    assert.equal(missing.status, 404);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     db.close();

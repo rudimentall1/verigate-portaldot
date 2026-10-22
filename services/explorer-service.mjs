@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { Interface } from "ethers";
 import { ApiPromise, WsProvider } from "@polkadot/api";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -105,6 +107,11 @@ export function initializeDatabase(db) {
     "CREATE INDEX IF NOT EXISTS logs_tx_idx ON logs(tx_hash);\n" +
     "CREATE INDEX IF NOT EXISTS logs_address_idx ON logs(contract_address, block_number DESC);\n" +
     "CREATE INDEX IF NOT EXISTS logs_topic0_idx ON logs(topic0, block_number DESC);\n" +
+    "CREATE TABLE IF NOT EXISTS registered_contracts (slug TEXT PRIMARY KEY,address TEXT NOT NULL,name TEXT,abi_json TEXT NOT NULL,manager_token_hash TEXT NOT NULL,registered_at TEXT NOT NULL,indexed_from_block INTEGER,last_decoded_block INTEGER,event_count INTEGER NOT NULL DEFAULT 0,decode_error TEXT);\n" +
+    "CREATE INDEX IF NOT EXISTS registered_contracts_address_idx ON registered_contracts(address);\n" +
+    "CREATE TABLE IF NOT EXISTS decoded_contract_events (slug TEXT NOT NULL,block_number INTEGER NOT NULL,log_index INTEGER NOT NULL,tx_hash TEXT,event_name TEXT NOT NULL,event_signature TEXT NOT NULL,args_json TEXT NOT NULL,raw_json TEXT NOT NULL,decoded_at TEXT NOT NULL,PRIMARY KEY(slug,block_number,log_index));\n" +
+    "CREATE INDEX IF NOT EXISTS decoded_events_name_idx ON decoded_contract_events(slug,event_name,block_number DESC);\n" +
+    "CREATE INDEX IF NOT EXISTS decoded_events_tx_idx ON decoded_contract_events(tx_hash);\n" +
     "CREATE TABLE IF NOT EXISTS indexer_state (state_key TEXT PRIMARY KEY,state_value TEXT NOT NULL,updated_at TEXT NOT NULL);\n" +
     "CREATE TABLE IF NOT EXISTS indexer_gaps (component TEXT NOT NULL,start_block INTEGER NOT NULL,end_block INTEGER NOT NULL,error_message TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,PRIMARY KEY(component,start_block,end_block));" +
     "CREATE TABLE IF NOT EXISTS substrate_blocks (block_number INTEGER PRIMARY KEY,block_hash TEXT NOT NULL,parent_hash TEXT,state_root TEXT,extrinsics_root TEXT,timestamp_ms TEXT,extrinsic_count INTEGER NOT NULL DEFAULT 0,event_count INTEGER NOT NULL DEFAULT 0,raw_json TEXT NOT NULL,indexed_at TEXT NOT NULL);" +
@@ -902,6 +909,258 @@ async function resolveAddress(db, address) {
   };
 }
 
+function safeAbiValue(value, param = null) {
+  if (typeof value === "bigint") return value.toString();
+  if (value == null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(param?.components) && value && typeof value.length === "number") {
+    return Object.fromEntries(param.components.map((component, index) => [
+      component.name || String(index),
+      safeAbiValue(value[index], component)
+    ]));
+  }
+  if (Array.isArray(value)) return value.map((item, index) => safeAbiValue(item, param?.arrayChildren || null));
+  if (typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, safeAbiValue(item)]));
+  }
+  return String(value);
+}
+
+function parseContractAbi(input) {
+  const abi = Array.isArray(input) ? input : input && Array.isArray(input.abi) ? input.abi : null;
+  if (!abi || abi.length === 0 || abi.length > 1000) {
+    const error = new Error("abi must be a non-empty Solidity ABI array (max 1000 entries) or artifact with an abi array.");
+    error.statusCode = 400;
+    throw error;
+  }
+  let abiJson;
+  try { abiJson = JSON.stringify(abi); }
+  catch {
+    const error = new Error("abi must be valid JSON data.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (Buffer.byteLength(abiJson, "utf8") > 256 * 1024) {
+    const error = new Error("abi exceeds the 256 KiB size limit.");
+    error.statusCode = 413;
+    throw error;
+  }
+  let iface;
+  try { iface = new Interface(abi); }
+  catch (error) {
+    const failure = new Error("Invalid Solidity ABI: " + (error?.message || String(error)));
+    failure.statusCode = 400;
+    throw failure;
+  }
+  const eventFragments = iface.fragments.filter((fragment) => fragment.type === "event");
+  if (eventFragments.length === 0) {
+    const error = new Error("The ABI must contain at least one event fragment.");
+    error.statusCode = 400;
+    throw error;
+  }
+  return { abi, abiJson, iface, eventCount: eventFragments.length };
+}
+
+function makeContractSlug(name) {
+  const base = String(name || "contract").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 36) || "contract";
+  return base + "-" + randomBytes(4).toString("hex");
+}
+
+function hashManagerToken(token) {
+  return createHash("sha256").update(token, "utf8").digest("hex");
+}
+
+function hasManagerAccess(req, storedHash) {
+  const header = String(req.headers.authorization || "");
+  const match = /^Bearer ([a-fA-F0-9]{64})$/.exec(header);
+  if (!match || !storedHash) return false;
+  const provided = Buffer.from(hashManagerToken(match[1]), "hex");
+  const expected = Buffer.from(storedHash, "hex");
+  return provided.length === expected.length && timingSafeEqual(provided, expected);
+}
+
+async function readJsonBody(req, maxBytes = 1024 * 1024) {
+  const contentType = String(req.headers["content-type"] || "").toLowerCase();
+  if (!contentType.startsWith("application/json")) {
+    const error = new Error("Content-Type must be application/json.");
+    error.statusCode = 415;
+    throw error;
+  }
+  const declaredLength = Number(req.headers["content-length"] || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    const error = new Error("Request body exceeds the size limit.");
+    error.statusCode = 413;
+    throw error;
+  }
+  const chunks = [];
+  let length = 0;
+  for await (const chunk of req) {
+    length += chunk.length;
+    if (length > maxBytes) {
+      const error = new Error("Request body exceeds the size limit.");
+      error.statusCode = 413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
+  if (length === 0) {
+    const error = new Error("Request body must contain a JSON object.");
+    error.statusCode = 400;
+    throw error;
+  }
+  let body;
+  try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); }
+  catch {
+    const error = new Error("Malformed JSON request body.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    const error = new Error("Request body must be a JSON object.");
+    error.statusCode = 400;
+    throw error;
+  }
+  return body;
+}
+
+function decodeOneContractLog(iface, rawLog) {
+  try {
+    const topics = Array.isArray(rawLog.topics) ? rawLog.topics : [];
+    const parsed = iface.parseLog({ topics, data: rawLog.data || "0x" });
+    if (!parsed) return null;
+    const args = {};
+    parsed.fragment.inputs.forEach((input, index) => {
+      args[input.name || String(index)] = safeAbiValue(parsed.args[index], input);
+    });
+    return {
+      eventName: parsed.name,
+      eventSignature: parsed.signature || parsed.fragment.format(),
+      args
+    };
+  } catch {
+    // A registered ABI can describe only a subset of logs for an address.
+    return null;
+  }
+}
+
+export function decodeContractLogsForSlug(db, slug, startBlock, endBlock) {
+  const contract = db.prepare("SELECT slug,address,abi_json FROM registered_contracts WHERE slug=?").get(slug);
+  if (!contract) return 0;
+  if (!Number.isSafeInteger(startBlock) || !Number.isSafeInteger(endBlock) || endBlock < startBlock) return 0;
+  const iface = new Interface(JSON.parse(contract.abi_json));
+  const rows = db.prepare(
+    "SELECT block_number,log_index,tx_hash,raw_json FROM logs WHERE contract_address=? AND block_number BETWEEN ? AND ? ORDER BY block_number,log_index"
+  ).all(contract.address, startBlock, endBlock);
+  const insert = db.prepare(
+    "INSERT INTO decoded_contract_events(slug,block_number,log_index,tx_hash,event_name,event_signature,args_json,raw_json,decoded_at) VALUES(?,?,?,?,?,?,?,?,?) " +
+    "ON CONFLICT(slug,block_number,log_index) DO UPDATE SET tx_hash=excluded.tx_hash,event_name=excluded.event_name,event_signature=excluded.event_signature,args_json=excluded.args_json,raw_json=excluded.raw_json,decoded_at=excluded.decoded_at"
+  );
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    // Re-decode this exact range to keep the projection consistent after log replacement or a resync.
+    db.prepare("DELETE FROM decoded_contract_events WHERE slug=? AND block_number BETWEEN ? AND ?").run(slug, startBlock, endBlock);
+    let decoded = 0;
+    for (const row of rows) {
+      const rawLog = JSON.parse(row.raw_json);
+      const parsed = decodeOneContractLog(iface, rawLog);
+      if (!parsed) continue;
+      insert.run(
+        slug, row.block_number, row.log_index, row.tx_hash,
+        parsed.eventName, parsed.eventSignature, JSON.stringify(parsed.args),
+        JSON.stringify(rawLog), new Date().toISOString()
+      );
+      decoded++;
+    }
+    const count = db.prepare("SELECT COUNT(*) AS count FROM decoded_contract_events WHERE slug=?").get(slug).count;
+    const last = db.prepare("SELECT MAX(block_number) AS n FROM logs WHERE contract_address=? AND block_number<=?").get(contract.address, endBlock).n;
+    const first = db.prepare("SELECT MIN(block_number) AS n FROM logs WHERE contract_address=?").get(contract.address).n;
+    const currentFrom = db.prepare("SELECT indexed_from_block FROM registered_contracts WHERE slug=?").get(slug)?.indexed_from_block;
+    db.prepare(
+      "UPDATE registered_contracts SET event_count=?,last_decoded_block=?,indexed_from_block=COALESCE(indexed_from_block,?),decode_error=NULL WHERE slug=?"
+    ).run(count, endBlock, first ?? (currentFrom ?? startBlock), slug);
+    db.exec("COMMIT");
+    return decoded;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    db.prepare("UPDATE registered_contracts SET decode_error=? WHERE slug=?").run(String(error?.message || error).slice(0, 800), slug);
+    throw error;
+  }
+}
+
+export function decodeRegisteredContractLogs(db, startBlock, endBlock) {
+  const contracts = db.prepare("SELECT slug FROM registered_contracts ORDER BY registered_at").all();
+  let decoded = 0;
+  for (const contract of contracts) {
+    try { decoded += decodeContractLogsForSlug(db, contract.slug, startBlock, endBlock); }
+    catch (error) {
+      console.error("Contract event decoding failed for " + contract.slug + ":", error?.message || String(error));
+    }
+  }
+  return decoded;
+}
+
+function registerContract(db, address, name, parsedAbi) {
+  const total = db.prepare("SELECT COUNT(*) AS count FROM registered_contracts").get().count;
+  if (total >= 200) {
+    const error = new Error("The contract registry is full (200 contracts).");
+    error.statusCode = 429;
+    throw error;
+  }
+  const existing = db.prepare("SELECT slug FROM registered_contracts WHERE address=?").get(address);
+  if (existing) {
+    const error = new Error("This address is already registered as slug " + existing.slug + ". Use its manage token to resync or delete it.");
+    error.statusCode = 409;
+    throw error;
+  }
+  const slug = makeContractSlug(name || ("contract-" + address.slice(2, 8)));
+  const manageToken = randomBytes(32).toString("hex");
+  const cursor = readState(db, "cursor");
+  const firstExistingLog = db.prepare("SELECT MIN(block_number) AS n FROM logs WHERE contract_address=?").get(address).n;
+  const indexedFrom = firstExistingLog ?? (cursor == null ? null : Number(cursor) + 1);
+  db.prepare(
+    "INSERT INTO registered_contracts(slug,address,name,abi_json,manager_token_hash,registered_at,indexed_from_block,last_decoded_block,event_count,decode_error) VALUES(?,?,?,?,?,?,?,?,0,NULL)"
+  ).run(slug, address, name || null, parsedAbi.abiJson, hashManagerToken(manageToken), new Date().toISOString(), indexedFrom, cursor == null ? null : Number(cursor));
+  if (cursor != null && Number(cursor) >= 0) {
+    try { decodeContractLogsForSlug(db, slug, 0, Number(cursor)); }
+    catch (error) {
+      db.prepare("UPDATE registered_contracts SET decode_error=? WHERE slug=?").run(String(error?.message || error).slice(0, 800), slug);
+    }
+  }
+  const record = db.prepare(
+    "SELECT slug,address,name,registered_at,indexed_from_block,last_decoded_block,event_count,decode_error FROM registered_contracts WHERE slug=?"
+  ).get(slug);
+  return {
+    slug: record.slug,
+    address: record.address,
+    name: record.name,
+    url: "/api/contracts/" + record.slug,
+    events_url: "/api/contracts/" + record.slug + "/events",
+    manage_token: manageToken,
+    indexed_from_block: record.indexed_from_block,
+    event_count: record.event_count,
+    note: "Save manage_token now. It is shown only once and is required for resync or delete."
+  };
+}
+
+function getRegisteredContract(db, slug) {
+  return db.prepare(
+    "SELECT slug,address,name,abi_json,manager_token_hash,registered_at,indexed_from_block,last_decoded_block,event_count,decode_error FROM registered_contracts WHERE slug=?"
+  ).get(slug);
+}
+
+function publicContractRecord(row) {
+  if (!row) return null;
+  return {
+    slug: row.slug,
+    address: row.address,
+    name: row.name,
+    registered_at: row.registered_at,
+    indexed_from_block: row.indexed_from_block,
+    last_decoded_block: row.last_decoded_block,
+    event_count: row.event_count,
+    decode_error: row.decode_error || null
+  };
+}
+
 function boundedLimit(value, fallback = 30, max = 100) {
   if (value == null || value === "") return fallback;
   if (!/^[0-9]+$/.test(String(value))) throw new Error("limit must be an integer.");
@@ -963,28 +1222,40 @@ function allowedOrigin(req) {
 function queryInteger(url, key, fallback, max) {
   const raw = url.searchParams.get(key);
   if (raw == null) return fallback;
-  if (!/^(0|[1-9][0-9]*)$/.test(raw)) throw new Error(key + " must be a decimal integer.");
+  if (!/^(0|[1-9][0-9]*)$/.test(raw)) {
+    const error = new Error(key + " must be a decimal integer.");
+    error.statusCode = 400;
+    throw error;
+  }
   const n = Number(raw);
-  if (!Number.isSafeInteger(n) || n > max) throw new Error(key + " is outside the allowed range.");
+  if (!Number.isSafeInteger(n) || n > max) {
+    const error = new Error(key + " is outside the allowed range.");
+    error.statusCode = 400;
+    throw error;
+  }
   return n;
 }
 
 async function apiRoute(req, res, url, db, runtime) {
+  const path = url.pathname;
   if (req.method === "OPTIONS") {
     const origin = allowedOrigin(req);
     if (origin === false) return jsonResponse(res, 403, { error: "Origin not allowed." });
     const headers = {
-      "access-control-allow-methods": "GET, OPTIONS",
-      "access-control-allow-headers": "content-type", "access-control-max-age": "600", "vary": "Origin"
+      "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
+      "access-control-allow-headers": "content-type, authorization", "access-control-max-age": "600", "vary": "Origin"
     };
     if (origin) headers["access-control-allow-origin"] = origin;
     res.writeHead(204, headers);
     return res.end();
   }
-  if (req.method !== "GET") return jsonResponse(res, 405, { error: "Read-only API; only GET is supported." });
+  const contractMutationPath = path === "/api/contracts" || path.startsWith("/api/contracts/");
+  const contractMutationAllowed = contractMutationPath && ["POST", "DELETE"].includes(req.method);
+  if (req.method !== "GET" && !contractMutationAllowed) {
+    return jsonResponse(res, 405, { error: "Read-only API; only GET is supported outside contract registry management." });
+  }
   const origin = allowedOrigin(req);
   if (origin === false) return jsonResponse(res, 403, { error: "Origin not allowed." }, null);
-  const path = url.pathname;
   try {
     if (path === "/health") return jsonResponse(res, 200, { ok: true, service: "portal-dot-explorer" }, origin);
     if (path === "/api/status") {
@@ -1001,7 +1272,113 @@ async function apiRoute(req, res, url, db, runtime) {
         live,
         indexer: getIndexerStatus(db),
         substrate: getSubstrateIndexerStatus(db, runtime),
+        registeredContracts: db.prepare("SELECT COUNT(*) AS count FROM registered_contracts").get().count,
         knownEvidence: KNOWN_EVIDENCE
+      }, origin);
+    }
+    if (path === "/api/contracts") {
+      if (req.method === "GET") {
+        const contracts = db.prepare(
+          "SELECT slug,address,name,registered_at,indexed_from_block,last_decoded_block,event_count,decode_error FROM registered_contracts ORDER BY registered_at DESC LIMIT 200"
+        ).all();
+        return jsonResponse(res, 200, { items: contracts.map(publicContractRecord), limit: 200 }, origin);
+      }
+      if (req.method === "POST") {
+        const body = await readJsonBody(req);
+        const address = normaliseAddress(body.address);
+        if (!address) return jsonResponse(res, 400, { error: "address must be a 20-byte EVM contract address." }, origin);
+        let name = null;
+        if (body.name != null) {
+          if (typeof body.name !== "string" || body.name.trim().length > 80) {
+            return jsonResponse(res, 400, { error: "name must be a string of at most 80 characters." }, origin);
+          }
+          name = body.name.trim() || null;
+        }
+        let abiInput = body.abi;
+        if (typeof abiInput === "string") {
+          try { abiInput = JSON.parse(abiInput); }
+          catch { return jsonResponse(res, 400, { error: "abi string must contain valid JSON." }, origin); }
+        }
+        const parsedAbi = parseContractAbi(abiInput);
+        return jsonResponse(res, 201, registerContract(db, address, name, parsedAbi), origin);
+      }
+    }
+    const contractEventsMatch = /^\/api\/contracts\/([^/]+)\/events$/.exec(path);
+    if (contractEventsMatch && req.method === "GET") {
+      const slug = decodeURIComponent(contractEventsMatch[1]);
+      const contract = getRegisteredContract(db, slug);
+      if (!contract) return jsonResponse(res, 404, { error: "Unknown contract slug." }, origin);
+      const cursor = Number(readState(db, "cursor") ?? -1);
+      const defaultFrom = contract.indexed_from_block == null ? 0 : Math.min(Number(contract.indexed_from_block), Math.max(0, cursor));
+      const fromBlock = queryInteger(url, "from_block", defaultFrom, Number.MAX_SAFE_INTEGER);
+      const toBlock = queryInteger(url, "to_block", Math.max(0, cursor), Number.MAX_SAFE_INTEGER);
+      if (toBlock < fromBlock) return jsonResponse(res, 200, { slug, items: [], from_block: fromBlock, to_block: toBlock, note: "No indexed range is available for this contract yet." }, origin);
+      if (toBlock - fromBlock > 10000) return jsonResponse(res, 400, { error: "Contract event range is limited to 10000 blocks per request." }, origin);
+      const name = url.searchParams.get("name");
+      const orderInput = (url.searchParams.get("order") || "desc").toLowerCase();
+      if (!["asc", "desc"].includes(orderInput)) return jsonResponse(res, 400, { error: "order must be asc or desc." }, origin);
+      const limit = boundedLimit(url.searchParams.get("limit"), 50, 200);
+      let sql = "SELECT block_number,log_index,tx_hash,event_name,event_signature,args_json,raw_json,decoded_at FROM decoded_contract_events WHERE slug=? AND block_number BETWEEN ? AND ?";
+      const args = [slug, fromBlock, toBlock];
+      if (name) { sql += " AND event_name=?"; args.push(name.slice(0,100)); }
+      sql += " ORDER BY block_number " + orderInput.toUpperCase() + ",log_index " + orderInput.toUpperCase() + " LIMIT ?";
+      args.push(limit);
+      const items = db.prepare(sql).all(...args).map((row) => ({
+        block_number: row.block_number, log_index: row.log_index, transaction_hash: row.tx_hash,
+        event_name: row.event_name, event_signature: row.event_signature, args: JSON.parse(row.args_json),
+        raw_log: JSON.parse(row.raw_json), decoded_at: row.decoded_at
+      }));
+      return jsonResponse(res, 200, {
+        slug, address: contract.address, name: contract.name, indexed_from_block: contract.indexed_from_block,
+        last_decoded_block: contract.last_decoded_block, event_count: contract.event_count,
+        decode_error: contract.decode_error || null, from_block: fromBlock, to_block: toBlock, order: orderInput, items
+      }, origin);
+    }
+    const contractResyncMatch = /^\/api\/contracts\/([^/]+)\/resync$/.exec(path);
+    if (contractResyncMatch && req.method === "POST") {
+      const slug = decodeURIComponent(contractResyncMatch[1]);
+      const contract = getRegisteredContract(db, slug);
+      if (!contract) return jsonResponse(res, 404, { error: "Unknown contract slug." }, origin);
+      if (!hasManagerAccess(req, contract.manager_token_hash)) return jsonResponse(res, 403, { error: "Valid Bearer manage_token required." }, origin);
+      const cursor = Number(readState(db, "cursor") ?? -1);
+      const start = contract.indexed_from_block == null ? 0 : Number(contract.indexed_from_block);
+      let decoded = 0;
+      if (cursor >= start && cursor >= 0) decoded = decodeContractLogsForSlug(db, slug, start, cursor);
+      const updated = getRegisteredContract(db, slug);
+      return jsonResponse(res, 200, {
+        ...publicContractRecord(updated), redecoded_events: decoded,
+        note: "Resync re-decodes logs already stored by the EVM indexer; it does not backfill missing RPC history."
+      }, origin);
+    }
+    const contractDeleteMatch = /^\/api\/contracts\/([^/]+)$/.exec(path);
+    if (contractDeleteMatch && req.method === "DELETE") {
+      const slug = decodeURIComponent(contractDeleteMatch[1]);
+      const contract = getRegisteredContract(db, slug);
+      if (!contract) return jsonResponse(res, 404, { error: "Unknown contract slug." }, origin);
+      if (!hasManagerAccess(req, contract.manager_token_hash)) return jsonResponse(res, 403, { error: "Valid Bearer manage_token required." }, origin);
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        db.prepare("DELETE FROM decoded_contract_events WHERE slug=?").run(slug);
+        db.prepare("DELETE FROM registered_contracts WHERE slug=?").run(slug);
+        db.exec("COMMIT");
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
+      return jsonResponse(res, 200, { deleted: true, slug }, origin);
+    }
+    const contractDetailMatch = /^\/api\/contracts\/([^/]+)$/.exec(path);
+    if (contractDetailMatch && req.method === "GET") {
+      const slug = decodeURIComponent(contractDetailMatch[1]);
+      const contract = getRegisteredContract(db, slug);
+      if (!contract) return jsonResponse(res, 404, { error: "Unknown contract slug." }, origin);
+      const iface = new Interface(JSON.parse(contract.abi_json));
+      return jsonResponse(res, 200, {
+        ...publicContractRecord(contract),
+        events: iface.fragments.filter((fragment) => fragment.type === "event").map((fragment) => ({
+          name: fragment.name, signature: fragment.format(), topic: fragment.topicHash
+        })),
+        events_url: "/api/contracts/" + slug + "/events"
       }, origin);
     }
     if (path === "/api/known-evidence") return jsonResponse(res, 200, KNOWN_EVIDENCE, origin);
@@ -1158,7 +1535,8 @@ async function apiRoute(req, res, url, db, runtime) {
     }
     return jsonResponse(res, 404, { error: "API route not found." }, origin);
   } catch (error) {
-    const code = error instanceof URIError ? 400 : 500;
+    const code = error instanceof URIError ? 400 :
+      (Number.isInteger(error?.statusCode) && error.statusCode >= 400 && error.statusCode <= 599 ? error.statusCode : 500);
     return jsonResponse(res, code, { error: error.message || "Internal error." }, origin);
   }
 }
@@ -1203,6 +1581,7 @@ async function indexRange(db, startBlock, endBlock, advanceCursor = true) {
     logs = result;
   } catch (error) { logsError = error.message; }
   persistBatch(db, { blocks, logs, startBlock, endBlock, blockErrors, logsError, advanceCursor });
+  decodeRegisteredContractLogs(db, startBlock, endBlock);
   return { blocks: blocks.length, missingBlocks: blockErrors.length, logs: logs.length, logsError };
 }
 
