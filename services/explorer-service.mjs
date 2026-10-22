@@ -1229,21 +1229,25 @@ function queryInteger(url, key, fallback, max) {
 }
 
 async function apiRoute(req, res, url, db, runtime) {
+  const path = url.pathname;
   if (req.method === "OPTIONS") {
     const origin = allowedOrigin(req);
     if (origin === false) return jsonResponse(res, 403, { error: "Origin not allowed." });
     const headers = {
-      "access-control-allow-methods": "GET, OPTIONS",
-      "access-control-allow-headers": "content-type", "access-control-max-age": "600", "vary": "Origin"
+      "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
+      "access-control-allow-headers": "content-type, authorization", "access-control-max-age": "600", "vary": "Origin"
     };
     if (origin) headers["access-control-allow-origin"] = origin;
     res.writeHead(204, headers);
     return res.end();
   }
-  if (req.method !== "GET") return jsonResponse(res, 405, { error: "Read-only API; only GET is supported." });
+  const contractMutationPath = path === "/api/contracts" || path.startsWith("/api/contracts/");
+  const contractMutationAllowed = contractMutationPath && ["POST", "DELETE"].includes(req.method);
+  if (req.method !== "GET" && !contractMutationAllowed) {
+    return jsonResponse(res, 405, { error: "Read-only API; only GET is supported outside contract registry management." });
+  }
   const origin = allowedOrigin(req);
   if (origin === false) return jsonResponse(res, 403, { error: "Origin not allowed." }, null);
-  const path = url.pathname;
   try {
     if (path === "/health") return jsonResponse(res, 200, { ok: true, service: "portal-dot-explorer" }, origin);
     if (path === "/api/status") {
@@ -1417,7 +1421,8 @@ async function apiRoute(req, res, url, db, runtime) {
     }
     return jsonResponse(res, 404, { error: "API route not found." }, origin);
   } catch (error) {
-    const code = error instanceof URIError ? 400 : 500;
+    const code = error instanceof URIError ? 400 :
+      (Number.isInteger(error?.statusCode) && error.statusCode >= 400 && error.statusCode <= 599 ? error.statusCode : 500);
     return jsonResponse(res, code, { error: error.message || "Internal error." }, origin);
   }
 }
