@@ -1,0 +1,41 @@
+{
+  "evidenceStatus": "reported_by_deploy_script; independent_read_only_verification_pending",
+  "recordedAt": "2026-10-22",
+  "network": "PortalDot V3 EVM Testnet",
+  "chainId": "420420777",
+  "substrateGenesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev",
+  "contract": {
+    "name": "PortalDotAgentGuardV2",
+    "address": "0x87C494a5e4B0A8E055F283767579667E10E046C6",
+    "deploymentTransactionHash": "0x331c1fc027da51af26ed5ee92ef22a8250fe4efdf0d84526f5fe2203f5d3494b",
+    "blockNumber": 148397,
+    "runtimeBytecodeHash": "0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859"
+  },
+  "deployer": "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB",
+  "readbackReportedByDeploymentScript": {
+    "admin": "0x4F714813407Efa8084189e58374F7Ce9CF2249b5",
+    "authoritySigner": "0x48F9B07d37b5AF744BA8195c4d6740145b593ea6",
+    "initialRecipient": "0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4",
+    "initialRecipientAllowed": true,
+    "maxPerTransferWei": "100000000000000000",
+    "maxPerTransferPot": "0.1",
+    "windowLimitWei": "500000000000000000",
+    "windowLimitPot": "0.5",
+    "windowSeconds": 3600
+  },
+  "preBroadcastBudgetCheck": {
+    "estimatedGasUnits": "8702155320496265",
+    "maxFeePerGasWei": "69000",
+    "estimatedCostPot": "600.448717",
+    "reservePercent": 15,
+    "requiredWithReservePot": "690.516024",
+    "deployerBalancePotBeforeBroadcast": "711.924335",
+    "sufficient": true
+  },
+  "caveats": [
+    "This record preserves the deploy script output; it is not itself independent verification.",
+    "Actual deployment fee and post-deployment deployer/guard balances have not yet been re-queried.",
+    "PortalDot V3 testnet prototype. Verigate Ed25519 verification remains off-chain."
+  ]
+}
