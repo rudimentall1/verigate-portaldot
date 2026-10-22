@@ -250,23 +250,13 @@ function renderApiResult(data) {
   return false;
 }
 async function loadIndexer() {
+  let statusData;
+  let blocksData;
+  let txData;
   try {
-    const [statusData,blocksData,txData] = await Promise.all([
+    [statusData,blocksData,txData] = await Promise.all([
       apiGet('/api/status'),apiGet('/api/blocks?limit=8'),apiGet('/api/transactions?limit=8')
     ]);
-    const indexer = statusData.indexer || {};
-    $('#indexedBlock').textContent = indexer.indexedThrough == null ? 'Starting' : Number(indexer.indexedThrough).toLocaleString('en-US');
-    $('#indexerHint').textContent = (indexer.blocksStored || 0).toLocaleString('en-US') + ' blocks · ' + (indexer.transactionsStored || 0).toLocaleString('en-US') + ' transactions · ' + (indexer.logsStored || 0).toLocaleString('en-US') + ' logs';
-    $('#apiBaseNote').textContent = 'Indexer API connected: ' + getApiBase() + ((indexer.gapCount ?? indexer.gaps?.length ?? 0) ? ' · recorded data gaps: ' + (indexer.gapCount ?? indexer.gaps.length) : ' · no recorded gaps currently visible');
-    $('#blocksSource').textContent = 'SQLite index';
-    $('#transactionsSource').textContent = 'SQLite index';
-    $('#recentBlocks').innerHTML = blocksData.items?.length ? blocksData.items.map(item =>
-      '<div class="feed-item"><div class="feed-main"><span>Block #' + esc(item.blockNumber) + '</span><button data-query="' + esc(item.blockNumber) + '">Open</button></div><div class="feed-secondary">' + esc(short(item.blockHash)) + ' · ' + esc(item.transactionCount) + ' transactions</div></div>'
-    ).join('') : '<div class="muted">No blocks indexed yet. Check /api/status and indexer.gaps.</div>';
-    $('#recentTransactions').innerHTML = txData.items?.length ? txData.items.map(item =>
-      '<div class="feed-item"><div class="feed-main"><span class="mono">' + esc(short(item.hash)) + '</span><button data-query="' + esc(item.hash) + '">Open</button></div><div class="feed-secondary">Block #' + esc(item.blockNumber) + ' · ' + esc(short(item.from)) + ' → ' + esc(short(item.to || 'contract creation')) + '</div></div>'
-    ).join('') : '<div class="muted">No transactions indexed yet.</div>';
-    return true;
   } catch (error) {
     $('#indexedBlock').textContent = 'Not connected';
     $('#indexerHint').textContent = 'Configure the persistent API URL to enable indexed history.';
@@ -275,8 +265,67 @@ async function loadIndexer() {
     $('#transactionsSource').textContent = 'Not connected';
     $('#recentBlocks').innerHTML = '<div class="muted">Connect the deployed Explorer API URL above to browse persistent blocks.</div>';
     $('#recentTransactions').innerHTML = '<div class="muted">Connect the deployed Explorer API URL above to browse persistent transactions.</div>';
+    $('#substrateIndexedBlock').textContent = 'Not connected';
+    $('#substrateIndexerHint').textContent = 'Substrate index requires the Explorer API.';
+    $('#recentSubstrateBlocks').innerHTML = '<div class="muted">Connect the Explorer API to browse Substrate blocks.</div>';
+    $('#recentSubstrateEvents').innerHTML = '<div class="muted">Connect the Explorer API to browse runtime events.</div>';
+    $('#recentSubstrateExtrinsics').innerHTML = '<div class="muted">Connect the Explorer API to browse extrinsics.</div>';
     return false;
   }
+  const indexer = statusData.indexer || {};
+  $('#indexedBlock').textContent = indexer.indexedThrough == null ? (indexer.gapCount ? 'Coverage gap' : 'Starting') : Number(indexer.indexedThrough).toLocaleString('en-US');
+  $('#indexerHint').textContent = (indexer.blocksStored || 0).toLocaleString('en-US') + ' EVM blocks · ' + (indexer.transactionsStored || 0).toLocaleString('en-US') + ' transactions · ' + (indexer.logsStored || 0).toLocaleString('en-US') + ' logs';
+  $('#blocksSource').textContent = 'SQLite index';
+  $('#transactionsSource').textContent = 'SQLite index';
+  $('#recentBlocks').innerHTML = blocksData.items?.length ? blocksData.items.map(item =>
+    '<div class="feed-item"><div class="feed-main"><span>Block #' + esc(item.blockNumber) + '</span><button data-query="' + esc(item.blockNumber) + '">Open</button></div><div class="feed-secondary">' + esc(short(item.blockHash)) + ' · ' + esc(item.transactionCount) + ' transactions</div></div>'
+  ).join('') : '<div class="muted">No EVM blocks indexed yet. Check /api/status and indexer.gaps.</div>';
+  $('#recentTransactions').innerHTML = txData.items?.length ? txData.items.map(item =>
+    '<div class="feed-item"><div class="feed-main"><span class="mono">' + esc(short(item.hash)) + '</span><button data-query="' + esc(item.hash) + '">Open</button></div><div class="feed-secondary">Block #' + esc(item.blockNumber) + ' · ' + esc(short(item.from)) + ' → ' + esc(short(item.to || 'contract creation')) + '</div></div>'
+  ).join('') : '<div class="muted">No EVM transactions indexed yet.</div>';
+
+  try {
+    const [substrateStatus,substrateBlocks,substrateEvents,substrateExtrinsics] = await Promise.all([
+      apiGet('/api/substrate/status'),
+      apiGet('/api/substrate/blocks?limit=8'),
+      apiGet('/api/substrate/events?limit=8'),
+      apiGet('/api/substrate/extrinsics?limit=8')
+    ]);
+    const indexed = substrateStatus.indexedThrough;
+    const gaps = substrateStatus.gapCount || 0;
+    $('#substrateIndexedBlock').textContent = indexed == null ? (gaps ? 'Coverage gap' : 'Starting') : Number(indexed).toLocaleString('en-US');
+    $('#substrateIndexerHint').textContent = (substrateStatus.blocksStored || 0).toLocaleString('en-US') + ' blocks · ' +
+      (substrateStatus.extrinsicsStored || 0).toLocaleString('en-US') + ' extrinsics · ' +
+      (substrateStatus.eventsStored || 0).toLocaleString('en-US') + ' events' +
+      (gaps ? ' · ' + gaps + ' gaps' : '') +
+      (substrateStatus.expectedGenesisHash ? '' : ' · genesis pin not configured');
+    $('#apiBaseNote').textContent = 'Indexer API connected: ' + getApiBase() +
+      ' · EVM gaps: ' + (indexer.gapCount || 0) + ' · Substrate gaps: ' + gaps +
+      (substrateStatus.error ? ' · Substrate: ' + substrateStatus.error : '');
+    $('#substrateBlocksSource').textContent = substrateStatus.connected ? 'Finalized · SQLite' : 'Stored data · RPC reconnecting';
+    $('#substrateEventsSource').textContent = 'Runtime events';
+    $('#substrateExtrinsicsSource').textContent = 'Runtime calls';
+    $('#recentSubstrateBlocks').innerHTML = substrateBlocks.items?.length ? substrateBlocks.items.map(item =>
+      '<div class="feed-item"><div class="feed-main"><span>Block #' + esc(item.blockNumber) + '</span><button data-substrate-block="' + esc(item.blockNumber) + '">Open</button></div><div class="feed-secondary">' +
+      esc(short(item.blockHash)) + ' · ' + esc(item.extrinsicCount) + ' extrinsics · ' + esc(item.eventCount) + ' events</div></div>'
+    ).join('') : '<div class="muted">No finalized Substrate blocks indexed yet. Check /api/substrate/status.</div>';
+    $('#recentSubstrateEvents').innerHTML = substrateEvents.items?.length ? substrateEvents.items.map(item =>
+      '<div class="feed-item"><div class="feed-main"><span>' + esc(item.section + '.' + item.method) + '</span><button data-substrate-block="' + esc(item.blockNumber) + '">Block</button></div><div class="feed-secondary">#' +
+      esc(item.blockNumber) + ':' + esc(item.eventIndex) + ' · ' + esc(JSON.stringify(item.data).slice(0,180)) + '</div></div>'
+    ).join('') : '<div class="muted">No runtime events indexed in the default range.</div>';
+    $('#recentSubstrateExtrinsics').innerHTML = substrateExtrinsics.items?.length ? substrateExtrinsics.items.map(item =>
+      '<div class="feed-item"><div class="feed-main"><span class="mono">' + esc(short(item.hash)) + '</span><button data-query="' + esc(item.hash) + '">Open</button></div><div class="feed-secondary">#' +
+      esc(item.blockNumber) + ' · ' + esc(item.section + '.' + item.method) + ' · ' + esc(short(item.signer || 'unsigned')) + '</div></div>'
+    ).join('') : '<div class="muted">No extrinsics indexed yet.</div>';
+  } catch (error) {
+    $('#substrateIndexedBlock').textContent = 'Unavailable';
+    $('#substrateIndexerHint').textContent = 'The EVM API is connected but Substrate routes did not respond.';
+    $('#recentSubstrateBlocks').innerHTML = '<div class="muted">Substrate index unavailable: ' + esc(error.message) + '</div>';
+    $('#recentSubstrateEvents').innerHTML = '<div class="muted">Substrate index unavailable.</div>';
+    $('#recentSubstrateExtrinsics').innerHTML = '<div class="muted">Substrate index unavailable.</div>';
+    $('#apiBaseNote').textContent += ' · Substrate API unavailable: ' + error.message;
+  }
+  return true;
 }
 async function search(queryText) {
   const query = queryText.trim();
@@ -449,6 +498,11 @@ $('#saveApiBase').addEventListener('click',async()=>{
 $('#searchBtn').addEventListener('click',()=>search($('#query').value));
 $('#query').addEventListener('keydown',event=>{if(event.key==='Enter')search($('#query').value);});
 document.addEventListener('click',async event=>{
+  const substrateBlockButton = event.target.closest('[data-substrate-block]');
+  if (substrateBlockButton) {
+    loadSubstrateBlock(substrateBlockButton.dataset.substrateBlock);
+    return;
+  }
   const queryButton = event.target.closest('[data-query]');
   if (queryButton) {
     search(queryButton.dataset.query);
