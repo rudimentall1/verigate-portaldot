@@ -107,7 +107,7 @@ export function initializeDatabase(db) {
     "CREATE INDEX IF NOT EXISTS logs_tx_idx ON logs(tx_hash);\n" +
     "CREATE INDEX IF NOT EXISTS logs_address_idx ON logs(contract_address, block_number DESC);\n" +
     "CREATE INDEX IF NOT EXISTS logs_topic0_idx ON logs(topic0, block_number DESC);\n" +
-    "CREATE TABLE IF NOT EXISTS registered_contracts (slug TEXT PRIMARY KEY,address TEXT NOT NULL,name TEXT,abi_json TEXT NOT NULL,manager_token_hash TEXT NOT NULL,registered_at TEXT NOT NULL,indexed_from_block INTEGER,last_decoded_block INTEGER,event_count INTEGER NOT NULL DEFAULT 0);\n" +
+    "CREATE TABLE IF NOT EXISTS registered_contracts (slug TEXT PRIMARY KEY,address TEXT NOT NULL,name TEXT,abi_json TEXT NOT NULL,manager_token_hash TEXT NOT NULL,registered_at TEXT NOT NULL,indexed_from_block INTEGER,last_decoded_block INTEGER,event_count INTEGER NOT NULL DEFAULT 0,decode_error TEXT);\n" +
     "CREATE INDEX IF NOT EXISTS registered_contracts_address_idx ON registered_contracts(address);\n" +
     "CREATE TABLE IF NOT EXISTS decoded_contract_events (slug TEXT NOT NULL,block_number INTEGER NOT NULL,log_index INTEGER NOT NULL,tx_hash TEXT,event_name TEXT NOT NULL,event_signature TEXT NOT NULL,args_json TEXT NOT NULL,raw_json TEXT NOT NULL,decoded_at TEXT NOT NULL,PRIMARY KEY(slug,block_number,log_index));\n" +
     "CREATE INDEX IF NOT EXISTS decoded_events_name_idx ON decoded_contract_events(slug,event_name,block_number DESC);\n" +
