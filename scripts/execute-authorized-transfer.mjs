@@ -9,7 +9,7 @@ const { parseHexQuantity, formatUnitsExact, resolveEstimateFromAddresses } =
   require("./deployment-estimate.js");
 const { validateSignedAuthorization, calculateExecutionBudget } =
   require("./execute-authorization-core.js");
-const { verifyGuardDeployment } = require("../adapter/verigate-bridge.js");
+const { verifyGuardDeployment, resolveActiveGuardConfig } = require("../adapter/verigate-bridge.js");
 
 const GUARD_ABI = [
   "function executeTransfer(address recipient,uint256 amount,uint256 nonce,uint256 deadline,bytes32 actionId,bytes signature) returns (bytes32)",
@@ -66,9 +66,10 @@ async function main() {
   const artifact = readSignedAuthorization(positional[0]);
   const config = requiredNetworkConfig();
 
+  const activeGuardConfig = resolveActiveGuardConfig();
   const guardAddress = requireConfiguredAddress(
-    process.env.PORTALDOT_GUARD_ADDRESS,
-    "PORTALDOT_GUARD_ADDRESS"
+    activeGuardConfig.guardAddress,
+    `PORTALDOT_${activeGuardConfig.profile.toUpperCase()}_GUARD_ADDRESS (or its documented V1 fallback)`
   );
   const authoritySigner = requireConfiguredAddress(
     process.env.AUTHORITY_SIGNER_ADDRESS,
