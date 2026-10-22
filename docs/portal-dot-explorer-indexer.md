@@ -81,6 +81,12 @@ The state snapshot captures `System.Account` entries and, when the runtime metad
 
 The API accepts read-only GET requests and uses CORS allowlisting from EXPLORER_ALLOWED_ORIGINS. No transaction-submission route is implemented.
 
+## Current preview deployment (2026-10-22)
+
+A temporary free Render service has been created at https://verigate-portaldot-explorer.onrender.com and Render reports its deployment as live. The Explorer UI defaults to this API URL, so manual API URL entry is not required.
+
+This is a preview, not the durable indexer deployment described below: its SQLite path is `/tmp/portal-dot-explorer.sqlite`, and the free service may sleep or restart. Local indexed history can therefore disappear and rebuild. The service has not yet been externally verified through successful HTTP responses for all EVM and Substrate endpoints. Do not present the preview as persistent or as verified complete chain coverage.
+
 ## Persistent deployment
 
 render.yaml describes the web service, environment variables, and a 2 GB persistent disk at /var/data. Render persistent disks require a paid service plan. The Blueprint file only describes a deployment; it does not create or deploy the service by itself.
