@@ -1,6 +1,6 @@
 # PortalDotAgentGuardV2 deployment runbook
 
-Status: the deployment command reported a successful V2 deployment and on-chain readback on 2026-10-22. Address, transaction and runtime code hash are recorded in `docs/evidence/portaldot-v2-deployment-2026-10-22.json`. Independent receipt/runtime verification and the signed Verigate ALLOW → V2 `TransferExecuted` demonstration remain pending; do not describe the end-to-end proof as complete before those checks pass.
+Status: the deployment command reported a successful V2 deployment and on-chain readback on 2026-10-22. Address, transaction and runtime code hash are recorded in `docs/evidence/portaldot-v2-deployment-2026-10-22.json`. Independent deployment verification now passed against the configured RPC. The V2 guard was funded with 0.11 POT in block 148577; the read-only funding verifier is `npm run verify:funding:v2`. The signed Verigate ALLOW → V2 `TransferExecuted` demonstration remains pending; do not describe the end-to-end proof as complete before that check passes.
 
 ## Safety model
 
@@ -52,6 +52,16 @@ npm run deploy:v2:portaldot
 ```
 
 The script refuses to broadcast if the chain/genesis checks or budget check fail. On success, preserve its JSON output securely in a new evidence record: deployment transaction hash, block, contract address, runtime bytecode hash, admin, authority signer, maxPerTransfer, windowLimit, windowSeconds and initialRecipientAllowed. Do not invent values if the RPC omits them.
+
+## Funding and current verification
+
+The recorded funding transaction is `0x3670b42ad718232b572ba06542ffaebd713db6852a215c8acffc471f0eab5019` in block `148577`, with `0.11 POT` sent from the deployer to the V2 guard. The transaction/fee/current-balance values are recorded in `docs/evidence/portaldot-v2-deployment-2026-10-22.json` as reported server output. Re-query it before using the record as independently verified funding evidence:
+
+```sh
+npm run verify:funding:v2
+```
+
+The V2 profile must be configured in the untracked local `.env` before signing or executing a V2 transfer. Do not change the V1 profile until ready to run the V2 flow, and keep the V1 address and hash intact.
 
 ## Required live checks before calling V2 deployed
 
