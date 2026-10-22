@@ -82,6 +82,22 @@ describe("Authorized transfer executor input validation", function () {
     });
   }
 
+  it("accepts a V2 typed authorization only when the V2 guard profile is selected", async function () {
+    const artifact = await makeArtifact({
+      domainOverrides: { name: "PortalDotAgentGuardV2", version: "2" }
+    });
+    const result = validate(artifact, { guardProfile: "v2" });
+    expect(result.domain.name).to.equal("PortalDotAgentGuardV2");
+    expect(result.domain.version).to.equal("2");
+    expect(result.recoveredSigner).to.equal(authority.address);
+    expect(() => validate(artifact)).to.throw(/does not match selected V1 guard profile/);
+  });
+
+  it("rejects unknown executor guard profiles", async function () {
+    const artifact = await makeArtifact();
+    expect(() => validate(artifact, { guardProfile: "v3" })).to.throw(/guardProfile must be either v1 or v2/);
+  });
+
   it("accepts a valid short-lived signature and preserves uint256 values as BigInt", async function () {
     const artifact = await makeArtifact({
       transferOverrides: {
