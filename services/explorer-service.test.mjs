@@ -6,6 +6,9 @@ import {
   quantityToInteger,
   initializeDatabase,
   persistBatch,
+  persistSubstrateBatch,
+  extractSubstrateAccounts,
+  getSubstrateIndexerStatus,
   createExplorerServer
 } from "./explorer-service.mjs";
 
@@ -134,6 +137,112 @@ test("read-only HTTP API exposes health and evidence, rejects non-GET writes", a
     assert.equal(badOrigin.status, 403);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    db.close();
+  }
+});
+
+
+const ss58 = "5" + "A".repeat(46);
+
+function fakeSubstrateBlock(number, blockHash, extrinsicHash, eventAddress = ss58) {
+  return {
+    number,
+    hash: blockHash,
+    parentHash: hash("0"),
+    stateRoot: hash("1"),
+    extrinsicsRoot: hash("2"),
+    timestampMs: 1710000000000,
+    extrinsics: [{
+      index: 0,
+      hash: extrinsicHash,
+      section: "balances",
+      method: "transferKeepAlive",
+      signer: eventAddress,
+      raw: { method: { section: "balances", method: "transferKeepAlive" }, signer: eventAddress }
+    }],
+    events: [{
+      index: 0,
+      extrinsicIndex: 0,
+      section: "balances",
+      method: "Transfer",
+      data: { from: eventAddress, to: "5" + "B".repeat(46), amount: "123" },
+      raw: { phase: { applyExtrinsic: 0 }, section: "balances", method: "Transfer" }
+    }],
+    eventsComplete: true,
+    raw: { number, hash: blockHash, timestampMs: 1710000000000, extrinsicCount: 1, eventCount: 1 }
+  };
+}
+
+test("classifies an SS58-looking address separately from EVM input", () => {
+  assert.deepEqual(classifyLookup(ss58), { type: "substrate_address", value: ss58 });
+});
+
+test("extracts SS58 account references from nested Substrate event data", () => {
+  const other = "5" + "B".repeat(46);
+  const found = extractSubstrateAccounts({ from: ss58, nested: [{ to: other }, { text: "not-an-account" }] });
+  assert.deepEqual(found.sort(), [ss58, other].sort());
+});
+
+test("persists Substrate blocks, extrinsics, events, SS58 references and cursor atomically", () => {
+  const db = new DatabaseSync(":memory:");
+  try {
+    initializeDatabase(db);
+    const block = fakeSubstrateBlock(110000, hash("4"), hash("5"));
+    persistSubstrateBatch(db, {
+      blocks: [block], startBlock: 110000, endBlock: 110000,
+      blockErrors: [], eventErrors: [], advanceCursor: true
+    });
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM substrate_blocks").get().n, 1);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM substrate_extrinsics").get().n, 1);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM substrate_events").get().n, 1);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM substrate_event_accounts WHERE address=?").get(ss58).n, 1);
+    assert.equal(db.prepare("SELECT state_value FROM indexer_state WHERE state_key='substrate_cursor'").get().state_value, "110000");
+    assert.equal(getSubstrateIndexerStatus(db, {}).indexedThrough, 110000);
+  } finally {
+    db.close();
+  }
+});
+
+test("Substrate block replacement removes stale extrinsics, events and address links", () => {
+  const db = new DatabaseSync(":memory:");
+  try {
+    initializeDatabase(db);
+    const oldHash = hash("4");
+    const oldExtrinsic = hash("5");
+    persistSubstrateBatch(db, {
+      blocks: [fakeSubstrateBlock(110001, oldHash, oldExtrinsic)],
+      startBlock: 110001, endBlock: 110001, blockErrors: [], eventErrors: []
+    });
+    const newHash = hash("6");
+    const newExtrinsic = hash("7");
+    const newAddress = "5" + "C".repeat(46);
+    persistSubstrateBatch(db, {
+      blocks: [fakeSubstrateBlock(110001, newHash, newExtrinsic, newAddress)],
+      startBlock: 110001, endBlock: 110001, blockErrors: [], eventErrors: []
+    });
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM substrate_extrinsics WHERE extrinsic_hash=?").get(oldExtrinsic).n, 0);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM substrate_events WHERE block_number=110001").get().n, 1);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM substrate_event_accounts WHERE address=?").get(ss58).n, 0);
+    assert.equal(db.prepare("SELECT block_hash FROM substrate_blocks WHERE block_number=110001").get().block_hash, newHash);
+  } finally {
+    db.close();
+  }
+});
+
+test("records missing Substrate history as a gap and does not claim full coverage", () => {
+  const db = new DatabaseSync(":memory:");
+  try {
+    initializeDatabase(db);
+    persistSubstrateBatch(db, {
+      blocks: [], startBlock: 110002, endBlock: 110002,
+      blockErrors: [{ block: 110002, error: "state pruned" }], eventErrors: [], advanceCursor: true
+    });
+    const state = getSubstrateIndexerStatus(db, {});
+    assert.equal(state.processedThrough, 110002);
+    assert.equal(state.indexedThrough, null);
+    assert.equal(state.gapCount, 1);
+    assert.match(state.gaps[0].error, /state pruned/);
+  } finally {
     db.close();
   }
 });
