@@ -5,7 +5,7 @@ const { parseExpectedSubstrateGenesisHash, validateSubstrateRpcUrl, verifySubstr
 const { rpcResult } = require("./preflight.js");
 const { parseHexQuantity, calculateDeploymentCost, buildDeploymentTransactionOverrides, formatUnitsExact } = require("./deployment-estimate.js");
 const hre = (await import("hardhat")).default;
-const { ethers } = await hre.network.create();
+const { ethers } = await hre.network.create("portaldot");
 
 async function main() {
   const rpcUrl = (process.env.PORTALDOT_RPC_URL || "").trim();
