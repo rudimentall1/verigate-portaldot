@@ -390,7 +390,11 @@ function readSubstrateBlock(db, ref) {
     eventIndex: row.event_index, extrinsicIndex: row.extrinsic_index, section: row.section, method: row.method,
     data: JSON.parse(row.data_json), event: JSON.parse(row.raw_json)
   }));
-  return { source: "substrate_indexer", block: JSON.parse(block.raw_json), blockNumber: block.block_number, blockHash: block.block_hash, extrinsics, events };
+  const gaps = db.prepare("SELECT component,error_message AS error,attempts,updated_at AS updatedAt FROM indexer_gaps WHERE component IN ('substrate_blocks','substrate_events') AND start_block<=? AND end_block>=?").all(block.block_number, block.block_number);
+  return {
+    source: "substrate_indexer", block: JSON.parse(block.raw_json), blockNumber: block.block_number,
+    blockHash: block.block_hash, extrinsics, events, gaps, historyComplete: gaps.length === 0
+  };
 }
 
 function parseSubstrateExtrinsic(extrinsic, index) {
