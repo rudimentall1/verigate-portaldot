@@ -1533,6 +1533,8 @@ async function apiRoute(req, res, url, db, runtime) {
         live,
         indexer: getIndexerStatus(db),
         substrate: getSubstrateIndexerStatus(db, runtime),
+        stateSnapshot: getLatestStateSnapshot(db),
+        stateSnapshotError: runtime.substrateSnapshotError || null,
         registeredContracts: db.prepare("SELECT COUNT(*) AS count FROM registered_contracts").get().count,
         knownEvidence: KNOWN_EVIDENCE
       }, origin);
@@ -1644,7 +1646,97 @@ async function apiRoute(req, res, url, db, runtime) {
     }
     if (path === "/api/known-evidence") return jsonResponse(res, 200, KNOWN_EVIDENCE, origin);
     if (path === "/api/substrate/status") {
-      return jsonResponse(res, 200, getSubstrateIndexerStatus(db, runtime), origin);
+      return jsonResponse(res, 200, {
+        ...getSubstrateIndexerStatus(db, runtime),
+        stateSnapshot: getLatestStateSnapshot(db),
+        stateSnapshotError: runtime.substrateSnapshotError || null
+      }, origin);
+    }
+    if (path === "/api/substrate/state-snapshot") {
+      const latest = getLatestStateSnapshot(db);
+      const runs = db.prepare(
+        "SELECT snapshot_block AS block,status,started_at AS startedAt,completed_at AS completedAt,native_symbol AS nativeSymbol,native_decimals AS nativeDecimals,native_accounts AS nativeAccounts,asset_count AS assetCount,asset_holder_count AS assetHolderCount,nft_count AS nftCount,error_message AS error FROM state_snapshot_runs ORDER BY started_at DESC LIMIT 20"
+      ).all();
+      return jsonResponse(res, 200, {
+        latest,
+        snapshotError: runtime.substrateSnapshotError || null,
+        history: runs,
+        note: "These are periodic state snapshots at finalized block heights, not a complete historical replay."
+      }, origin);
+    }
+    if (path === "/api/substrate/balances") {
+      const limit = boundedLimit(url.searchParams.get("limit"), 20, 100);
+      const snapshot = getLatestStateSnapshot(db);
+      if (!snapshot) return jsonResponse(res, 200, { source: "state_snapshot", snapshot: null, items: [], note: "No complete state snapshot is available yet." }, origin);
+      const rows = db.prepare(
+        "SELECT address,free,reserved,frozen,nonce,raw_json FROM native_balance_snapshots WHERE snapshot_block=? ORDER BY length(free) DESC,free DESC,length(reserved) DESC,reserved DESC LIMIT ?"
+      ).all(snapshot.block, limit);
+      return jsonResponse(res, 200, {
+        source: "state_snapshot",
+        snapshot: { block: snapshot.block, capturedAt: snapshot.completedAt, symbol: snapshot.nativeSymbol, decimals: snapshot.nativeDecimals, accountCount: snapshot.nativeAccounts },
+        items: rows.map((row) => ({
+          address: row.address, free: row.free, reserved: row.reserved, frozen: row.frozen,
+          nonce: row.nonce, account: JSON.parse(row.raw_json)
+        }))
+      }, origin);
+    }
+    if (path === "/api/substrate/assets") {
+      const limit = boundedLimit(url.searchParams.get("limit"), 50, 200);
+      const snapshot = getLatestStateSnapshot(db);
+      if (!snapshot) return jsonResponse(res, 200, { source: "state_snapshot", snapshot: null, items: [], note: "No complete state snapshot is available yet." }, origin);
+      const rows = db.prepare(
+        "SELECT asset_id,name,symbol,decimals,supply,owner,raw_json FROM asset_metadata_snapshots WHERE snapshot_block=? ORDER BY asset_id LIMIT ?"
+      ).all(snapshot.block, limit);
+      return jsonResponse(res, 200, {
+        source: "state_snapshot",
+        snapshot: { block: snapshot.block, capturedAt: snapshot.completedAt },
+        items: rows.map((row) => ({
+          assetId: row.asset_id, name: row.name, symbol: row.symbol, decimals: row.decimals,
+          supply: row.supply, owner: row.owner, metadata: JSON.parse(row.raw_json)
+        }))
+      }, origin);
+    }
+    const assetHoldersMatch = /^\/api\/substrate\/assets\/([^/]+)\/holders$/.exec(path);
+    if (assetHoldersMatch) {
+      const assetId = decodeURIComponent(assetHoldersMatch[1]);
+      if (!/^(0|[1-9][0-9]*)$/.test(assetId)) return jsonResponse(res, 400, { error: "asset id must be a decimal integer." }, origin);
+      const limit = boundedLimit(url.searchParams.get("limit"), 50, 200);
+      const snapshot = getLatestStateSnapshot(db);
+      if (!snapshot) return jsonResponse(res, 200, { source: "state_snapshot", snapshot: null, assetId, items: [], note: "No complete state snapshot is available yet." }, origin);
+      const rows = db.prepare(
+        "SELECT address,balance,status,raw_json FROM asset_holder_snapshots WHERE snapshot_block=? AND asset_id=? ORDER BY length(balance) DESC,balance DESC LIMIT ?"
+      ).all(snapshot.block, assetId, limit);
+      const asset = db.prepare("SELECT name,symbol,decimals,supply FROM asset_metadata_snapshots WHERE snapshot_block=? AND asset_id=?").get(snapshot.block, assetId);
+      return jsonResponse(res, 200, {
+        source: "state_snapshot", snapshot: { block: snapshot.block, capturedAt: snapshot.completedAt },
+        assetId, asset: asset || null,
+        items: rows.map((row) => ({ address: row.address, balance: row.balance, status: row.status, account: JSON.parse(row.raw_json) }))
+      }, origin);
+    }
+    if (path === "/api/substrate/nfts") {
+      const limit = boundedLimit(url.searchParams.get("limit"), 50, 200);
+      const snapshot = getLatestStateSnapshot(db);
+      if (!snapshot) return jsonResponse(res, 200, { source: "state_snapshot", snapshot: null, items: [], note: "No complete state snapshot is available yet." }, origin);
+      const collectionId = url.searchParams.get("collectionId");
+      const owner = url.searchParams.get("owner");
+      const pallet = url.searchParams.get("pallet");
+      if (collectionId && !/^(0|[1-9][0-9]*)$/.test(collectionId)) return jsonResponse(res, 400, { error: "collectionId must be a decimal integer." }, origin);
+      if (owner && !cleanSubstrateAccount(owner)) return jsonResponse(res, 400, { error: "owner must be an SS58 address." }, origin);
+      if (pallet && !["nfts","uniques"].includes(pallet)) return jsonResponse(res, 400, { error: "pallet must be nfts or uniques." }, origin);
+      let sql = "SELECT pallet,collection_id,item_id,owner,raw_json FROM nft_owner_snapshots WHERE snapshot_block=?";
+      const args = [snapshot.block];
+      if (collectionId) { sql += " AND collection_id=?"; args.push(collectionId); }
+      if (owner) { sql += " AND owner=?"; args.push(owner); }
+      if (pallet) { sql += " AND pallet=?"; args.push(pallet); }
+      sql += " ORDER BY pallet,collection_id,item_id LIMIT ?";
+      args.push(limit);
+      return jsonResponse(res, 200, {
+        source: "state_snapshot", snapshot: { block: snapshot.block, capturedAt: snapshot.completedAt },
+        items: db.prepare(sql).all(...args).map((row) => ({
+          pallet: row.pallet, collectionId: row.collection_id, itemId: row.item_id,
+          owner: row.owner, raw: JSON.parse(row.raw_json)
+        }))
+      }, origin);
     }
     if (path === "/api/substrate/blocks") {
       const limit = boundedLimit(url.searchParams.get("limit"), 30);
