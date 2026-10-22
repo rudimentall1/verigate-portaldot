@@ -1,14 +1,16 @@
 # PortalDot Explorer indexer
 
-This service adds a durable EVM data index for the PortalDot V3 testnet to the existing Verigate PortalDot repository. It does not use Pindex source code or its API.
+The Explorer service is part of rudimentall1/verigate-portaldot. It does not use Pindex source code or its API.
 
-## What it runs
+## Architecture
 
-- A read-only HTTP API.
-- An SQLite indexer for EVM blocks, transactions and contract logs.
-- A retry queue for block/log ranges the RPC temporarily cannot serve.
-- A small static route serving the Explorer at / or /explorer/ and the current Verigate dashboard at /dashboard/.
-- Known V1 deployment and TransferExecuted records with a clear historical-evidence label. These are not inserted into the live transaction tables unless the RPC actually returns the records.
+One long-running Node.js service serves a read-only HTTP API and the Explorer static pages. It maintains one SQLite database on a persistent disk.
+
+- EVM indexer: blocks, transactions and EVM logs from https://test-evm-rpc-v3.portaldot.dev.
+- Substrate indexer: finalized blocks, extrinsics, runtime events, and SS58-like addresses extracted from decoded event payloads via wss://test-node-v3.portaldot.dev.
+- Both indexers persist independent cursors and record gaps. EVM retry jobs do not consume Substrate gaps, and vice versa.
+- A six-block EVM confirmation lag is used. The Substrate indexer reads only the finalized head.
+- Historical Verigate deployment and TransferExecuted records are shown separately as project evidence. They are not fabricated into database rows when a historical RPC lookup returns null.
 
 ## Start locally
 
@@ -19,20 +21,24 @@ Use Node.js 22.13 or later.
 
 Defaults:
 - EVM RPC: https://test-evm-rpc-v3.portaldot.dev
-- Expected chain ID: 420420777
+- EVM chain ID: 420420777
+- Substrate WebSocket: wss://test-node-v3.portaldot.dev
 - SQLite path: ./data/portal-dot-explorer.sqlite
-- Backfill start: 30,000 blocks behind the first observed head, unless EXPLORER_START_BLOCK is set.
-- Confirmation lag: 6 blocks.
-- Batch size: 20 blocks.
-- Poll interval: 6 seconds after the indexer catches up.
+- EVM backfill start: 30,000 blocks behind the first observed head unless EXPLORER_START_BLOCK is set.
+- Substrate backfill start: 30,000 finalized blocks behind the initial finalized head unless SUBSTRATE_START_BLOCK is set.
+- Substrate batch size: 10 blocks; EVM batch size: 20 blocks.
+- EVM confirmation lag: six blocks.
+- Poll interval: six seconds when caught up.
 
-To target the two previously recorded Verigate transactions, set EXPLORER_START_BLOCK=110000. This is a practical starting point for those records, not proof of complete chain history. A block that the RPC cannot return is recorded as a gap and retried. An unresolved gap remains unresolved; the service never fabricates historical data.
+The Render Blueprint sets both indexers to start at block 110000 so the service attempts to cover the recorded Verigate deployment/transfer heights. That does not prove those historical ranges are readable. Runtime state-history retention varies, and inaccessible blocks/events are stored as gaps. The expected Substrate genesis hash is deliberately not pinned in the template; configure PORTALDOT_SUBSTRATE_GENESIS_HASH only after checking the canonical genesis hash for the target endpoint.
 
 ## API routes
 
+### EVM
+
 - GET /health
 - GET /api/status
-- GET /api/search?q=<tx-hash|block-number|block-hash|evm-address>
+- GET /api/search?q=<tx-hash|block-number|block-hash|evm-address|ss58-address>
 - GET /api/tx/<transaction-hash>
 - GET /api/block/<block-number-or-hash>
 - GET /api/address/<evm-address>
@@ -41,23 +47,45 @@ To target the two previously recorded Verigate transactions, set EXPLORER_START_
 - GET /api/logs?fromBlock=110000&toBlock=110100&address=0x...&topic0=0x...&limit=100
 - GET /api/known-evidence
 
-The API accepts read-only GET requests and CORS is restricted to EXPLORER_ALLOWED_ORIGINS plus same-origin requests. It does not have a transaction-submission route.
+### Substrate
+
+- GET /api/substrate/status
+- GET /api/substrate/blocks?limit=30
+- GET /api/substrate/block/<height-or-hash>
+- GET /api/substrate/extrinsics?limit=30&section=balances&method=transferKeepAlive&signer=5...
+- GET /api/substrate/extrinsic/<extrinsic-hash>
+- GET /api/substrate/events?fromBlock=110000&toBlock=110100&section=balances&method=Transfer&address=5...&limit=50
+- GET /api/substrate/address/<ss58-address>
+
+The API accepts read-only GET requests and uses CORS allowlisting from EXPLORER_ALLOWED_ORIGINS. No transaction-submission route is implemented.
 
 ## Persistent deployment
 
-The root render.yaml describes a Render web service backed by a 2 GB persistent disk. In Render, create a Blueprint from this repository and review the service plan before applying it. Render persistent disks require a paid service plan; without persistent storage, an SQLite index would be lost on restart/redeploy. The service name suggests the default host name, but the actual assigned URL must be read from the Render dashboard.
+render.yaml describes the web service, environment variables, and a 2 GB persistent disk at /var/data. Render persistent disks require a paid service plan. The Blueprint file only describes a deployment; it does not create or deploy the service by itself.
 
-Once deployed, verify /health, /api/status, and the returned indexer.startedFrom, indexer.indexedThrough, indexer.gaps, blocksStored, transactionsStored, and logsStored fields before presenting the service as live. Set the actual service URL as the API endpoint in the GitHub Pages Explorer if you want that page to query the persistent index.
+In Render, create a Blueprint from this repository, review the plan, apply it, and use the actual assigned public service URL from the dashboard. Then verify:
+
+    GET /health
+    GET /api/status
+    GET /api/substrate/status
+    GET /api/blocks?limit=5
+    GET /api/substrate/blocks?limit=5
+    GET /api/substrate/events?limit=5
+
+Set the assigned HTTPS service URL in the Explorer's “Indexer API URL” field on GitHub Pages. Do not claim the persistent index is live until both indexer statuses have been checked against the deployed service.
 
 ## Data limits
 
-- This first indexer stores EVM block data, transactions and EVM logs. It does not yet index every Substrate pallet event, native-account balances, token holders, NFTs, or ABI-decoded contract event names.
-- The historical transaction/receipt RPC may return null even for a transaction recorded by the project earlier. The SQLite indexer only preserves blocks it can actually read.
-- The indexer uses a six-block confirmation lag by default. This reduces reorg risk but is not a claim of finalized Substrate history.
-- RPC retention, rate limits, and outages are recorded as gaps; gap status must be inspected before claiming complete coverage.
+- Substrate account lookup returns live system.account data and historical events/extrinsics found by this indexer. It is not an all-history guarantee.
+- The first Substrate implementation records runtime events and string-like SS58 accounts found in decoded event payloads. It does not yet provide a universal account reference decoder for every runtime type.
+- Token-holder rankings and NFT owner/balance views are not yet implemented. Those require their own storage snapshot/baseline and gap-aware state reconstruction; they must not be inferred from a partial event range.
+- This phase does not decode event arguments using arbitrary user-supplied contract ABI.
+- EVM native token balance units and Substrate native-account data are distinct sources and are not automatically converted/mapped into one another.
+- The saved V1 deployment transaction and TransferExecuted record are project-supplied historical evidence; the indexer only stores the real blocks/events that the RPC actually serves.
+- A gap means a specific block or event range was unavailable at a query attempt. Read the gap list before claiming complete coverage.
 
 ## Tests
 
     npm run test:explorer
 
-The tests use an in-memory SQLite database and do not send network transactions.
+Tests use an in-memory SQLite database and do not broadcast network transactions.
