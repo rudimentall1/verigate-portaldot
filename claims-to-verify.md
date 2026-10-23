@@ -66,7 +66,7 @@ Do not claim:
 The uploaded working render is `159.43 seconds` (2:39), `1920×1080`, 30 fps, H.264 video and AAC audio. It fits the three-minute cap.
 
 Before submission, revise the video source and render again:
-1. The end card around 2:20 still says to repeat the transfer and capture a fresh receipt. That is stale: V2's recorded transfer and sender/recipient balance reconciliation now exist. Replace this with the accurately scoped V1/V2 proof and same-RPC limitation.
-2. Around 1:02 the subtitle overlaps the small `executeTransfer` annotation/arrow in the architecture frame. Retiming or repositioning the subtitle is preferable to claiming that it only touches the footnote edge.
+1. The working MP4 still contains a stale end card around 2:18. The replacement card is versioned at [`docs/media/portaldot-v1-v2-outro.svg`](docs/media/portaldot-v1-v2-outro.svg); use the timed instructions in [`docs/video-edit-brief.md`](docs/video-edit-brief.md), replace the final narration, and re-render through the last frame. The replacement has not yet been integrated into the MP4.
+2. Around 1:02 the existing subtitle overlaps the small `executeTransfer` annotation/arrow in the architecture frame. Rebuild/reposition this cue from the editing source and re-render; changing a separate SRT alone will not erase the existing text pixels in the MP4.
 3. The public V1 sender/recipient address `0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB` is part of the recorded on-chain evidence. Keep it visible unless you explicitly want to conceal address-to-activity correlation; blurring makes verification harder.
 4. The MP4 was inspected for technical metadata and sampled key frames, not listened to start-to-finish. Subtitle timing still needs a full playback check. The matching `.srt` was not attached to this repository snapshot, so its exact cues have not been checked here.
