@@ -66,7 +66,7 @@ A recorded Verigate `ALLOW` was followed by bridge authorization and a successfu
 - Event: exactly one matching `TransferExecuted`
 - Sender debit reconciled: `7.82782148139542551 POT`; sender balance fell from `416.196502092920504516` to `408.368680611525079006 EVM POT`, matching `gasUsed × effectiveGasPriceWei` for the isolated block. Single RPC; no execution-fee/storage-deposit split.
 
-This is single-provider testnet evidence, not independent authentication of the RPC operator. The recipient balance delta was not measured by the recorded verifier. The cap/allowlist negative cases have local contract-test evidence, not recorded public-chain revert evidence. The configured RPC later stopped returning the historical V2 deployment receipt. Full details: [V2 transfer evidence](docs/evidence/portaldot-v2-live-transfer-2026-10-22.json).
+This is single-provider testnet evidence, not independent authentication of the RPC operator. A later read-only follow-up measured the recipient balance increasing from `0` to `0.1 POT` across the same isolated block; see [cost reconciliation evidence](docs/evidence/portaldot-v2-cost-reconciliation-2026-10-23.json). This check also used the configured RPC only. The cap/allowlist negative cases have local contract-test evidence, not recorded public-chain revert evidence. The configured RPC later stopped returning the historical V2 deployment receipt. Full details: [V2 transfer evidence](docs/evidence/portaldot-v2-live-transfer-2026-10-22.json).
 
 ### Earlier V1 public transfer evidence
 
