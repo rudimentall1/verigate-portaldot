@@ -29,6 +29,15 @@ try {
   rmSync(temporaryDirectory, { recursive: true, force: true });
 }
 
+const lookupModulePath = path.join(root, "web3-dapp", "receipt-lookup.mjs");
+const lookupModule = readFileSync(lookupModulePath, "utf8");
+const moduleSyntax = spawnSync(process.execPath, ["--check", lookupModulePath], { encoding: "utf8" });
+assert.equal(
+  moduleSyntax.status,
+  0,
+  "Receipt lookup module syntax check failed:\\n" + moduleSyntax.stdout + moduleSyntax.stderr
+);
+
 const ids = new Set([...html.matchAll(/\bid=["']([^"']+)["']/g)].map((match) => match[1]));
 const referencedIds = [...inlineScript.matchAll(/\bel\(["']([^"']+)["']\)/g)].map((match) => match[1]);
 const missingIds = [...new Set(referencedIds)].filter((id) => !ids.has(id));
@@ -41,12 +50,15 @@ for (const marker of [
   "eth_getTransactionReceipt",
   "eth_getTransactionByHash",
   "eth_getBlockByHash",
+  'import("./receipt-lookup.mjs")',
   "TransferExecuted",
   "does not prove the transaction never existed",
   "does not prove a Verigate ALLOW decision"
 ]) {
   assert.ok(html.includes(marker), "Missing dashboard requirement: " + marker);
 }
+assert.ok(lookupModule.includes("evaluateReceiptResponse"), "Reusable receipt validator must be present.");
+assert.ok(lookupModule.includes("findTransferExecutedLogs"), "Reusable event filter must be present.");
 assert.ok(!html.includes("HISTORICAL_TX"), "Receipt lookup must not be hardwired to the saved transaction.");
 assert.ok(!html.includes("V2_TRANSFER_TX"), "Receipt lookup must not be hardwired to the saved transaction.");
 assert.ok(
