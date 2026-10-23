@@ -60,7 +60,7 @@ See [claims-to-verify.md](../claims-to-verify.md) for approved wording and prohi
 
 1. Produce the sub-3-minute demo; this is the clearest remaining submission gap.
 2. Read-only RPC simulations now confirm the deployed V2 guard returns the expected over-cap and disallowed-recipient errors without changing observable state. Do not call these mined revert transactions. Window-overflow and nonce non-consumption are covered by local contract tests only; a public-chain revert transaction has not been sent.
-3. Measure recipient balance before/after only if needed for the final demo; the current transfer evidence does not claim that measurement.
+3. The recorded V2 transfer evidence includes recipient and sender balance changes re-queried through the configured RPC. Do not present that as independent verification; no second EVM provider was used.
 4. H160-to-SS58 account mapping remains unverified; do not infer it from address conversion or successful EVM execution.
 5. Do not claim independent RPC authentication, a second-provider cross-check, a security audit, or production readiness.
 6. Never commit `.env`, wallet exports, private keys, mnemonics, or sensitive signed authorizations.
