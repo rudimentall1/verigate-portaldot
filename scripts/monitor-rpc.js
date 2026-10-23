@@ -70,12 +70,28 @@ async function rpc(rpcUrl, method) {
   return data.result;
 }
 
+async function rpcWithRetry(rpcUrl, method, options = {}) {
+  const attempts = Number.isInteger(options.attempts) ? options.attempts : 3;
+  const delayMs = Number.isInteger(options.delayMs) ? options.delayMs : 500;
+  if (attempts < 1 || attempts > 5) throw new Error("RPC retry attempts must be between 1 and 5.");
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await (options.request || rpc)(rpcUrl, method);
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
+    }
+  }
+  throw new Error(`${method} failed after ${attempts} attempts: ${lastError?.message || "unknown error"}`);
+}
+
 async function main() {
   const config = requiredConfig();
   const started = Date.now();
   const [chainHex, blockHex] = await Promise.all([
-    rpc(config.rpcUrl, "eth_chainId"),
-    rpc(config.rpcUrl, "eth_blockNumber")
+    rpcWithRetry(config.rpcUrl, "eth_chainId"),
+    rpcWithRetry(config.rpcUrl, "eth_blockNumber")
   ]);
   const snapshot = evaluateSnapshot({
     expectedChainId: config.expectedChainId,
@@ -100,4 +116,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { requiredConfig, evaluateSnapshot, rpc };
+module.exports = { requiredConfig, evaluateSnapshot, rpc, rpcWithRetry };
