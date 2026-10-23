@@ -31,7 +31,7 @@
     "verify:deployment:v2": "node scripts/verify-v2-deployment.mjs",
     "fund:guard:v2": "node scripts/fund-v2-guard.mjs",
     "verify:funding:v2": "node scripts/verify-v2-funding.mjs",
-    "test:dapp": "node scripts/validate-dapp.mjs"
+    "test:dapp": "node scripts/validate-dapp.mjs && node --test test/receipt-lookup.test.mjs"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^4.0.0",
