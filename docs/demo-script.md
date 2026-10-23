@@ -57,21 +57,20 @@ On screen: use the dashboard receipt lookup field with the recorded V2 transacti
 
 Say: “This PortalDot V3 testnet transfer is recorded in block 149241. The saved evidence shows a successful receipt and matching TransferExecuted event after Verigate returned ALLOW. A read-only check through the configured RPC reconciled the sender debit from 416.196502092920504516 to 408.368680611525079006 POT and the recipient credit from zero to 0.1 POT. The sender debit matches gasUsed times effectiveGasPriceWei; the runtime fee and storage-deposit components were not separated. This is one-RPC evidence, not independent provider verification.”
 
-### 2:25–2:45 — Close
+### 2:18–2:39 — Close
 
-On screen: two-column status card with V1 historical proof and the V2 proof separately. Do not show the old “repeat the transfer for a fresh receipt” prompt.
+On screen: replace the existing Status/Next card and the remainder of the closing segment with [the V1/V2 evidence card](media/portaldot-v1-v2-outro.svg). Cover the obsolete burned-in subtitles in the old end card. Keep the repository URL visible through the final frame. The current MP4 has not yet been rendered with this replacement.
 
-Suggested card text:
+Suggested card content:
+- V1: 0.1 POT recorded in block 132475; a later lookup through the same configured RPC no longer returned the historical receipt.
+- V2: 0.1 POT recorded in block 149241; receipt status 1, one matching TransferExecuted event, and both balance changes re-queried through the configured RPC.
+- Limits: one configured EVM RPC only; no second-provider verification; no EVM genesis hash pin for this transfer; unaudited testnet prototype, not mainnet.
 
-- **V1:** recorded 0.1 POT transfer, block 132475. Receipt/event were verified through the configured RPC when captured; a later lookup through that same RPC no longer returned the historical receipt.
-- **V2:** recorded 0.1 POT transfer, block 149241. Receipt, matching event, sender debit and recipient credit were re-queried through the same configured RPC.
-- **Boundary:** no second EVM RPC provider; testnet prototype, not audited or mainnet. Public-chain negative cap/allowlist reverts are not recorded.
-
-Say: “The V1 transfer is recorded in block 132475, but its historical receipt is no longer returned by the configured RPC. The V2 transfer is recorded in block 149241; its receipt, matching event, sender debit and recipient credit were re-queried through the same RPC. No second provider was used. This is a testnet prototype, not an audit or production deployment.”
+Say: “V1: 0.1 POT recorded in block 132475; its receipt is no longer returned by this RPC. V2: 0.1 POT in block 149241, with receipt, event and both balance changes re-queried through the same RPC. No second provider. Testnet only; unaudited, not mainnet.”
 
 ## Final checks before publishing
 
-- [ ] Video is under three minutes with clear audio.
+- [ ] Video is under three minutes with clear audio. Replace the Status/Next segment from approximately 02:18 through the final frame using [the video edit brief](video-edit-brief.md) and [the replacement card](media/portaldot-v1-v2-outro.svg).
 - [ ] Dashboard URL points at the deployed V2 address, and all shown values are read from RPC.
 - [ ] Live RPC, local Hardhat ALLOW/BLOCK, and public testnet transfer are clearly distinguished.
 - [ ] Transfer recipient is not the sender/relayer; amount and reconciled sender debit are visible together, and the single-RPC basis and missing fee/storage-deposit breakdown are disclosed.
@@ -79,8 +78,9 @@ Say: “The V1 transfer is recorded in block 132475, but its historical receipt 
 - [ ] No raw authorization JSON, secret files, private keys or mnemonics appear.
 - [ ] No H160-to-SS58 mapping claim is made unless a real runtime storage entry was verified.
 - [ ] No explorer claim is made unless the matching transaction hash was personally confirmed there.
-- [ ] Upload the actual recording and paste its exact public/judge-accessible URL into DoraHacks.
+- [ ] Full-playback verification of narration/subtitle sync is complete; the architecture subtitle collision near 01:02 is corrected.
+- [ ] Upload the actual corrected recording and paste its exact public/judge-accessible URL into DoraHacks.
 
 ## Known limits
 
-V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`; the live 0.1 POT transfer is documented, but the public-chain negative cap/window cases are not recorded as mined revert transactions. The sender debit of 7.82782148139542551 POT was reconciled against the sender's before/after balance using the configured RPC. No independent second-RPC check or runtime execution-fee/storage-deposit breakdown is available. The recipient balance delta was reconciled through the same RPC. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support. The current working MP4's outro still asks to repeat the transfer, so replace that line with a V1/V2 evidence summary before submission.
+V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`; the live 0.1 POT transfer is documented, but the public-chain negative cap/window cases are not recorded as mined revert transactions. The sender debit of 7.82782148139542551 POT was reconciled against the sender's before/after balance using the configured RPC. No independent second-RPC check or runtime execution-fee/storage-deposit breakdown is available. The recipient balance delta was reconciled through the same RPC. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support. The current working MP4 still has the stale repeat-transfer outro and an architecture-caption overlap near 01:02. The replacement V1/V2 outro card is versioned at `docs/media/portaldot-v1-v2-outro.svg`; follow `docs/video-edit-brief.md` and do not mark the video complete until the edited render and full audio/subtitle playback have been reviewed.
