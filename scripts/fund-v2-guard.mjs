@@ -171,7 +171,8 @@ async function main() {
       transactionHash: receipt.hash,
       blockNumber: receipt.blockNumber,
       receiptStatus: receipt.status,
-      actualFeePot: formatEther(receipt.gasUsed * receipt.gasPrice),
+      receiptDerivedCostPot: formatEther(receipt.gasUsed * receipt.gasPrice),
+      costInterpretation: "gasUsed * effectiveGasPriceWei from the receipt; not a balance-reconciled fee/deposit breakdown.",
       guardBalancePotAfter: formatEther(balanceAfter),
       deployerBalancePotAfter: formatEther(latestDeployerBalance)
     }, null, 2));
