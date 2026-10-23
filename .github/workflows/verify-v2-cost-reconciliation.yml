@@ -48,19 +48,19 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Fail only on a confirmed mismatch
-        if: steps.reconcile.outcome == 'failure'
+      - name: Require complete reconciliation
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -s artifacts/v2-cost-reconciliation.json ]]; then
-            STATUS="$(node -p "JSON.parse(require('fs').readFileSync('artifacts/v2-cost-reconciliation.json','utf8')).status")"
-            echo "Read-only reconciliation status: $STATUS"
-            if [[ "$STATUS" == "balance_delta_mismatch" || "$STATUS" == "wrong_chain" || "$STATUS" == "transaction_identity_check_failed" ]]; then
-              exit 1
-            fi
-            # Network/history unavailable is reported as unknown, not mislabelled as a confirmed mismatch.
-            exit 0
+          if [[ ! -s artifacts/v2-cost-reconciliation.json ]]; then
+            echo "No report was generated; verification is incomplete."
+            exit 1
           fi
-          echo "No report was generated; inspect the step output."
-          exit 1
+          STATUS="$(node -p "JSON.parse(require('fs').readFileSync('artifacts/v2-cost-reconciliation.json','utf8')).status")"
+          echo "Read-only reconciliation status: $STATUS"
+          if [[ "$STATUS" != "reconciled" ]]; then
+            echo "Verification is incomplete or mismatched. Only a full 'reconciled' result is green."
+            exit 1
+          fi
+          echo "Receipt, exact event, block isolation, sender debit and recipient credit all reconcile."
