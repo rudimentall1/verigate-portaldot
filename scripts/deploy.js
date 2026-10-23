@@ -1,6 +1,6 @@
 require("dotenv").config();
 const { ethers } = require("hardhat");
-const { assertPortalDotTestnetChainId } = require("./preflight.js");
+const { assertPortalDotTestnetChainId, assertPortalDotTestnetRpcUrl } = require("./preflight.js");
 
 async function main() {
   const rpcUrl = (process.env.PORTALDOT_RPC_URL || "").trim();
@@ -12,6 +12,7 @@ async function main() {
     throw new Error("Refusing deployment: PORTALDOT_CHAIN_ID must be explicitly set to the confirmed positive decimal chain ID.");
   }
   const expectedChainId = assertPortalDotTestnetChainId(BigInt(chainIdText), "legacy V1 deployment");
+  assertPortalDotTestnetRpcUrl(rpcUrl, "legacy V1 deployment");
   const network = await ethers.provider.getNetwork();
 
   if (network.chainId !== expectedChainId) {
