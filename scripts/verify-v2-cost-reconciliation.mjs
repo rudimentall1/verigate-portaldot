@@ -8,6 +8,9 @@ if (rpcParsed.protocol !== "https:" || rpcParsed.username || rpcParsed.password)
   throw new Error("PORTALDOT_RPC_URL must use HTTPS without embedded credentials.");
 }
 const EXPECTED_GUARD = "0x87c494a5e4b0a8e055f283767579667e10e046c6".toLowerCase();
+const EXPECTED_RECIPIENT = "0xa0fc1a7248955a159d54d84e48681d9cebb86be4".toLowerCase();
+const EXPECTED_ACTION_ID = "0xff2cc7690a604a51db85b1e5c43d02bc7cee12277754ccbf6295e78a7b75f38e";
+const EXPECTED_AMOUNT_WEI = 100000000000000000n;
 const OUT = process.env.COST_RECONCILIATION_OUT || "";
 
 let requestId = 0;
@@ -52,7 +55,10 @@ const base = {
   rpcOrigin: new URL(RPC_URL).origin,
   transactionHash: TX_HASH,
   expectedGuard: EXPECTED_GUARD,
-  method: "read-only transaction receipt + block isolation + sender EVM-balance delta",
+  expectedRecipient: EXPECTED_RECIPIENT,
+  expectedActionId: EXPECTED_ACTION_ID,
+  expectedTransferAmountWei: EXPECTED_AMOUNT_WEI.toString(),
+  method: "read-only transaction receipt + exact event match + block isolation + sender/recipient EVM-balance deltas",
   broadcastedTransactions: false,
   status: "unknown",
   limitations: [
@@ -98,13 +104,32 @@ try {
       report.receiptDerivedCostEvmPOT = pot(derived);
       report.targetMatchesV2Guard = target === EXPECTED_GUARD;
 
+      const transferLogs = Array.isArray(receipt.logs) ? receipt.logs.filter((log) => {
+        const topics = Array.isArray(log.topics) ? log.topics : [];
+        if (String(log.address || "").toLowerCase() !== EXPECTED_GUARD || topics.length !== 3) return false;
+        const indexedRecipient = "0x" + String(topics[2] || "").slice(-40).toLowerCase();
+        return String(topics[1] || "").toLowerCase() === EXPECTED_ACTION_ID &&
+          indexedRecipient === EXPECTED_RECIPIENT &&
+          typeof log.data === "string" && /^0x[0-9a-f]{128}$/i.test(log.data) &&
+          BigInt("0x" + log.data.slice(2, 66)) === EXPECTED_AMOUNT_WEI;
+      }) : [];
+      report.matchingTransferExecutedEvents = transferLogs.length;
+      report.transferEventMatchesExpectedRecipientAndAmount = transferLogs.length === 1;
+      report.transferEventAmountWei = transferLogs.length === 1
+        ? BigInt("0x" + transferLogs[0].data.slice(2, 66)).toString()
+        : null;
+
       if (report.receiptStatus !== "1" || !report.targetMatchesV2Guard || sender.length !== 42) {
         report.status = "transaction_identity_check_failed";
         report.note = "Receipt status, target address, or sender format did not match the expected V2 transfer.";
+      } else if (transferLogs.length !== 1) {
+        report.status = "expected_transfer_event_not_found";
+        report.note = "The receipt did not contain exactly one V2 TransferExecuted log matching the expected action ID, recipient and amount.";
       } else {
-        const [block, before] = await Promise.all([
+        const [block, senderBefore, recipientBefore] = await Promise.all([
           rpc("eth_getBlockByNumber", [receipt.blockNumber, true]),
           rpc("eth_getBalance", [tx.from, hex(blockNumber - 1n)]),
+          rpc("eth_getBalance", [EXPECTED_RECIPIENT, hex(blockNumber - 1n)]),
         ]);
         if (!block || !Array.isArray(block.transactions)) {
           report.status = "block_transactions_unavailable";
@@ -117,20 +142,34 @@ try {
             report.status = "insufficient_block_isolation";
             report.note = "The receipt block did not contain exactly the target transaction, so the sender's block-level balance delta cannot be attributed solely to this transaction.";
           } else {
-            const after = await rpc("eth_getBalance", [tx.from, receipt.blockNumber]);
-            const beforeWei = int(before, "sender balance before transaction block");
-            const afterWei = int(after, "sender balance after transaction block");
-            const delta = beforeWei - afterWei;
-            report.senderBalanceBeforeEvmPOT = pot(beforeWei);
-            report.senderBalanceAfterEvmPOT = pot(afterWei);
-            report.senderBalanceDecreaseWei = delta.toString();
-            report.senderBalanceDecreaseEvmPOT = pot(delta);
-            report.balanceDeltaMatchesReceiptDerivedCost = delta === derived;
-            report.status = delta === derived ? "reconciled" : "balance_delta_mismatch";
-            report.note = delta === derived
-              ? "The sender's EVM-balance decrease equals gasUsed × effectiveGasPriceWei for this isolated block."
-              : "The sender's EVM-balance decrease does not equal gasUsed × effectiveGasPriceWei. Do not label the receipt-derived value as the reconciled amount; investigate runtime fee, storage-deposit, and balance semantics.";
-            if (delta < 0n) report.balanceDeltaMatchesReceiptDerivedCost = false;
+            const [senderAfter, recipientAfter] = await Promise.all([
+              rpc("eth_getBalance", [tx.from, receipt.blockNumber]),
+              rpc("eth_getBalance", [EXPECTED_RECIPIENT, receipt.blockNumber]),
+            ]);
+            const senderBeforeWei = int(senderBefore, "sender balance before transaction block");
+            const senderAfterWei = int(senderAfter, "sender balance after transaction block");
+            const recipientBeforeWei = int(recipientBefore, "recipient balance before transaction block");
+            const recipientAfterWei = int(recipientAfter, "recipient balance after transaction block");
+            const senderDelta = senderBeforeWei - senderAfterWei;
+            const recipientDelta = recipientAfterWei - recipientBeforeWei;
+            report.senderBalanceBeforeEvmPOT = pot(senderBeforeWei);
+            report.senderBalanceAfterEvmPOT = pot(senderAfterWei);
+            report.senderBalanceDecreaseWei = senderDelta.toString();
+            report.senderBalanceDecreaseEvmPOT = pot(senderDelta);
+            report.balanceDeltaMatchesReceiptDerivedCost = senderDelta === derived;
+            report.recipientBalanceBeforeEvmPOT = pot(recipientBeforeWei);
+            report.recipientBalanceAfterEvmPOT = pot(recipientAfterWei);
+            report.recipientBalanceIncreaseWei = recipientDelta.toString();
+            report.recipientBalanceIncreaseEvmPOT = pot(recipientDelta);
+            report.recipientBalanceDeltaMatchesTransferAmount = recipientDelta === EXPECTED_AMOUNT_WEI;
+
+            if (senderDelta === derived && recipientDelta === EXPECTED_AMOUNT_WEI) {
+              report.status = "reconciled";
+              report.note = "The isolated block contains only the target transaction; sender balance decrease matches gasUsed × effectiveGasPriceWei, and the expected recipient's balance increase matches the TransferExecuted amount.";
+            } else {
+              report.status = "balance_delta_mismatch";
+              report.note = "Sender and/or recipient balance delta did not match the recorded transaction cost or transfer amount. Do not claim full balance reconciliation.";
+            }
           }
         }
       }
