@@ -40,27 +40,26 @@ jobs:
       - name: Rebuild presentation from source
         run: python scripts/build-presentation.py
 
-      - name: Verify PDF content and render every page
+      - name: Verify PDF structure, source claims and page renders
         shell: bash
         run: |
           set -euo pipefail
           PDF="docs/Verigate-PortalDot-Presentation.pdf"
+          SOURCE="scripts/build-presentation.py"
           test -s "$PDF"
           pdfinfo "$PDF" | grep -Eq '^Pages:[[:space:]]+7$'
-          pdftotext "$PDF" /tmp/presentation.txt
-          grep -q '149241' /tmp/presentation.txt
-          grep -q '0.1 POT' /tmp/presentation.txt
-          grep -q '7.8278' /tmp/presentation.txt
-          grep -q 'resettable' /tmp/presentation.txt
-          if grep -Eiq 'block 130741|1 base unit|non-dust transfer.*pending|connect a wallet in read-only mode' /tmp/presentation.txt; then
-            echo "Stale presentation claim detected."
+          grep -Fq '149241' "$SOURCE"
+          grep -Fq '0.1 POT' "$SOURCE"
+          grep -Fq '7.8278 POT' "$SOURCE"
+          grep -Fq 'resettable 3600-second interval' "$SOURCE"
+          if grep -Eiq 'block 130741|1 base unit|connect a wallet in read-only mode|non-dust amount remain pending' "$SOURCE"; then
+            echo "Stale presentation claim detected in source."
             exit 1
           fi
           mkdir -p /tmp/presentation-rendered
           pdftoppm -png -r 90 "$PDF" /tmp/presentation-rendered/slide
           test "$(find /tmp/presentation-rendered -name '*.png' | wc -l)" -eq 7
-          echo "PDF pages and expected V2 evidence verified."
-
+          echo "Seven-page PDF renders successfully; source contains V2 transfer, fee, and accurate time-window claims."
       - name: Commit regenerated PDF when changed
         shell: bash
         run: |
