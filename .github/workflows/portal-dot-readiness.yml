@@ -1,0 +1,90 @@
+name: PortalDot Network Readiness
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "scripts/portal-dot-readiness.mjs"
+      - "scripts/portal-dot-readiness.test.mjs"
+      - "docs/portal-dot-readiness.md"
+      - ".github/workflows/portal-dot-readiness.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  readiness:
+    name: Read-only public endpoint snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.16.0"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Collect network readiness report
+        id: report
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          set +e
+          npm run --silent portal:readiness -- --json > artifacts/portal-dot-readiness.json
+          report_exit_code=$?
+          set -e
+          printf '%s\n' "$report_exit_code" > artifacts/command-exit-code.txt
+
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const report = JSON.parse(fs.readFileSync("artifacts/portal-dot-readiness.json", "utf8"));
+          const lines = [
+            "# PortalDot network readiness",
+            "",
+            "- Report generated: " + report.checkedAt,
+            "- Overall endpoint status: **" + report.overallStatus + "**",
+            "- Testnet EVM chain ID: " + (report.checks.evm.actualChainId ?? "unavailable"),
+            "- Latest EVM block: " + (report.checks.evm.latestBlockNumber ?? "unavailable"),
+            "- Substrate chain: " + (report.checks.substrate.chainName ?? "unavailable"),
+            "- Substrate runtime: " + (report.checks.substrate.runtime?.specName ?? "unavailable") + " / " + (report.checks.substrate.runtime?.specVersion ?? "unavailable"),
+            "- Substrate finalized block: " + (report.checks.substrate.finalizedBlockNumber ?? "unavailable"),
+            "- Mainnet EVM identity: **" + report.checks.mainnetEvm.status + "**",
+            "",
+            "## Public web surfaces",
+            "",
+            "| Surface | Status | HTTP | Latency |",
+            "|---|---|---:|---:|",
+            ...report.checks.publicSurfaces.map((item) =>
+              "| " + item.name + " | " + item.status + " | " + (item.httpStatus ?? "n/a") + " | " + item.latencyMs + " ms |"
+            ),
+            "",
+            "## Limitations",
+            "",
+            ...report.knownLimitations.map((item) => "- " + item),
+            "",
+            "The workflow status records whether the snapshot was generated. Use the report's Overall endpoint status to interpret PortalDot reachability; a generated FAIL report is not relabelled as healthy.",
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
+          console.log("Readiness report generated: " + report.overallStatus);
+          if (report.overallStatus === "DEGRADED") console.log("::warning title=PortalDot readiness degraded::Review the artifact and job summary.");
+          if (report.overallStatus === "FAIL") console.log("::error title=PortalDot readiness failed::Review the artifact and job summary.");
+          NODE
+
+      - name: Upload machine-readable report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-dot-readiness-report
+          path: |
+            artifacts/portal-dot-readiness.json
+            artifacts/command-exit-code.txt
+          if-no-files-found: error
+          retention-days: 14
