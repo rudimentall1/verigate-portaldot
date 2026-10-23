@@ -612,6 +612,10 @@ def main() -> int:
                     raise RuntimeError("The isolated guard did not receive enough local test funds.")
 
                 execution_env = bridge_env.copy()
+                # The executor independently rechecks the Substrate genesis pin.
+                # Keep that check deterministic in this loopback-only integration,
+                # using the same explicit mock as the deployment and bridge steps.
+                execution_env["NODE_OPTIONS"] = f"{execution_env.get('NODE_OPTIONS', '').strip()} --import={project_root / 'scripts' / 'mock-substrate-websocket.mjs'}".strip()
                 execution_env.update({
                     "DEPLOYER_PRIVATE_KEY": test_wallets["deployerPrivateKey"],
                     "DEPLOYMENT_ESTIMATE_FROM": test_wallets["deployerAddress"],
