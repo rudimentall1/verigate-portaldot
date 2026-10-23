@@ -148,8 +148,9 @@ No integration into PortalDot Wallet or DaaS is currently claimed, and no Portal
 - [0.1 EVM POT transfer evidence](docs/authorized-transfer-evidence-2026-10-21-nondust.md)
 - [One-base-unit transfer evidence](docs/authorized-transfer-evidence-2026-10-21.md)
 - [Three-minute demo plan](docs/demo-script.md)
+- [Claims-to-verify wording matrix](claims-to-verify.md)
 - [Hacker House checklist](docs/hacker-house-check-in.md)
 - [Presentation PDF](docs/Verigate-PortalDot-Presentation.pdf)
 - [Live DApp](https://rudimentall1.github.io/verigate-portaldot/)
 
-**Demo recording:** pending. The local ALLOW/BLOCK flow and public testnet transfer are different evidence items; the video should label them clearly and show the public transaction hash only as recorded testnet evidence.
+**Demo recording:** a 2:39 working render was reviewed on 23 October. Before submission, update its stale closing-card prompt, adjust the architecture-scene subtitle overlap, and complete a full playback/SRT timing check. The MP4 and matching SRT are not both committed in this repository. Keep the local ALLOW/BLOCK run distinct from public V1/V2 testnet transfer evidence.
