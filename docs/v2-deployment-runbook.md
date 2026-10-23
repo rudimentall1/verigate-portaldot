@@ -5,7 +5,8 @@ Status: the deployment command reported a successful V2 deployment and on-chain 
 ## Safety model
 
 - V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`; do not overwrite or relabel it.
-- V2 adds an admin-controlled recipient allowlist, maximum transfer amount, and rolling spending window.
+- V2 adds an admin-controlled recipient allowlist, maximum transfer amount, and resettable time-window spending cap.
+- The counter resets once `windowSeconds` has elapsed; this is a resettable interval cap, not a continuously sliding rolling-window sum. The admin can change this policy, so it is not immutable against a compromised admin.
 - `admin`, `authoritySigner`, and the deployer must be three different EVM addresses.
 - The admin can change policy and allowlisted recipients. The authority signer can authorize a transfer but cannot change policy.
 - Verigate Ed25519 is still verified off-chain by the bridge. V2 verifies only the bridge's EIP-712 signature.
@@ -86,7 +87,7 @@ These results came from the configured PortalDot RPC. The separate verifier is a
 ### Still open before claiming broader policy-enforcement coverage
 
 1. Verify that a transfer above the per-transfer cap reverts.
-2. Verify that a transfer exceeding the rolling-window cap reverts.
+2. Verify that a transfer exceeding the time-window cap reverts.
 3. For those negative tests, confirm that a reverted operation does not consume its nonce. Prefer local tests or a dedicated test fixture first; live revert transactions may still consume a material testnet fee.
 4. Measure the recipient's balance delta with before/after reads if that proof is needed for the demo.
 5. Confirm H160-to-SS58 mapping separately using a real runtime mapping entry. Do not infer it from an address conversion or a successful EVM transaction.
