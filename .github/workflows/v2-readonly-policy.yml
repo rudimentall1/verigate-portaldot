@@ -8,6 +8,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/v2-readonly-policy.yml"
+      - "docs/hacker-house-check-in-copy.md"
   pull_request:
     branches: [main]
   workflow_dispatch:
