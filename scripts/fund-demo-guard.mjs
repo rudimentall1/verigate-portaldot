@@ -5,7 +5,10 @@
  * are fixed, network/deployment/signer are checked, and broadcast is opt-in.
  */
 import "dotenv/config";
+import { createRequire } from "node:module";
 import { JsonRpcProvider, Wallet, Contract, keccak256, formatEther } from "ethers";
+const require = createRequire(import.meta.url);
+const { assertPortalDotTestnetRpcUrl } = require("./preflight.js");
 
 const EXPECTED_CHAIN_ID = 420420777n;
 const EXPECTED_DEPLOYER = "0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB";
@@ -32,6 +35,7 @@ if (argv.has("--help")) {
 }
 
 const rpcUrl = required("PORTALDOT_RPC_URL");
+if (broadcast) assertPortalDotTestnetRpcUrl(rpcUrl, "demo-guard funding broadcast");
 const configuredChain = BigInt(required("PORTALDOT_CHAIN_ID"));
 const guardAddress = required("PORTALDOT_GUARD_ADDRESS");
 const configuredCodeHash = required("PORTALDOT_GUARD_CODE_HASH").toLowerCase();
