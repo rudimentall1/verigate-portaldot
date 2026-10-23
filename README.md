@@ -2,7 +2,7 @@
 
 Verigate PortalDot is a testnet prototype for policy-gated native-token payments by autonomous agents. Verigate authorizes an action off-chain, the bridge validates the signed authorization and issues a short-lived EIP-712 payload, and the deployed `PortalDotAgentGuardV2` enforces recipient and spending constraints before transferring native POT from the guard's own balance.
 
-**Current execution demo:** V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`. A recorded Verigate `ALLOW` → bridge signing → V2 execution completed a `0.1 POT` transfer in block `149241` and emitted one matching `TransferExecuted` event. The receipt-derived cost figure is `7.82782148139542551 POT`, calculated as `gasUsed × effectiveGasPriceWei`. The relayer's before/after balance delta and the runtime fee/storage-deposit breakdown were not captured for this V2 transaction, so we do not present the figure as an independently reconciled execution fee. See [V2 live transfer evidence](docs/evidence/portaldot-v2-live-transfer-2026-10-22.json).
+**Current execution demo:** V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`. A recorded Verigate `ALLOW` → bridge signing → V2 execution completed a `0.1 POT` transfer in block `149241` and emitted one matching `TransferExecuted` event. The receipt-derived cost figure is `7.82782148139542551 POT`, calculated as `gasUsed × effectiveGasPriceWei`. A read-only reconciliation subsequently checked the sender's EVM balance at block 149240 and after block 149241. Because that block contained exactly one EVM transaction, the sender's balance decrease of `7.82782148139542551 POT` exactly matches `gasUsed × effectiveGasPriceWei`. This was verified through one configured RPC; the runtime cost was not split into execution-fee and storage-deposit components. See [cost reconciliation evidence](docs/evidence/portaldot-v2-cost-reconciliation-2026-10-23.json). See [V2 live transfer evidence](docs/evidence/portaldot-v2-live-transfer-2026-10-22.json).
 
 V1 remains deployed as the predecessor. The two addresses and their evidence are kept separate below. This is testnet evidence, not an audit, production launch, security guarantee, or mainnet-ready system.
 
@@ -64,7 +64,7 @@ A recorded Verigate `ALLOW` was followed by bridge authorization and a successfu
 - Amount: `0.1 POT`
 - Receipt status: `1`
 - Event: exactly one matching `TransferExecuted`
-- Receipt-derived cost figure: `7.82782148139542551 POT` (`gasUsed × effectiveGasPriceWei`; not balance-reconciled for this V2 transfer)
+- Sender debit reconciled: `7.82782148139542551 POT`; sender balance fell from `416.196502092920504516` to `408.368680611525079006 EVM POT`, matching `gasUsed × effectiveGasPriceWei` for the isolated block. Single RPC; no execution-fee/storage-deposit split.
 
 This is single-provider testnet evidence, not independent authentication of the RPC operator. The recipient balance delta was not measured by the recorded verifier. The cap/allowlist negative cases have local contract-test evidence, not recorded public-chain revert evidence. The configured RPC later stopped returning the historical V2 deployment receipt. Full details: [V2 transfer evidence](docs/evidence/portaldot-v2-live-transfer-2026-10-22.json).
 
