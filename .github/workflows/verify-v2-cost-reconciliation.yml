@@ -1,0 +1,66 @@
+name: Verify V2 transaction cost (read-only)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/verify-v2-cost-reconciliation.mjs"
+      - ".github/workflows/verify-v2-cost-reconciliation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v2-cost-reconciliation
+  cancel-in-progress: true
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.16.0"
+
+      - name: Reconcile receipt-derived cost against sender balance delta
+        id: reconcile
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          COST_RECONCILIATION_OUT="artifacts/v2-cost-reconciliation.json" node scripts/verify-v2-cost-reconciliation.mjs
+
+      - name: Upload sanitized reconciliation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-cost-reconciliation
+          path: artifacts/v2-cost-reconciliation.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Fail only on a confirmed mismatch
+        if: steps.reconcile.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -s artifacts/v2-cost-reconciliation.json ]]; then
+            STATUS="$(node -p "JSON.parse(require('fs').readFileSync('artifacts/v2-cost-reconciliation.json','utf8')).status")"
+            echo "Read-only reconciliation status: $STATUS"
+            if [[ "$STATUS" == "balance_delta_mismatch" || "$STATUS" == "wrong_chain" || "$STATUS" == "transaction_identity_check_failed" ]]; then
+              exit 1
+            fi
+            # Network/history unavailable is reported as unknown, not mislabelled as a confirmed mismatch.
+            exit 0
+          fi
+          echo "No report was generated; inspect the step output."
+          exit 1
