@@ -10,7 +10,7 @@ Status: the deployment command reported a successful V2 deployment and on-chain 
 - `admin`, `authoritySigner`, and the deployer must be three different EVM addresses.
 - The admin can change policy and allowlisted recipients. The authority signer can authorize a transfer but cannot change policy.
 - Verigate Ed25519 is still verified off-chain by the bridge. V2 verifies only the bridge's EIP-712 signature.
-- Testnet only. The V1 deployment entrypoints, V2 deployment entrypoint, and explicit authorized-transfer broadcast are restricted to EVM chain ID `420420777`. The authorized-transfer CLI may still run read-only simulations against a local Hardhat chain, but its `--broadcast` path refuses any other chain ID. Mainnet V3 RPC and EVM chain identity are not yet verified in this project; a mainnet deployment requires a separately reviewed code/configuration change. No audit or production claim.
+- Testnet only. The V1/V2 deployment entrypoints and explicit authorized-transfer broadcast require EVM chain ID `420420777` and pin the write RPC host to `test-evm-rpc-v3.portaldot.dev`; the fixed V1/V2 funding scripts also require the official testnet host for broadcasts. The authorized-transfer CLI may still run read-only simulations against a local Hardhat chain, but its `--broadcast` path refuses any other chain ID or RPC host. Mainnet V3 EVM RPC and chain identity are not yet verified in this project; a mainnet deployment requires a separately reviewed code/configuration change. No audit or production claim.
 
 ## Configure an untracked .env
 
