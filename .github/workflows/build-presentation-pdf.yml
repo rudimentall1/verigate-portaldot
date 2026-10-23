@@ -1,0 +1,86 @@
+name: Build and verify PortalDot presentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/build-presentation.py"
+      - ".github/workflows/build-presentation-pdf.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portal-dot-presentation-pdf
+  cancel-in-progress: true
+
+jobs:
+  build-verify-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out current main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install render dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pillow
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+
+      - name: Rebuild presentation from source
+        run: python scripts/build-presentation.py
+
+      - name: Verify PDF content and render every page
+        shell: bash
+        run: |
+          set -euo pipefail
+          PDF="docs/Verigate-PortalDot-Presentation.pdf"
+          test -s "$PDF"
+          pdfinfo "$PDF" | grep -Eq '^Pages:[[:space:]]+7$'
+          pdftotext "$PDF" /tmp/presentation.txt
+          grep -q '149241' /tmp/presentation.txt
+          grep -q '0.1 POT' /tmp/presentation.txt
+          grep -q '7.8278' /tmp/presentation.txt
+          grep -q 'resettable' /tmp/presentation.txt
+          if grep -Eiq 'block 130741|1 base unit|non-dust transfer.*pending|connect a wallet in read-only mode' /tmp/presentation.txt; then
+            echo "Stale presentation claim detected."
+            exit 1
+          fi
+          mkdir -p /tmp/presentation-rendered
+          pdftoppm -png -r 90 "$PDF" /tmp/presentation-rendered/slide
+          test "$(find /tmp/presentation-rendered -name '*.png' | wc -l)" -eq 7
+          echo "PDF pages and expected V2 evidence verified."
+
+      - name: Commit regenerated PDF when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/Verigate-PortalDot-Presentation.pdf
+          if git diff --cached --quiet; then
+            echo "Presentation PDF already matches its source."
+            exit 0
+          fi
+          git commit -m "Regenerate PortalDot presentation PDF from current evidence"
+          git push origin HEAD:main
+
+      - name: Upload PDF and rendered pages for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: verigate-portaldot-presentation-review
+          path: |
+            docs/Verigate-PortalDot-Presentation.pdf
+            /tmp/presentation-rendered/*.png
+          if-no-files-found: error
+          retention-days: 14
