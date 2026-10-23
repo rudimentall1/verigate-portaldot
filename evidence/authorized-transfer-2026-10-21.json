@@ -12,8 +12,6 @@
   "to": "0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b",
   "gasUsed": "107785833941356",
   "effectiveGasPriceWei": "36055",
-  "actualFeeWei": "3886218242755590580",
-  "actualFeeEvmPOT": "3.88621824275559058",
   "logsCount": 1,
   "transferExecutedEventConfirmed": true,
   "transferExecutedEvents": [
@@ -37,7 +35,11 @@
   },
   "limitations": [
     "The transaction, receipt, block and event were read from the configured RPC; this is not independent authentication of the RPC operator.",
-    "The event confirms the guard call and its emitted fields; it does not establish production readiness or an independent security audit."
+    "The event confirms the guard call and its emitted fields; it does not establish production readiness or an independent security audit.",
+    "The receipt-derived cost fields were renamed from actualFeeWei/actualFeeEvmPOT because the payer balance delta and runtime fee/storage-deposit breakdown were not recorded for this 1-base-unit transaction."
   ],
-  "ok": true
+  "ok": true,
+  "receiptDerivedCostWei": "3886218242755590580",
+  "receiptDerivedCostEvmPOT": "3.88621824275559058",
+  "costInterpretation": "The value is gasUsed × effectiveGasPriceWei from the receipt. This record does not include a payer before/after balance reconciliation or a runtime fee/storage-deposit breakdown; do not describe it as an independently reconciled actual fee."
 }
