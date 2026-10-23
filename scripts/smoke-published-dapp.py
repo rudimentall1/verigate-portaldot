@@ -6,6 +6,7 @@ transactions or treat a saved receipt as a live result.
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
 import os
 import sys
@@ -164,20 +165,59 @@ def run() -> None:
             fail("Receipt lookup failed validation: " + lookup_text)
 
         if lookup_text.startswith("RPC lookup returned a mined receipt."):
-            if "Block: 149241" not in lookup_text and "block" not in lookup_text.lower():
-                fail("Successful receipt response omitted block details: " + lookup_text)
+            if "Outcome: SUCCESS (receipt status 1)." not in lookup_text:
+                fail("Known V2 transaction did not return a successful receipt: " + lookup_text)
+            if "Block: 149241" not in lookup_text:
+                fail("Known V2 receipt returned an unexpected block: " + lookup_text)
             if "TransferExecuted events from the transaction target: 1" not in lookup_text:
                 fail("Known V2 transfer did not return exactly one matching event in this live query: " + lookup_text)
-            checks["knownV2Lookup"] = "live receipt and event returned"
+            lower_lookup = lookup_text.lower()
+            expected_event_fields = [
+                "actionid 0xff2cc7690a604a51db85b1e5c43d02bc7cee12277754ccbf6295e78a7b75f38e",
+                "recipient 0xa0fc1a7248955a159d54d84e48681d9cebb86be4",
+                "amount 0.1 pot"
+            ]
+            for field in expected_event_fields:
+                if field not in lower_lookup:
+                    fail("Known V2 event did not match expected event field " + field + ": " + lookup_text)
+            checks["knownV2Lookup"] = "live_success_receipt_event_and_expected_fields"
+            checks["knownV2ReceiptStatus"] = 1
+            checks["knownV2ReceiptBlock"] = 149241
+            checks["knownV2TransferEventCount"] = 1
         else:
-            checks["knownV2Lookup"] = "RPC returned null; saved evidence remains distinct"
+            checks["knownV2Lookup"] = "rpc_returned_null_saved_evidence_is_separate"
+            checks["knownV2ReceiptStatus"] = None
+            checks["knownV2ReceiptBlock"] = None
+            checks["knownV2TransferEventCount"] = None
 
+        checks["knownV2TransactionHash"] = KNOWN_V2_TX
+        checks["knownV2LookupDisplay"] = lookup_text
         if page_errors:
             fail("Browser runtime errors: " + json.dumps(page_errors, ensure_ascii=False))
         # Record failed requests rather than automatically rejecting optional
         # font/CDN requests; the core page and all required RPC readouts passed.
         checks["failedRequests"] = failed_requests
-        print(json.dumps({"status": "PASS", "checks": checks}, ensure_ascii=False, indent=2))
+        report = {
+            "schemaVersion": 1,
+            "status": "PASS",
+            "checkedAt": datetime.now(timezone.utc).isoformat(),
+            "commit": os.environ.get("GITHUB_SHA"),
+            "workflowRunId": os.environ.get("GITHUB_RUN_ID"),
+            "workflowRunAttempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+            "network": "PortalDot V3 EVM testnet",
+            "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev",
+            "rpcProviderCount": 1,
+            "secondProviderUsed": False,
+            "evmGenesisHashPinUsed": False,
+            "transactionBroadcast": False,
+            "checks": checks
+        }
+        output_path = os.environ.get("VERIGATE_DAPP_SMOKE_OUTPUT", "").strip()
+        if output_path:
+            output_file = Path(output_path)
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            output_file.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+        print(json.dumps(report, ensure_ascii=False, indent=2))
         browser.close()
 
 
