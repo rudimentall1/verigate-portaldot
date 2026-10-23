@@ -204,6 +204,20 @@ export function validateSubstrateTransferBinding(response, options = {}) {
     fail("amount_exact and signed native amount_base_units must match exactly.");
   }
 
+  // The fee ceiling is part of the signed action digest. It is an off-chain
+  // preflight budget, not an on-chain guarantee of the final charged fee.
+  const mappedFeeCeiling = positiveCanonicalInteger(
+    mapping.max_fee_base_units,
+    "metadata.portaldot_substrate_v3.max_fee_base_units",
+  ).toString();
+  const intentFeeCeiling = positiveCanonicalInteger(
+    intentMapping.max_fee_base_units,
+    "intent metadata max_fee_base_units",
+  ).toString();
+  if (mappedFeeCeiling !== intentFeeCeiling) {
+    fail("Signed max_fee_base_units must match in intent and execution authorization.");
+  }
+
   const digest = actionDigest(action);
   if (String(authPayload.action_sha256 || "").toLowerCase() !== digest) {
     fail("Execution authorization action digest does not match its action.");
@@ -217,6 +231,8 @@ export function validateSubstrateTransferBinding(response, options = {}) {
     amount: BigInt(amountText),
     amountBaseUnits: amountText,
     amountPot: formatNativePot(amountText),
+    maxFeeBaseUnits: mappedFeeCeiling,
+    maxFeePot: formatNativePot(mappedFeeCeiling),
     authorizationId: String(authPayload.authorization_id).toLowerCase(),
     intentId: String(intent.intent_id),
     agentId: String(intent.agent_id),
@@ -379,6 +395,12 @@ export async function createTransferPreflight(api, transfer, signerAddress) {
   ]);
   const freeBalance = BigInt(payerAccount.data.free.toString());
   const fee = BigInt(paymentInfo.partialFee.toString());
+  const maxFee = BigInt(transfer.maxFeeBaseUnits);
+  if (fee > maxFee) {
+    fail("Estimated native fee " + fee.toString() + " base units (" + formatNativePot(fee) +
+      " POT) exceeds the signed max_fee_base_units ceiling " + maxFee.toString() +
+      " (" + formatNativePot(maxFee) + " POT); refusing to proceed.");
+  }
   const existentialDeposit = BigInt(api.consts.balances.existentialDeposit.toString());
   if (freeBalance < transfer.amount + fee) fail("Executor balance is below transfer amount plus estimated fee.");
   if (freeBalance - transfer.amount - fee < existentialDeposit) {
@@ -404,6 +426,9 @@ export async function createTransferPreflight(api, transfer, signerAddress) {
     amountPOT: transfer.amountPot,
     estimatedFeeBaseUnits: fee.toString(),
     estimatedFeePOT: formatNativePot(fee),
+    authorizedMaxFeeBaseUnits: maxFee.toString(),
+    authorizedMaxFeePOT: formatNativePot(maxFee),
+    feeCeilingPassed: fee <= maxFee,
     freeBalanceBaseUnits: freeBalance.toString(),
     freeBalancePOT: formatNativePot(freeBalance),
     existentialDepositBaseUnits: existentialDeposit.toString(),
