@@ -1,0 +1,65 @@
+{
+  "evidenceStatus": "read_only_public_rpc_policy_simulations_passed",
+  "checkedAt": "2026-10-23T16:24:26.079Z",
+  "source": {
+    "workflow": "V2 read-only policy simulations",
+    "runUrl": "https://github.com/rudimentall1/verigate-portaldot/actions/runs/39986452279",
+    "artifactUrl": "https://github.com/rudimentall1/verigate-portaldot/actions/runs/39986452279/artifacts/12514968777",
+    "executionMode": "GitHub Actions; ethers eth_call only; no transaction submitted"
+  },
+  "network": {
+    "name": "PortalDot V3 EVM testnet",
+    "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev",
+    "chainId": "420420777",
+    "latestBlockBefore": 162640,
+    "latestBlockAfter": 162640
+  },
+  "guard": {
+    "name": "PortalDotAgentGuardV2",
+    "address": "0x87C494a5e4B0A8E055F283767579667E10E046C6",
+    "runtimeCodeBytes": 3370,
+    "runtimeCodeHash": "0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859",
+    "authoritySigner": "0x48F9B07d37b5AF744BA8195c4d6740145b593ea6",
+    "allowlistedRecipient": "0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4",
+    "maxPerTransferBaseUnits": "100000000000000000",
+    "windowLimitBaseUnits": "500000000000000000",
+    "windowSeconds": "3600",
+    "guardBalanceBaseUnitsBefore": "10000000000000000",
+    "spentInWindowBaseUnitsBefore": "100000000000000000",
+    "windowStartBefore": "1792691880"
+  },
+  "simulations": [
+    {
+      "name": "over-per-transfer-cap",
+      "recipient": "0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4",
+      "amountBaseUnits": "100000000000000001",
+      "expectedRevert": "AmountExceedsCap",
+      "actualRevert": "AmountExceedsCap",
+      "passed": true
+    },
+    {
+      "name": "recipient-not-allowlisted",
+      "recipient": "0x000000000000000000000000000000000000dEaD",
+      "amountBaseUnits": "1",
+      "expectedRevert": "InvalidRecipient",
+      "actualRevert": "InvalidRecipient",
+      "passed": true
+    }
+  ],
+  "stateAfter": {
+    "guardBalanceBaseUnits": "10000000000000000",
+    "spentInWindowBaseUnits": "100000000000000000",
+    "windowStart": "1792691880",
+    "firstProbeNonceUsed": false,
+    "secondProbeNonceUsed": false,
+    "observableStateUnchanged": true
+  },
+  "conclusion": {
+    "readOnlySimulationsPassed": true,
+    "publicChainRevertTransactionSubmitted": false,
+    "windowLimitOverflowLiveSimulated": false,
+    "windowLimitOverflowCoverage": "local Hardhat contract test only",
+    "rpcIndependence": "not independently verified; all observations came from the configured PortalDot RPC",
+    "scope": "This demonstrates the configured RPC's current eth_call behavior for two policy violations. It is not a mined revert transaction, independent RPC authentication, an audit, or proof of protection for arbitrary user wallets."
+  }
+}
