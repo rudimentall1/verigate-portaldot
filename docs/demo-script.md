@@ -68,7 +68,7 @@ Say: “This is a focused agent-authorization middleware prototype on PortalDot 
 - [ ] Video is under three minutes with clear audio.
 - [ ] Dashboard URL points at the deployed V2 address, and all shown values are read from RPC.
 - [ ] Live RPC, local Hardhat ALLOW/BLOCK, and public testnet transfer are clearly distinguished.
-- [ ] Transfer recipient is not the sender/relayer; amount and receipt-derived cost are visible together, and the single-RPC basis and missing fee/storage-deposit breakdown are disclosed.
+- [ ] Transfer recipient is not the sender/relayer; amount and reconciled sender debit are visible together, and the single-RPC basis and missing fee/storage-deposit breakdown are disclosed.
 - [ ] Local cap/window/allowlist tests are labelled local; no implication of public-chain negative tests.
 - [ ] No raw authorization JSON, secret files, private keys or mnemonics appear.
 - [ ] No H160-to-SS58 mapping claim is made unless a real runtime storage entry was verified.
