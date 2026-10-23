@@ -50,6 +50,12 @@ The executor does not send a transaction by default. The explicit `--broadcast` 
 
 The contract does not verify Verigate's Ed25519 signatures. The bridge verifies those through the configured Verigate instance, then uses a separate EVM key to produce an EIP-712 signature. The executor relays that exact signed payload. The EVM contract trusts the bridge signer. Protecting the Verigate API and bridge key is part of the security model; the relayer key should be separate from the authority signer.
 
+## Native Substrate reference adapter (testnet code path)
+
+A separate adapter, documented in [native Substrate authorized transfer](native-substrate-authorized-transfer.md), verifies Verigate's signed `ALLOW` artifacts and exact action binding, checks the pinned Substrate genesis and runtime, estimates fee/balance conditions, and can explicitly submit only `Balances.transfer_keep_alive` to an SS58 recipient on the confirmed testnet. It defaults to read-only preflight; a transfer requires the explicit `--broadcast` flag and a dedicated Substrate signer.
+
+This extends the reference integration beyond EVM-only payments. It is not direct DaaS integration: the DaaS call ABI was not found in the reviewed public material. No native transfer has yet been broadcast as part of this change; tests are offline fixture tests, and the adapter's Ed25519 checks happen in the adapter, not inside the Substrate runtime. Its local replay ledger is single-host state and must not be treated as distributed replay protection.
+
 ## Testnet deployment status
 
 Two distinct versions are deployed on PortalDot V3 EVM testnet. The current execution demo uses `PortalDotAgentGuardV2` at `0x87C494a5e4B0A8E055F283767579667E10E046C6`. The V2 deployment/configuration record lists runtime hash `0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859`, the configured authority signer, an allowlisted recipient, a `0.1 POT` per-transfer maximum, and a `0.5 POT` cap for a resettable `3600-second` spending interval. The counter resets after the interval expires; it is not a continuously sliding rolling-window sum. The administrator can change recipients and caps.
