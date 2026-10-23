@@ -53,9 +53,9 @@ Say: “The local integration sends allowed and denied actions through Verigate'
 
 ### 1:45–2:25 — Confirmed public testnet transfer
 
-On screen: show the actual V2 transfer report: transaction hash, block `149241`, receipt status `1`, amount `0.1 POT`, sender debit `7.82782148139542551 POT`, reconciled by read-only before/after sender-balance reads for the isolated block, recipient, and matching `TransferExecuted` event. The V2 recipient differs from the relayer/sender. Show the saved dated report and label the RPC verification timestamp; do not imply a new lookup succeeded unless you have just repeated it. The reported guard balance after the transfer was `0.01 POT`; a later read-only balance check showed the recipient increase from `0` to `0.1 POT` across the isolated block using the same RPC.
+On screen: use the dashboard receipt lookup field with the recorded V2 transaction hash 0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e. Show the live response only if the configured RPC returns it. The dashboard accepts any 32-byte transaction hash, checks transaction/receipt/block consistency, reports success versus revert, and decodes TransferExecuted events when present. Then show the saved V2 transfer report: block 149241, receipt status 1, amount 0.1 POT, sender debit 7.82782148139542551 POT, and the recipient credit. If the current RPC returns null, show that result honestly and use the dated evidence card separately; do not imply that a saved result was returned by the live lookup.
 
-Say: “This is the confirmed PortalDot V3 testnet transfer. Verigate returned ALLOW, the bridge signed the exact action, and the V2 guard emitted the matching execution event. The sender's balance fell from 416.196502092920504516 to 408.368680611525079006 POT in a block containing exactly one EVM transaction. The 7.8278 POT decrease matches gasUsed × effectiveGasPriceWei. This is a single-RPC balance reconciliation; the runtime cost was not split into execution-fee and storage-deposit components. The guard enforces allowlist and spending limits at the contract boundary; Verigate Ed25519 verification remains off-chain in the bridge.”
+Say: “This PortalDot V3 testnet transfer is recorded in block 149241. The saved evidence shows a successful receipt and matching TransferExecuted event after Verigate returned ALLOW. A read-only check through the configured RPC reconciled the sender debit from 416.196502092920504516 to 408.368680611525079006 POT and the recipient credit from zero to 0.1 POT. The sender debit matches gasUsed times effectiveGasPriceWei; the runtime fee and storage-deposit components were not separated. This is one-RPC evidence, not independent provider verification.”
 
 ### 2:25–2:45 — Close
 
@@ -67,7 +67,7 @@ Suggested card text:
 - **V2:** recorded 0.1 POT transfer, block 149241. Receipt, matching event, sender debit and recipient credit were re-queried through the same configured RPC.
 - **Boundary:** no second EVM RPC provider; testnet prototype, not audited or mainnet. Public-chain negative cap/allowlist reverts are not recorded.
 
-Say: “The V1 record is historical because the same RPC no longer returns its receipt. The V2 transfer was re-queried in block 149241, including the matching event and both balance deltas. Both checks used the configured RPC; no second provider was used. This is a testnet prototype, not an audited or mainnet system.”
+Say: “The V1 transfer is recorded in block 132475, but its historical receipt is no longer returned by the configured RPC. The V2 transfer is recorded in block 149241; its receipt, matching event, sender debit and recipient credit were re-queried through the same RPC. No second provider was used. This is a testnet prototype, not an audit or production deployment.”
 
 ## Final checks before publishing
 
