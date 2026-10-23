@@ -33,6 +33,7 @@ function assertPortalDotTestnetRpcUrl(value, operation = "operation") {
   const isOfficialTestnetRpc =
     parsed.protocol === "https:" &&
     parsed.hostname.toLowerCase() === "test-evm-rpc-v3.portaldot.dev" &&
+    parsed.port === "" &&
     hasNoUrlCredentialsOrOverrides;
   const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
   const isLoopbackSimulator =
