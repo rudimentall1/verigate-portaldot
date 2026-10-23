@@ -194,12 +194,12 @@ bullet(d,100,565,"Pre-broadcast checks passed","The executor re-simulated the ex
 bullet(d,100,730,"Public V2 transfer recorded","Receipt status 1 at block 149241 and one matching TransferExecuted event, queried through the configured RPC.",790,GREEN)
 rounded(d,(1030,580,1800,845),24,fill="#301C2A",outline=RED,width=2)
 d.text((1070,620),"IMPORTANT DISTINCTION",font=font(20,True),fill=RED)
-paragraph(d,(1070,680),"The recorded transfer was 0.1 POT; the receipt-derived cost figure was 7.8278 POT. The relayer balance delta and runtime fee/storage-deposit breakdown were not recorded, so this is not an independently reconciled execution-fee claim. No second RPC provider or recipient balance delta was recorded.",font(21),WHITE,max_width=660,leading=1.28)
+paragraph(d,(1070,680),"The transfer was 0.1 POT. Sender balance fell from 416.1965 to 408.3687 POT across an isolated block, exactly matching the 7.8278 POT receipt-derived amount. One configured RPC only; no runtime fee/storage-deposit split or recipient balance delta was recorded.",font(21),WHITE,max_width=660,leading=1.28)
 slides.append(im)
 
 # 7. Roadmap and limitations
 im,d=base("What remains before wider adoption","The next work is evidence and user validation, not another unproven feature.",7)
-bullet(d,95,310,"Investigate execution cost","The receipt-derived cost figure was 7.8278 POT for a 0.1 POT transfer; it is not balance-reconciled. Do not claim cost-efficient operation until its fee/deposit semantics are verified.",800,BLUE)
+bullet(d,95,310,"Investigate execution cost","The sender debit was reconciled as 7.8278 POT for a 0.1 POT transfer, about 78× the transfer value. The reason for this cost and the runtime execution-fee/storage-deposit split remain unresolved; do not claim cost-effective operation.",800,BLUE)
 bullet(d,95,475,"Prove negative policy paths","The cap and allowlist rejection cases are backed by local Solidity tests, not recorded public-testnet reverts.",800,CYAN)
 bullet(d,95,640,"Validate ecosystem need","No PortalDot Wallet/DaaS integration, team endorsement, or external user adoption is currently confirmed.",800,GREEN)
 rounded(d,(1035,325,1800,800),28,fill=PANEL,outline="#2C4968")
