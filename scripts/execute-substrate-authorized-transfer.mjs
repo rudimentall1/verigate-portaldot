@@ -115,6 +115,17 @@ export function formatNativePot(baseUnits) {
   return fraction ? whole.toString() + "." + fraction : whole.toString();
 }
 
+export function assertEstimatedFeeWithinCeiling(estimatedFeeBaseUnits, maxFeeBaseUnits) {
+  const fee = BigInt(estimatedFeeBaseUnits);
+  const ceiling = positiveCanonicalInteger(maxFeeBaseUnits, "max_fee_base_units");
+  if (fee > ceiling) {
+    fail("Estimated native fee " + fee.toString() + " base units (" + formatNativePot(fee) +
+      " POT) exceeds the signed max_fee_base_units ceiling " + ceiling.toString() +
+      " (" + formatNativePot(ceiling) + " POT); refusing to proceed.");
+  }
+  return { estimatedFeeBaseUnits: fee.toString(), maxFeeBaseUnits: ceiling.toString() };
+}
+
 export function validateSubstrateTransferBinding(response, options = {}) {
   const expectedGenesisHash = String(options.expectedGenesisHash ||
     process.env.PORTALDOT_SUBSTRATE_GENESIS_HASH || TESTNET_GENESIS_HASH).trim().toLowerCase();
@@ -395,12 +406,11 @@ export async function createTransferPreflight(api, transfer, signerAddress) {
   ]);
   const freeBalance = BigInt(payerAccount.data.free.toString());
   const fee = BigInt(paymentInfo.partialFee.toString());
-  const maxFee = BigInt(transfer.maxFeeBaseUnits);
-  if (fee > maxFee) {
-    fail("Estimated native fee " + fee.toString() + " base units (" + formatNativePot(fee) +
-      " POT) exceeds the signed max_fee_base_units ceiling " + maxFee.toString() +
-      " (" + formatNativePot(maxFee) + " POT); refusing to proceed.");
-  }
+  const { maxFeeBaseUnits } = assertEstimatedFeeWithinCeiling(
+    fee.toString(),
+    transfer.maxFeeBaseUnits,
+  );
+  const maxFee = BigInt(maxFeeBaseUnits);
   const existentialDeposit = BigInt(api.consts.balances.existentialDeposit.toString());
   if (freeBalance < transfer.amount + fee) fail("Executor balance is below transfer amount plus estimated fee.");
   if (freeBalance - transfer.amount - fee < existentialDeposit) {
