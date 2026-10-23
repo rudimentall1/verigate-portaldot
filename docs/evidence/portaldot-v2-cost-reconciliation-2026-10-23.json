@@ -41,5 +41,10 @@
   "recipientBalanceIncreaseWei": "100000000000000000",
   "recipientBalanceIncreaseEvmPOT": "0.1",
   "recipientBalanceDeltaMatchesTransferAmount": true,
-  "note": "The isolated block contains only the target transaction; sender balance decrease matches gasUsed × effectiveGasPriceWei, and the expected recipient's balance increase matches the TransferExecuted amount."
+  "note": "The isolated block contains only the target transaction; sender balance decrease matches gasUsed × effectiveGasPriceWei, and the expected recipient's balance increase matches the TransferExecuted amount.",
+  "costInterpretation": "The sender's gross EVM balance decrease for this isolated transaction block is reconciled to gasUsed × effectiveGasPriceWei. Do not label the full amount as an irrecoverable gas-only fee: upstream pallet-revive gas-estimation documentation describes storage deposits as part of the required gas budget, and such deposits may be refundable. This report does not establish the exact execution-fee versus storage-deposit split for this PortalDot V3 runtime.",
+  "upstreamBackground": [
+    "https://docs.polkadot.com/smart-contracts/for-eth-devs/gas-model/",
+    "https://paritytech.github.io/polkadot-sdk/master/pallet_revive/pallet/trait.Config.html"
+  ]
 }
