@@ -33,11 +33,13 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 | Independent verification limits | Explicitly documented | The recorded checks use the configured PortalDot RPC; they do not independently authenticate the RPC operator or use a second provider. The original live verifier did not record the recipient delta or post-transaction nonce state. A later read-only check confirmed the recipient balance increase from `0` to `0.1 POT` and reconciled the sender debit against `gasUsed × effectiveGasPriceWei` in the isolated V2 block, using the configured RPC; no second EVM provider was used. |
 | V2 policy negative cases | Local tests exist; live negative cases not verified | [V2 contract tests](../test/PortalDotAgentGuardV2.test.js) cover over-cap transfer, time-window cap overflow, and nonce non-consumption on revert. Do not describe those tests as live testnet evidence. |
 | Public DApp | Published, read-only view | Use the V2 guard URL above. Dashboard state is not itself proof that Verigate authorized or executed a transaction. |
-| Demo video under 3 minutes | **Pending** | Record one real ALLOW → V2 receipt path and one meaningful blocked/rejected case. Clearly label local tests versus live testnet evidence. |
-| Presentation | Published | [Presentation PDF](Verigate-PortalDot-Presentation.pdf). |
+| Demo video under 3 minutes | Working draft rendered; final pass required | User-provided MP4 is 2:39 at 1920×1080, 30 fps, H.264/AAC. The final card still says to repeat the transfer despite the recorded V2 proof; architecture-scene subtitles overlap a small annotation. Update the outro, adjust captions, and check audio/SRT timing on full playback before submission. |
+| Presentation | Published; source being refreshed | [Presentation PDF](Verigate-PortalDot-Presentation.pdf). The repository's reproducible deck has 7 slides; the separate 10-slide working deck described in the video notes is not present in this repository snapshot. |
 | Run instructions and architecture | Present | [Architecture](architecture.md), [operations runbook](testnet-operations-2026-10-20.md), [V2 runbook](v2-deployment-runbook.md). |
 | License / reused components | Final disclosure review pending | MIT project license; preserve dependency licenses and distinguish existing Verigate components from PortalDot-specific integration work. |
 | DoraHacks check-in visibility | Not independently confirmed | Open the build entry and verify saved fields/public visibility in the DoraHacks UI. Do not assume a GitHub commit completes check-in. |
+
+See [claims-to-verify.md](../claims-to-verify.md) for approved wording and prohibited overclaims.
 
 ## Current live V2 facts
 
