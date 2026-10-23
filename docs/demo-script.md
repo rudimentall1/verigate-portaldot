@@ -4,15 +4,14 @@ Recording status: not recorded. Target duration: 2:40–2:45. Public dashboard: 
 
 ## Gate before recording
 
-Do not present V2 as deployed until all of these are true:
-- V2 deployment receipt status is `0x1` on chain ID `420420777`.
-- `eth_getCode` returns non-empty runtime bytecode at the recorded V2 address.
-- On-chain readback confirms the expected admin, authority signer, max-per-transfer, window limit, window duration, and an allowed recipient.
-- A signed transfer succeeds to a recipient distinct from the relayer/sender and shows a matching `TransferExecuted` event.
-- Cap and allowlist negative tests revert as expected; reverted nonces remain unused.
-- The published GitHub Pages site has the read-only dashboard, and `?guard=0x<V2_ADDRESS>` reads the actual deployed V2 state.
+V2 deployment/configuration and a positive live transfer are now documented in `docs/evidence/portaldot-v2-deployment-2026-10-22.json` and `docs/evidence/portaldot-v2-live-transfer-2026-10-22.json`. Before recording, check these gates:
+- The current V2 code and configuration are read live from chain ID `420420777` if the RPC serves them; the historical deployment receipt may no longer be returned by this RPC, so distinguish a saved deployment receipt from a fresh lookup.
+- Readback shows the recorded admin, authority signer, `0.1 POT` max-per-transfer, `0.5 POT` rolling window over 3600 seconds, and the allowlisted recipient.
+- The saved live transfer report shows the successful receipt and matching `TransferExecuted` event for `0.1 POT` to a recipient distinct from the relayer/sender.
+- Show the cap, rolling-window and allowlist negative cases from the local Solidity tests as **local tests**. Do not imply these negative cases were submitted as paid transactions on public PortalDot.
+- The published GitHub Pages site has the read-only dashboard, and `?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6` reads the actual deployed V2 state.
 
-If V2 has not passed these gates, do not use the V2 shot list as if it were live. Record the V1 prototype honestly and say that recipient/spending caps are not yet deployed.
+If a current RPC read is unavailable, show the dated evidence as historical and say so explicitly. Never describe a saved receipt as a fresh lookup.
 
 ## Recording setup
 
@@ -54,9 +53,9 @@ Say: “The local integration sends allowed and denied actions through Verigate'
 
 ### 1:45–2:25 — Confirmed public testnet transfer
 
-On screen: show the actual V2 transfer report: transaction hash, block, receipt status, amount, fee, recipient, and matching `TransferExecuted` event. The recipient must differ from the relayer/sender. If the RPC no longer serves the receipt, show the saved dated report and label it historical; do not imply a live lookup succeeded.
+On screen: show the actual V2 transfer report: transaction hash, block `149241`, receipt status `1`, amount `0.1 POT`, reported actual fee `7.82782148139542551 POT`, recipient, and matching `TransferExecuted` event. The recipient differs from the relayer/sender. Show the saved dated report and label the RPC verification timestamp; do not imply a new lookup succeeded unless you have just repeated it. The reported guard balance after the transfer was `0.01 POT`; the recipient balance delta was not separately measured.
 
-Say: “This is the confirmed PortalDot V3 testnet transfer. The receipt, event and recipient balance delta were recorded together. The amount and actual fee are visible side by side. The guard limits the action at the contract boundary; the bridge's Ed25519 verification remains an off-chain trust boundary.”
+Say: “This is the confirmed PortalDot V3 testnet transfer. Verigate returned ALLOW, the bridge signed the exact action, and the V2 guard emitted the matching execution event. The recorded fee was 7.8278 POT for a 0.1 POT transfer, which is high and should be visible rather than hidden. The guard enforces allowlist and spending limits at the contract boundary; Verigate Ed25519 verification remains off-chain in the bridge.”
 
 ### 2:25–2:45 — Close
 
@@ -69,7 +68,8 @@ Say: “This is a focused agent-authorization middleware prototype on PortalDot 
 - [ ] Video is under three minutes with clear audio.
 - [ ] Dashboard URL points at the deployed V2 address, and all shown values are read from RPC.
 - [ ] Live RPC, local Hardhat ALLOW/BLOCK, and public testnet transfer are clearly distinguished.
-- [ ] Transfer recipient is not the sender/relayer; amount and fee are visible together.
+- [ ] Transfer recipient is not the sender/relayer; amount and actual fee are visible together, and the high fee is not obscured.
+- [ ] Local cap/window/allowlist tests are labelled local; no implication of public-chain negative tests.
 - [ ] No raw authorization JSON, secret files, private keys or mnemonics appear.
 - [ ] No H160-to-SS58 mapping claim is made unless a real runtime storage entry was verified.
 - [ ] No explorer claim is made unless the matching transaction hash was personally confirmed there.
@@ -77,4 +77,4 @@ Say: “This is a focused agent-authorization middleware prototype on PortalDot 
 
 ## Known limits
 
-V1 is deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`, but has no on-chain recipient allowlist or spending caps. V2 must not be described as live until the gate above is satisfied. The historical V1 transfer to the relayer/sender is not suitable as the final economic demo. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support.
+V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`; the live 0.1 POT transfer is documented, but the public-chain negative cap/window cases are not recorded as mined revert transactions. The actual reported fee is unusually high (7.82782148139542551 POT). H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support.
