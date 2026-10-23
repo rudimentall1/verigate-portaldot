@@ -9,7 +9,7 @@
   },
   "scripts": {
     "compile": "hardhat build",
-    "test": "hardhat test && npm run test:explorer",
+    "test": "hardhat test && npm run test:explorer && npm run test:dapp",
     "preflight": "node scripts/preflight.js",
     "deploy:portaldot": "npm run preflight && hardhat run scripts/deploy.mjs --network portaldot",
     "deploy:v2:portaldot": "npm run preflight && hardhat run scripts/deploy-v2.mjs --network portaldot",
@@ -30,7 +30,8 @@
     "estimate:deployment:v2": "npm run compile && node scripts/estimate-deployment-v2.mjs",
     "verify:deployment:v2": "node scripts/verify-v2-deployment.mjs",
     "fund:guard:v2": "node scripts/fund-v2-guard.mjs",
-    "verify:funding:v2": "node scripts/verify-v2-funding.mjs"
+    "verify:funding:v2": "node scripts/verify-v2-funding.mjs",
+    "test:dapp": "node scripts/validate-dapp.mjs"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^4.0.0",
