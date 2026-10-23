@@ -85,6 +85,18 @@
     "The verified event confirms the guard call and the emitted recipient and amount. Recipient balance delta was not measured by the reported verifier.",
     "This is testnet execution evidence, not a security audit or a production-readiness claim.",
     "Historical lookup limitations previously affected the V2 deployment transaction; this transfer receipt was available and matched the reported block hash at the time of verification.",
-    "The value previously named actualFeePot was calculated as gasUsed × effectiveGasPriceWei from the EVM receipt. It is now labelled receiptDerivedCostPot because the relayer's before/after native balance and any runtime fee/storage-deposit breakdown were not captured for this transaction."
-  ]
+    "A later read-only reconciliation on 2026-10-23 queried the sender's EVM balance before and after the receipt block. The block contained exactly one EVM transaction, and the sender balance decrease matched gasUsed × effectiveGasPriceWei exactly. This reconciles the sender's total balance debit on the configured RPC; runtime execution-fee versus storage-deposit components were not separately decomposed."
+  ],
+  "costReconciliation": {
+    "checkedAt": "2026-10-23T07:41:42.645Z",
+    "evidence": "docs/evidence/portaldot-v2-cost-reconciliation-2026-10-23.json",
+    "status": "reconciled",
+    "method": "Read-only query of sender balance at block 149240 and after block 149241; block 149241 contained exactly one EVM transaction.",
+    "senderBalanceBeforeEvmPOT": "416.196502092920504516",
+    "senderBalanceAfterEvmPOT": "408.368680611525079006",
+    "senderBalanceDecreaseEvmPOT": "7.82782148139542551",
+    "receiptDerivedCostEvmPOT": "7.82782148139542551",
+    "matches": true,
+    "caveat": "One configured PortalDot RPC only. This reconciles the sender's total EVM-balance decrease for the transaction; it does not independently authenticate the RPC operator or separate runtime execution fee from any storage-deposit component."
+  }
 }
