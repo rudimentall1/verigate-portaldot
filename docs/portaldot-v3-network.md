@@ -11,7 +11,24 @@
 | Native symbol | POT; UI may show tPOT/tPOTv3 |
 | Reported Substrate native precision | 14 decimals |
 | EVM native `value` precision | 18 decimal places |
-| EVM explorer | No dedicated EVM explorer was listed in the field guide |
+| Officially announced testnet explorer | https://scanner-testnet-v3.portaldot.dev/ (announced 23 October 2026; EVM receipt/deep-link behavior not independently checked) |
+| Officially announced V3 mainnet explorer | https://scanner-live-v3.portaldot.dev/ (Mainnet V3 launch announced for 24 October 2026 at 04:00 in the announcement's displayed timezone) |
+| Mainnet EVM RPC / chain ID | Not confirmed by this project; do not infer these from the explorer URL or reuse testnet settings |
+
+## Mainnet V3 upgrade watch — announcement dated 23 October 2026
+
+The project maintainer supplied a PortalDot Discord announcement stating that the Mainnet V3.0 upgrade is scheduled for Saturday, 24 October 2026 at 04:00 (the pasted announcement does not state a UTC offset). It lists these official links:
+
+- Node Console: https://node-console.portaldot.dev/
+- V3 mainnet explorer: https://scanner-live-v3.portaldot.dev/
+- Cross-chain bridge: https://bridge.portaldot.dev/
+- V3 testnet explorer: https://scanner-testnet-v3.portaldot.dev/
+- Testnet Substrate WebSocket: `wss://test-node-v3.portaldot.dev`
+- Testnet EVM RPC: `https://test-evm-rpc-v3.portaldot.dev`
+
+The testnet RPC and WSS in that announcement match the existing testnet configuration above. The repo's read-only RPC health check passed on 23 October before the announced upgrade time, but that does not prove endpoint continuity after the change. The project’s independent DApp also links to the two V3 explorers; those links are a navigation convenience, not an assertion that a given explorer supports every EVM hash or historical receipt.
+
+**Do not switch the deployment configuration to Mainnet merely because the mainnet explorer is available.** This announcement, as pasted, does not supply a mainnet EVM RPC URL or EVM chain ID, and the existing V2 contract/transfer evidence is testnet-only. Before considering mainnet work, independently confirm the mainnet EVM RPC, chain ID, Substrate genesis/runtime identity, deployment cost and contract semantics. Do not reuse testnet addresses or signing configuration as mainnet deployment evidence, and do not redeploy the testnet guard to recreate an RPC-pruned historical receipt.
 
 ## Live Substrate runtime inspection
 
