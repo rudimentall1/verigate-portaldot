@@ -12,6 +12,9 @@ types/ethers-contracts/
 # Local signing secrets; never commit
 .secrets/
 
+# Local replay-prevention ledger for native Substrate authorization IDs
+.verigate-substrate-replay/
+
 # Authorization responses and signed transaction payloads; never commit replayable artifacts
 authorization-response*.json
 signed-transfer*.json

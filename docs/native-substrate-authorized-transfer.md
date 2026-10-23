@@ -1,0 +1,92 @@
+# Verigate-authorized native PortalDot transfer
+
+## Why this adapter exists
+
+The public V2 proof already demonstrates the EVM path: a Verigate decision is verified off-chain, a bridge signer produces a scoped EIP-712 authorization, and `PortalDotAgentGuardV2` transfers native EVM POT.
+
+PortalDot also exposes a native Substrate runtime. This adapter adds a separate, deliberately narrow path for **`Balances.transfer_keep_alive`** so the project can demonstrate Verigate-gated authority over a native-runtime transfer instead of treating EVM as the only execution interface.
+
+This is not a DaaS integration. The public material available to this project did not provide a concrete DaaS pallet/call ABI that could be safely encoded, so the adapter does not invent a liquidation or recovery call. It is a testnet reference adapter for a standard native transfer.
+
+## Authorization contract
+
+The input file must contain both signed artifacts from Verigate: `decision_receipt` and `execution_authorization`. Both are checked locally against the pinned Ed25519 issuer public key and checked again through Verigate's `/v1/verify` endpoint.
+
+The signed intent/action must exactly bind:
+
+| Field | Required value |
+|---|---|
+| `action_type` | `portaldot.substrate_transfer` |
+| `network` | `portaldot-v3-substrate` |
+| `asset` | `POT` |
+| `target` | PortalDot SS58 address with prefix 42 |
+| `amount_exact` | Canonical positive decimal string in Substrate base units |
+| `metadata.portaldot_substrate_v3.genesis_hash` | `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd` |
+| `metadata.portaldot_substrate_v3.recipient_ss58` | Same address as `target` |
+| `metadata.portaldot_substrate_v3.amount_base_units` | Same integer string as `amount_exact` |
+
+The same metadata and action values must be present in the signed intent and execution authorization. Authorization ID, policy digest, intent ID, agent ID, action digest, issue time and expiry are checked. Only `ALLOW` continues; `WARN` and `BLOCK` fail closed.
+
+This action type/network may need to be explicitly enabled in the operator's Verigate capability and policy configuration. The adapter does not weaken Verigate policy or create an ALLOW decision by itself.
+
+## Configure
+
+Use the existing `.env` file locally; do not commit it or paste a mnemonic/private URI into a report.
+
+Required values:
+
+- `PORTALDOT_SUBSTRATE_RPC_URL=wss://test-node-v3.portaldot.dev`
+- `PORTALDOT_SUBSTRATE_GENESIS_HASH=0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd`
+- `PORTALDOT_SUBSTRATE_SIGNER_ADDRESS=<funded SS58 address>`
+- `VERIGATE_PUBLIC_KEY_FILE=<trusted issuer public-key PEM path>`
+- `VERIGATE_PUBLIC_KEY_SHA256=<independently verified issuer-key fingerprint>`
+- `VERIGATE_BASE_URL=<trusted Verigate API URL>`
+
+For a public Verigate API, use HTTPS and the configured API key if required. The adapter reuses the repository's pinned issuer verification logic.
+
+The signing URI is needed only for a transfer that the operator explicitly decides to broadcast:
+
+- `PORTALDOT_SUBSTRATE_SIGNER_URI=<local secret URI; never commit>`
+- `PORTALDOT_SUBSTRATE_REPLAY_DIR=.verigate-substrate-replay`
+
+The SS58 signer address must correspond to the local signing URI. Keep this native-runtime signer separate from EVM deployer, relayer and EIP-712 authority keys. Prefer a dedicated low-balance test account.
+
+## Read-only preflight
+
+Save the Verigate response to an untracked local JSON file such as `authorization-response-native.json`, then run:
+
+```sh
+npm run substrate:execute -- ./authorization-response-native.json
+```
+
+This mode:
+
+1. validates the signed `ALLOW` and exact target/amount/network/genesis bindings;
+2. verifies the Ed25519 artifacts locally and through `/v1/verify`;
+3. checks the connected Substrate genesis hash and runtime `specName`;
+4. queries sender/recipient balances, runtime existential deposit, and `paymentInfo` fee estimate;
+5. prints JSON with authorization identifiers, amount, estimated fee, current free balance and chain/runtime version.
+
+No extrinsic is signed or sent in this mode. `paymentInfo` is a fee estimate, not a full execution dry-run. A successful result means the checked preconditions passed at that time, not that a transfer has been submitted.
+
+The remote URL is restricted to the recorded PortalDot V3 testnet WSS. Loopback WebSocket is allowed for isolated local testing when a local genesis hash is explicitly pinned. Other remote endpoints are refused.
+
+## Explicit testnet broadcast
+
+Broadcast requires the separate `--broadcast` argument and `PORTALDOT_SUBSTRATE_SIGNER_URI`. The signer address derived from that URI must match `PORTALDOT_SUBSTRATE_SIGNER_ADDRESS`.
+
+```sh
+npm run substrate:execute -- ./authorization-response-native.json --broadcast
+```
+
+Before submitting, review the exact `ALLOW`, recipient, base-unit amount and fee estimate. The adapter records the authorization ID in a local replay ledger **before** submission, waits for finalization, rejects dispatch errors, and requires exactly one matching `Balances.Transfer` event in the finalized extrinsic. Save the JSON output as execution evidence only after a successful live testnet transfer.
+
+The replay ledger is local to one filesystem and is not a distributed nonce service. Multiple executor replicas need shared durable replay state before this pattern can be relied on in a distributed deployment. A crash after reserving authorization but before recording the result intentionally requires operator reconciliation rather than automatic replay.
+
+## Safety boundaries and status
+
+- The adapter accepts one native call: `Balances.transfer_keep_alive`. It does not dispatch arbitrary runtime calls, DaaS liquidation calls, governance actions, or EVM contract calls.
+- The native runtime executes the transfer; Verigate authorization is verified by the adapter before submission. The Substrate runtime does not natively verify the Verigate Ed25519 artifact.
+- It uses one configured Substrate endpoint; a receipt/finalized event is an observation from that endpoint, not independent network authentication.
+- This repository currently has public testnet evidence for the EVM V2 transfer. The new native adapter's unit tests are local fixture tests only until an explicitly authorized native testnet transfer is performed and its finalized extrinsic/event is saved.
+- The adapter is not security-audited or production-ready. Do not use a valuable account or mainnet credentials.
