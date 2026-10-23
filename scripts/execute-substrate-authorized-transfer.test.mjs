@@ -13,6 +13,7 @@ import {
   validateSubstrateRpcUrl,
   resolveExpectedGenesisHash,
   validateSubstrateTransferBinding,
+  createTransferPreflight,
 } from "./execute-substrate-authorized-transfer.mjs";
 import { cryptoWaitReady, encodeAddress } from "@polkadot/util-crypto";
 import { createRequire } from "node:module";
@@ -249,5 +250,107 @@ test("authorization nonce, signed action digest and action/intent equality are c
   assert.throws(
     () => validateSubstrateTransferBinding(wrongDigest, { now: 2_000_000_000 }),
     /action digest does not match/,
+  );
+});
+
+
+function fakeSubstrateApi({ payerBalance, recipientBalance = 0n, partialFee = 1000n, existentialDeposit = 1000n }) {
+  const payer = testAddress(9);
+  const recipient = testAddress(7);
+  return {
+    __portalDotRpcUrl: TESTNET_RPC,
+    tx: {
+      balances: {
+        transferKeepAlive: (destination, amount) => {
+          assert.equal(destination, recipient);
+          assert.ok(BigInt(amount) > 0n);
+          return {
+            paymentInfo: async (address) => {
+              assert.equal(address, payer);
+              return { partialFee: { toString: () => partialFee.toString() } };
+            },
+          };
+        },
+      },
+    },
+    query: {
+      system: {
+        account: async (address) => ({
+          data: {
+            free: {
+              toString: () => (address === payer ? payerBalance : recipientBalance).toString(),
+            },
+          },
+        }),
+      },
+    },
+    rpc: {
+      state: {
+        getRuntimeVersion: async () => ({
+          specName: { toString: () => "portaldot-v3" },
+          specVersion: { toString: () => "3002" },
+          transactionVersion: { toString: () => "2" },
+        }),
+      },
+      system: { chain: async () => ({ toString: () => "PortalDot V3 Test" }) },
+    },
+    consts: {
+      balances: { existentialDeposit: { toString: () => existentialDeposit.toString() } },
+    },
+    genesisHash: { toHex: () => TESTNET_GENESIS_HASH },
+  };
+}
+
+test("read-only preflight returns fee, balance and runtime facts without broadcasting", async () => {
+  const transfer = validateSubstrateTransferBinding(validResponse(), { now: 2_000_000_000 });
+  const api = fakeSubstrateApi({ payerBalance: 200_000_000_000_000n });
+  const report = await createTransferPreflight(api, transfer, testAddress(9));
+  assert.equal(report.status, "READY");
+  assert.equal(report.network, "PortalDot V3 Substrate");
+  assert.equal(report.genesisHashMatches, true);
+  assert.equal(report.specName, "portaldot-v3");
+  assert.equal(report.specVersion, 3002);
+  assert.equal(report.amountPOT, "1");
+  assert.equal(report.estimatedFeeBaseUnits, "1000");
+  assert.equal(report.transactionBroadcast, false);
+  assert.equal(report.requiresExplicitBroadcast, true);
+});
+
+test("preflight refuses a payer that cannot cover amount plus estimated fee", async () => {
+  const transfer = validateSubstrateTransferBinding(validResponse(), { now: 2_000_000_000 });
+  const api = fakeSubstrateApi({ payerBalance: transfer.amount });
+  await assert.rejects(
+    () => createTransferPreflight(api, transfer, testAddress(9)),
+    /balance is below transfer amount plus estimated fee/,
+  );
+});
+
+test("preflight enforces keep-alive and new-recipient existential deposit", async () => {
+  const transfer = validateSubstrateTransferBinding(validResponse(), { now: 2_000_000_000 });
+  const belowKeepAlive = fakeSubstrateApi({
+    payerBalance: transfer.amount + 1000n + 999n,
+    partialFee: 1000n,
+    existentialDeposit: 1000n,
+  });
+  await assert.rejects(
+    () => createTransferPreflight(belowKeepAlive, transfer, testAddress(9)),
+    /below the runtime existential deposit/,
+  );
+
+  const tinyTransfer = {
+    ...transfer,
+    amount: 500n,
+    amountBaseUnits: "500",
+    amountPot: formatNativePot(500n),
+  };
+  const belowRecipientDeposit = fakeSubstrateApi({
+    payerBalance: 10000n,
+    recipientBalance: 0n,
+    partialFee: 10n,
+    existentialDeposit: 1000n,
+  });
+  await assert.rejects(
+    () => createTransferPreflight(belowRecipientDeposit, tinyTransfer, testAddress(9)),
+    /below the existential deposit for a new recipient account/,
   );
 });
