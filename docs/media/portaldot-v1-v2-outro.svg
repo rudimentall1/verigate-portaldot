@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+<title id="title">Verigate PortalDot V1 and V2 testnet evidence status</title>
+<desc id="desc">The V1 historical receipt is no longer returned by the configured RPC. The V2 transfer receipt, matching event, sender debit, and recipient credit were re-queried through the same configured RPC. This is testnet evidence, not an audit or mainnet deployment.</desc>
+<rect width="1920" height="1080" fill="#081426"/>
+<rect width="16" height="1080" fill="#57d7ed"/>
+<g font-family="Inter, DejaVu Sans, Arial, sans-serif">
+  <text x="70" y="67" font-size="24" font-weight="700" fill="#57d7ed">VERIGATE / PORTALDOT V3</text>
+  <text x="1460" y="67" font-size="18" font-weight="700" fill="#9cb0cb">HACKER HOUSE 2026 · EVIDENCE</text>
+  <text x="70" y="155" font-size="52" font-weight="700" fill="#f4f7fc">V1 + V2 / TESTNET EVIDENCE</text>
+  <path d="M70 188 H1850" stroke="#57d7ed" stroke-width="3"/>
+  <text x="72" y="239" font-size="25" fill="#9cb0cb">Recorded execution and current receipt availability are different facts.</text>
+  <!-- V1 card -->
+  <rect x="60" y="280" width="565" height="555" rx="24" fill="#112846" stroke="#2e527a" stroke-width="2"/>
+  <rect x="60" y="280" width="477" height="12" rx="6" fill="#57d7ed"/>
+  <text x="84" y="320" font-size="25" font-weight="700" fill="#57d7ed">V1 · HISTORICAL</text>
+  <g fill="#57d7ed">
+    <circle cx="92" cy="359" r="6"/><circle cx="92" cy="457" r="6"/><circle cx="92" cy="563" r="6"/>
+  </g>
+  <g fill="#f4f7fc" font-size="22" font-weight="700">
+    <text x="110" y="366">0.1 POT transfer</text>
+    <text x="110" y="464">Receipt + TransferExecuted event</text>
+    <text x="110" y="570">Later RPC lookup</text>
+  </g>
+  <g fill="#d1deef" font-size="20">
+    <text x="110" y="401">Block 132475</text>
+    <text x="110" y="499">Verified when captured on 21 Oct</text>
+    <text x="110" y="605"><tspan x="110" dy="0">The same configured RPC no longer</tspan><tspan x="110" dy="28">returned the historical receipt.</tspan></text>
+  </g>
+  <!-- V2 card -->
+  <rect x="655" y="280" width="615" height="555" rx="24" fill="#112846" stroke="#2e527a" stroke-width="2"/>
+  <rect x="655" y="280" width="615" height="12" rx="6" fill="#7ce0aa"/>
+  <text x="679" y="320" font-size="25" font-weight="700" fill="#7ce0aa">V2 · RE-QUERIED</text>
+  <g fill="#7ce0aa">
+    <circle cx="687" cy="359" r="6"/><circle cx="687" cy="435" r="6"/><circle cx="687" cy="523" r="6"/><circle cx="687" cy="594" r="6"/>
+  </g>
+  <g fill="#f4f7fc" font-size="22" font-weight="700">
+    <text x="705" y="366">0.1 POT transfer</text>
+    <text x="705" y="442">Execution event</text>
+    <text x="705" y="530">Recipient credit</text>
+    <text x="705" y="601">Sender gross debit</text>
+  </g>
+  <g fill="#d1deef" font-size="20">
+    <text x="705" y="401">Block 149241 · receipt status 1</text>
+    <text x="705" y="477">One matching TransferExecuted event</text>
+    <text x="705" y="565">0 → 0.1 POT</text>
+    <text x="705" y="636"><tspan x="705" dy="0">7.82782148139542551 POT; matches</tspan><tspan x="705" dy="28">gasUsed × effectiveGasPriceWei.</tspan></text>
+  </g>
+  <!-- limits -->
+  <rect x="1300" y="280" width="550" height="555" rx="24" fill="#112846" stroke="#2e527a" stroke-width="2"/>
+  <rect x="1300" y="280" width="550" height="12" rx="6" fill="#f3c66e"/>
+  <text x="1324" y="320" font-size="25" font-weight="700" fill="#f3c66e">VERIFICATION LIMITS</text>
+  <g fill="#f3c66e">
+    <circle cx="1332" cy="359" r="6"/><circle cx="1332" cy="457" r="6"/><circle cx="1332" cy="555" r="6"/><circle cx="1332" cy="660" r="6"/>
+  </g>
+  <g fill="#f4f7fc" font-size="22" font-weight="700">
+    <text x="1350" y="366">One configured EVM RPC</text>
+    <text x="1350" y="464">Network identity</text>
+    <text x="1350" y="562">Runtime cost split</text>
+    <text x="1350" y="667">Scope</text>
+  </g>
+  <g fill="#d1deef" font-size="20">
+    <text x="1350" y="401">No second-provider verification</text>
+    <text x="1350" y="499">No EVM genesis hash pin</text>
+    <text x="1350" y="597"><tspan x="1350" dy="0">Execution fee vs refundable storage</tspan><tspan x="1350" dy="28">deposit has not been determined.</tspan></text>
+    <text x="1350" y="702"><tspan x="1350" dy="0">Unaudited testnet prototype,</tspan><tspan x="1350" dy="28">not mainnet.</tspan></text>
+  </g>
+  <path d="M60 888 H1850" stroke="#2e527a" stroke-width="2"/>
+  <text x="62" y="950" font-size="20" font-weight="700" fill="#57d7ed">ONE CONFIGURED RPC</text>
+  <text x="395" y="950" font-size="20" font-weight="700" fill="#7ce0aa">READ-ONLY EVIDENCE</text>
+  <text x="705" y="950" font-size="20" font-weight="700" fill="#f3c66e">NO SECOND-PROVIDER CLAIM</text>
+  <text x="1280" y="950" font-size="18" font-weight="700" fill="#9cb0cb">TESTNET · NOT AUDITED / NOT MAINNET</text>
+  <text x="62" y="1020" font-size="22" font-weight="700" fill="#f4f7fc">A proposal is not authority.</text>
+  <text x="475" y="1020" font-size="19" fill="#57d7ed">github.com/rudimentall1/verigate-portaldot</text>
+</g>
+</svg>
