@@ -42,6 +42,7 @@ function validResponse(now = 2_000_000_000) {
         genesis_hash: TESTNET_GENESIS_HASH,
         recipient_ss58: recipient,
         amount_base_units: "100000000000000",
+        max_fee_base_units: "1000000000000",
       },
     },
   };
@@ -189,6 +190,34 @@ test("rejects incorrect action type, network and asset", () => {
 test("rejects invalid SS58 addresses and addresses with a non-PortalDot prefix", () => {
   assert.throws(() => normalizeSs58Address("not-an-address"), /valid checksummed SS58/);
   assert.throws(() => normalizeSs58Address(testAddress(7, 2)), /SS58 prefix 42/);
+});
+
+test("signed fee ceiling is bound and rejects malformed or mismatched metadata", () => {
+  const response = validResponse();
+  const binding = validateSubstrateTransferBinding(response, { now: 2_000_000_000 });
+  assert.equal(binding.maxFeeBaseUnits, "1000000000000");
+  assert.equal(binding.maxFeePot, "0.01");
+
+  const mismatch = validResponse();
+  mismatch.execution_authorization.payload.action.metadata.portaldot_substrate_v3.max_fee_base_units = "2000000000000";
+  mismatch.execution_authorization.payload.action_sha256 = actionDigest(
+    mismatch.execution_authorization.payload.action,
+  );
+  assert.throws(
+    () => validateSubstrateTransferBinding(mismatch, { now: 2_000_000_000 }),
+    /does not exactly match the signed decision receipt intent/,
+  );
+
+  const missing = validResponse();
+  delete missing.decision_receipt.payload.intent.metadata.portaldot_substrate_v3.max_fee_base_units;
+  delete missing.execution_authorization.payload.action.metadata.portaldot_substrate_v3.max_fee_base_units;
+  missing.execution_authorization.payload.action_sha256 = actionDigest(
+    missing.execution_authorization.payload.action,
+  );
+  assert.throws(
+    () => validateSubstrateTransferBinding(missing, { now: 2_000_000_000 }),
+    /canonical positive decimal integer string/,
+  );
 });
 
 test("native POT formatting uses PortalDot's 14-decimal base unit", () => {
