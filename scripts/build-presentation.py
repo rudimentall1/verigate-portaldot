@@ -194,7 +194,7 @@ bullet(d,100,565,"Pre-broadcast checks passed","The executor re-simulated the ex
 bullet(d,100,730,"Public V2 transfer recorded","Receipt status 1 at block 149241 and one matching TransferExecuted event, queried through the configured RPC.",790,GREEN)
 rounded(d,(1030,580,1800,845),24,fill="#301C2A",outline=RED,width=2)
 d.text((1070,620),"IMPORTANT DISTINCTION",font=font(20,True),fill=RED)
-paragraph(d,(1070,680),"The recorded transfer was 0.1 POT; the reported fee was 7.8278 POT. This demonstrates the positive path, not cost-effective operation or every negative policy case. No second RPC provider or recipient balance delta was recorded.",font(21),WHITE,max_width=660,leading=1.28)
+paragraph(d,(1070,680),"The recorded transfer was 0.1 POT; the receipt-derived cost figure was 7.8278 POT. The relayer balance delta and runtime fee/storage-deposit breakdown were not recorded, so this is not an independently reconciled execution-fee claim. No second RPC provider or recipient balance delta was recorded.",font(21),WHITE,max_width=660,leading=1.28)
 slides.append(im)
 
 # 7. Roadmap and limitations
