@@ -47,8 +47,8 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 - Runtime code hash recorded: `0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859`.
 - Deployment transaction recorded: `0x331c1fc027da51af26ed5ee92ef22a8250fe4efdf0d84526f5fe2203f5d3494b`, block 148397. Historical receipt availability later failed on the configured RPC; the current code/configuration readback was reported successful.
 - Initial policy: 0.1 POT maximum per transfer, 0.5 POT per resettable 3600-second interval, initial recipient allowlisted.
-- Successful live transfer: `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`, block 149241, amount 0.1 POT, one matching `TransferExecuted` event. Reported actual fee: 7.82782148139542551 POT.
-- The actual transfer was preceded by a fresh Verigate `ALLOW`, bridge signature, pre-broadcast re-simulation, refreshed gas quote and fee-budget check.
+- Successful live transfer: `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`, block 149241, amount 0.1 POT, one matching `TransferExecuted` event. Receipt-derived cost figure: 7.82782148139542551 POT (`gasUsed × effectiveGasPriceWei`); relayer balance delta and runtime fee/storage-deposit breakdown not recorded for this V2 transfer.
+- The transfer was preceded by a fresh Verigate `ALLOW`, bridge signature, pre-broadcast re-simulation, refreshed gas quote and fee-budget check.
 - Current CI on commit `0133188cbe8bca6de06e72794a1da8e4d7a2b672`: Test, PortalDot CI, PortalDot RPC health, and Explorer live smoke check workflows reported success. These checks do not replace the live transaction evidence or the pending demo video.
 
 ## Remaining risks and honest-claim rules
