@@ -8,6 +8,8 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/v2-readonly-policy.yml"
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
