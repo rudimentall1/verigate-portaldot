@@ -167,7 +167,14 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
         }
       }
       const allExpected = chainNumber === 420420777n && bytes > 0 && (!isV2 || hashMatches);
-      setMessage(allExpected ? "Live RPC responds. Chain ID, runtime code, and V2 runtime hash checks passed." : "RPC responds, but the chain ID, runtime code, or recorded V2 runtime hash did not match expectations.", allExpected ? "good" : "warn");
+      const statusMessage = !allExpected
+        ? "RPC responds, but the chain ID, runtime code, or recorded V2 runtime hash did not match expectations."
+        : isV2
+          ? "Live RPC responds. Chain ID, runtime code, and V2 runtime hash checks passed."
+          : isV1
+            ? "Live RPC responds. Chain ID and V1 runtime code are present."
+            : "Live RPC responds for the selected address. This address is not pinned as the known V1 or V2 guard.";
+      setMessage(statusMessage, allExpected ? "good" : "warn");
     } catch (error) {
       el("rpcStatus").textContent = "Unavailable";
       el("rpcStatus").className = "value red";
