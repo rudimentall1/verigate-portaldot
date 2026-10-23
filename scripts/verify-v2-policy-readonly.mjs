@@ -15,8 +15,6 @@ import {
   JsonRpcProvider,
   getAddress,
   keccak256,
-  toBeHex,
-  zeroPadValue
 } from "ethers";
 
 const RPC_URL = (process.env.PORTALDOT_RPC_URL || "https://test-evm-rpc-v3.portaldot.dev").trim();
