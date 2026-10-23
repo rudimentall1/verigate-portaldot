@@ -21,9 +21,9 @@ h2{font-size:18px;margin:25px 0 12px;letter-spacing:-.02em}.card{min-width:0}.mu
 <div class="wrap">
 <header class="top"><a class="brand" href="../">PORTALDOT / VERIGATE</a><nav class="nav"><a href="#search">Search</a><a href="#official-explorers">Official explorers</a><a href="#evidence">Our deployment evidence</a><a href="https://github.com/rudimentall1/verigate-portaldot" target="_blank" rel="noopener noreferrer">Source ↗</a></nav><span class="pill">TESTNET · READ ONLY</span></header>
 <main>
-<section class="hero" id="search"><div class="eyebrow">Independent PortalDot V3 Explorer</div><h1>Search the chain. Verify the evidence.</h1><p class="lead">Look up an EVM transaction, block, or address using the PortalDot V3 RPC. Results from the live endpoint are kept separate from saved Verigate deployment records. This first version does not claim full historical indexing or address-wide transaction history.</p>
+<section class="hero" id="search"><div class="eyebrow">Independent PortalDot V3 Explorer</div><h1>Search the chain. Verify the evidence.</h1><p class="lead">Look up an EVM transaction, block, or address using the PortalDot V3 RPC. Results from the live endpoint are kept separate from saved Verigate deployment records. This first version does not claim full historical indexing or address-wide transaction history.</p><div class="notice">Preview deployment: the current indexer stores SQLite data in temporary storage. Indexed history may reset when the service restarts, and older chain history may be unavailable from the RPC. Treat live RPC results and Explorer-index results as separate sources.</div>
 <div class="search"><input id="query" spellcheck="false" autocomplete="off" aria-label="Transaction hash, block number, block hash, EVM address, or native SS58 address" placeholder="Transaction hash, block number, block hash, EVM address, or native 5… address"><button id="searchBtn">Search</button></div>
-<div class="presets"><button data-query="0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c">Our deployment transaction</button><button data-query="0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c">Saved TransferExecuted</button><button data-query="0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b">V1 guard contract</button><button data-query="116872">Recorded deployment block</button><button data-query="132475">Recorded transfer block</button></div><div class="api-config"><input id="apiBaseInput" placeholder="Optional indexer API URL, e.g. https://your-service.onrender.com" aria-label="Indexer API base URL"><button id="saveApiBase">Connect indexer</button><div class="api-note" id="apiBaseNote">Persistent transaction history requires the Explorer API. Direct RPC lookup continues to work without it.</div></div></section>
+<div class="presets"><button data-query="0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c">Our deployment transaction</button><button data-query="0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c">Saved TransferExecuted</button><button data-query="0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b">V1 guard contract</button><button data-query="116872">Recorded deployment block</button><button data-query="132475">Recorded transfer block</button></div><div class="api-config"><input id="apiBaseInput" placeholder="Optional indexer API URL, e.g. https://your-service.onrender.com" aria-label="Indexer API base URL"><button id="saveApiBase">Connect indexer</button><div class="api-note" id="apiBaseNote">Indexed history requires the Explorer API. This preview uses temporary storage and indexed history may reset after a service restart. Direct RPC lookup works without it.</div></div></section>
 <section class="card" id="official-explorers" style="margin:18px 0 22px">
 <div class="headrow"><h3>Official PortalDot V3 explorers</h3><span class="tag">Network reference</span></div>
 <p class="small">Use the official explorers for general network browsing. This independent Verigate view focuses on runtime address mapping, saved deployment evidence, ABI decoding, and cross-layer read-only queries. Historical coverage depends on the RPC and the configured indexer; neither view should be treated as proof of data it cannot retrieve.</p>
@@ -38,7 +38,7 @@ h2{font-size:18px;margin:25px 0 12px;letter-spacing:-.02em}.card{min-width:0}.mu
 <section class="card">
   <p class="small">Checks the connected PortalDot V3 runtime's reviveApi mapping in both directions. A missing result is reported as “not found”; the Explorer does not replace it with an offline-derived address.</p>
   <div class="search"><input id="mappingQuery" spellcheck="false" autocomplete="off" aria-label="EVM or SS58 address to map" placeholder="EVM 0x… or native SS58 5…"><button id="mappingLookupButton" type="button">Check runtime mapping</button></div>
-  <div id="mappingResult"><div class="muted">Configure the persistent Explorer API URL to query the Substrate runtime mapping API.</div></div>
+  <div id="mappingResult"><div class="muted">Configure the Explorer API URL to query the Substrate runtime mapping API.</div></div>
 </section>
 <h2>Logs for the resolved block</h2><section class="card" id="logs"><div class="muted">Block logs appear here when the RPC can return the requested block.</div></section><h2>Indexed chain activity</h2><section class="two"><article class="card"><div class="headrow"><h3>Recent indexed blocks</h3><span class="tag" id="blocksSource">Index pending</span></div><div id="recentBlocks" class="rows"><div class="muted">Connect an Explorer API to browse stored blocks.</div></div></article><article class="card"><div class="headrow"><h3>Recent indexed transactions</h3><span class="tag" id="transactionsSource">Index pending</span></div><div id="recentTransactions" class="rows"><div class="muted">Connect an Explorer API to browse stored transactions.</div></div></article></section><h2>Native Substrate activity</h2><section class="substrate-grid"><article class="card"><div class="headrow"><h3>Recent finalized blocks</h3><span class="tag" id="substrateBlocksSource">Index pending</span></div><div id="recentSubstrateBlocks" class="rows"><div class="muted">Connect an Explorer API to browse finalized Substrate blocks.</div></div></article><article class="card"><div class="headrow"><h3>Recent runtime events</h3><span class="tag" id="substrateEventsSource">Index pending</span></div><div id="recentSubstrateEvents" class="rows"><div class="muted">Connect an Explorer API to browse runtime events.</div></div></article><article class="card"><div class="headrow"><h3>Recent extrinsics</h3><span class="tag" id="substrateExtrinsicsSource">Index pending</span></div><div id="recentSubstrateExtrinsics" class="rows"><div class="muted">Connect an Explorer API to browse signed/unsigned extrinsics.</div></div></article></section>
 <h2>Current finalized-state snapshots</h2>
@@ -72,7 +72,7 @@ h2{font-size:18px;margin:25px 0 12px;letter-spacing:-.02em}.card{min-width:0}.mu
       <div class="field full"><label for="contractAbi">Solidity JSON ABI or Hardhat/Foundry artifact</label><textarea id="contractAbi" spellcheck="false" placeholder='[{"type":"event","name":"Transfer","inputs":[...]}]' required></textarea></div>
       <div class="form-actions"><button id="registerContractButton" type="submit">Get my event URL</button></div>
     </form>
-    <div id="contractRegistrationResult" class="small" role="status" aria-live="polite">Connect the persistent indexer API above to register a contract.</div>
+    <div id="contractRegistrationResult" class="small" role="status" aria-live="polite">Connect the Explorer API above to register a contract.</div>
     <div class="rule"></div>
     <div class="headrow"><h3>Manage a registered contract</h3><span class="tag">Bearer token</span></div>
     <div class="contract-form">
@@ -187,7 +187,7 @@ function renderBlock(block, label='Live RPC', indexedLogs=null) {
 }
 function renderLogs(logs, label='Live RPC') {
   if (!Array.isArray(logs) || !logs.length) {
-    $('#logs').innerHTML = status('warn',label === 'Persistent index' ? 'No EVM logs were stored for this block in the index.' : 'No EVM logs were returned for this block. This does not mean the block has no Substrate events.');
+    $('#logs').innerHTML = status('warn',label === 'Explorer index' ? 'No EVM logs were stored for this block in the index.' : 'No EVM logs were returned for this block. This does not mean the block has no Substrate events.');
     return;
   }
   $('#logs').innerHTML = status('good',logs.length + ' EVM log(s) · ' + label) + logs.slice(0,200).map((log,index) =>
@@ -269,7 +269,7 @@ async function loadContractRegistry() {
     }).join('');
     return true;
   } catch (error) {
-    box.innerHTML = '<div class="muted">Contract registry unavailable. Check that the persistent Explorer API is connected. ' + esc(error.message) + '</div>';
+    box.innerHTML = '<div class="muted">Contract registry unavailable. Check that the Explorer API is connected. ' + esc(error.message) + '</div>';
     return false;
   }
 }
@@ -414,7 +414,7 @@ function renderApiResult(data) {
     const receiptLabel = receipt
       ? (receipt.status === '0x1' ? status('good','0x1 · successful receipt') : receipt.status === '0x0' ? status('bad','0x0 · reverted') : status('warn',receipt.status || 'Receipt returned without status'))
       : status('warn','Receipt unavailable from the current RPC.');
-    const origin = data.source === 'indexer' ? 'Persistent index' : 'Live RPC';
+    const origin = data.source === 'indexer' ? 'Explorer index' : 'Live RPC';
     $('#result').innerHTML = '<div class="headrow"><h3>Transaction</h3><span class="tag">' + origin + '</span></div>' + rows([
       ['Transaction hash',mono(tx.hash) + ' ' + copyButton(tx.hash)],
       ['Receipt status',receiptLabel],
@@ -425,9 +425,9 @@ function renderApiResult(data) {
       ['Value (raw EVM units)',esc(raw(tx.value))],
       ['Gas used',receipt?.gasUsed ? esc(raw(receipt.gasUsed)) : '—'],
       ['Receipt note',esc(data.receiptNote || 'A receipt lookup has not been confirmed.')],
-      ['Transaction record',data.source === 'indexer' ? 'Persisted in the local Explorer index.' : 'Returned by the live RPC, not yet guaranteed to be persisted.']
+      ['Transaction record',data.source === 'indexer' ? 'Returned from the current Explorer index; coverage depends on indexed ranges and may reset after a service restart.' : 'Returned by the live RPC, not yet guaranteed to be persisted.']
     ]);
-    renderLogs(Array.isArray(data.logs) && data.logs.length ? data.logs : (receipt?.logs || []), data.source === 'indexer' ? 'Persistent index' : 'Live RPC');
+    renderLogs(Array.isArray(data.logs) && data.logs.length ? data.logs : (receipt?.logs || []), data.source === 'indexer' ? 'Explorer index' : 'Live RPC');
     return true;
   }
   if (data.source === 'substrate_indexer+live_rpc' && data.currentAccount) {
@@ -462,7 +462,7 @@ function renderApiResult(data) {
   }
   if (data.source === 'substrate_indexer' && Array.isArray(data.extrinsics) && Array.isArray(data.events)) {
     const block = data.block || {};
-    $('#result').innerHTML = '<div class="headrow"><h3>Substrate block #' + esc(data.blockNumber) + '</h3><span class="tag">Persistent index</span></div>' + rows([
+    $('#result').innerHTML = '<div class="headrow"><h3>Substrate block #' + esc(data.blockNumber) + '</h3><span class="tag">Explorer index</span></div>' + rows([
       ['Block hash',mono(data.blockHash || block.hash) + ' ' + copyButton(data.blockHash || block.hash)],
       ['Parent hash',mono(block.parentHash || '—')],
       ['State root',mono(block.stateRoot || '—')],
@@ -480,7 +480,7 @@ function renderApiResult(data) {
     return true;
   }
   if (data.source === 'substrate_indexer' && data.hash && data.extrinsic) {
-    $('#result').innerHTML = '<div class="headrow"><h3>Substrate extrinsic</h3><span class="tag">Persistent index</span></div>' + rows([
+    $('#result').innerHTML = '<div class="headrow"><h3>Substrate extrinsic</h3><span class="tag">Explorer index</span></div>' + rows([
       ['Extrinsic hash',mono(data.hash) + ' ' + copyButton(data.hash)],
       ['Block',esc(data.blockNumber)],
       ['Extrinsic index',esc(data.extrinsicIndex)],
@@ -495,12 +495,12 @@ function renderApiResult(data) {
     const block = data.source === 'indexer'
       ? {...data.block,transactions:Array.isArray(data.transactions) ? data.transactions : []}
       : data.block;
-    renderBlock(block,data.source === 'indexer' ? 'Persistent index' : 'Live RPC',data.source === 'indexer' ? (data.logs || []) : null);
+    renderBlock(block,data.source === 'indexer' ? 'Explorer index' : 'Live RPC',data.source === 'indexer' ? (data.logs || []) : null);
     return true;
   }
   if (data.address) {
     const hasCode = data.code && data.code !== '0x' && data.code !== '0x0';
-    $('#result').innerHTML = '<div class="headrow"><h3>' + (hasCode ? 'Contract address' : 'EVM account') + '</h3><span class="tag">Live RPC + persistent history</span></div>' + rows([
+    $('#result').innerHTML = '<div class="headrow"><h3>' + (hasCode ? 'Contract address' : 'EVM account') + '</h3><span class="tag">Live RPC + indexed history</span></div>' + rows([
       ['Address',mono(data.address) + ' ' + copyButton(data.address)],
       ['Runtime mapping','<button type="button" data-map-query="' + esc(data.address) + '">Check EVM ↔ SS58</button>'],
       ['Current balance (raw EVM units)',esc(raw(data.balance))],
@@ -539,12 +539,12 @@ async function loadIndexer() {
     ]);
   } catch (error) {
     $('#indexedBlock').textContent = 'Not connected';
-    $('#indexerHint').textContent = 'Configure the persistent API URL to enable indexed history.';
+    $('#indexerHint').textContent = 'Configure the Explorer API URL to enable indexed history.';
     $('#apiBaseNote').textContent = 'Indexer API unavailable at ' + (apiBaseOverride || location.origin) + '. Direct RPC search remains enabled. ' + error.message;
     $('#blocksSource').textContent = 'Not connected';
     $('#transactionsSource').textContent = 'Not connected';
-    $('#recentBlocks').innerHTML = '<div class="muted">Connect the deployed Explorer API URL above to browse persistent blocks.</div>';
-    $('#recentTransactions').innerHTML = '<div class="muted">Connect the deployed Explorer API URL above to browse persistent transactions.</div>';
+    $('#recentBlocks').innerHTML = '<div class="muted">Connect the Explorer API above to browse indexed blocks. The preview's indexed history may reset after a restart.</div>';
+    $('#recentTransactions').innerHTML = '<div class="muted">Connect the Explorer API above to browse indexed transactions. The preview's indexed history may reset after a restart.</div>';
     $('#substrateIndexedBlock').textContent = 'Not connected';
     $('#substrateIndexerHint').textContent = 'Substrate index requires the Explorer API.';
     $('#recentSubstrateBlocks').innerHTML = '<div class="muted">Connect the Explorer API to browse Substrate blocks.</div>';
