@@ -1,6 +1,24 @@
 require("dotenv").config();
 const { parseExpectedSubstrateGenesisHash, validateSubstrateRpcUrl, verifySubstrateGenesisHash } = require("./substrate-genesis.js");
 
+const PORTALDOT_V3_TESTNET_CHAIN_ID = 420420777n;
+
+function assertPortalDotTestnetChainId(chainId, operation = "operation") {
+  let actual;
+  try {
+    actual = BigInt(chainId);
+  } catch {
+    throw new Error(`Refusing ${operation}: chain ID must be the confirmed PortalDot V3 testnet chain ID 420420777.`);
+  }
+  if (actual !== PORTALDOT_V3_TESTNET_CHAIN_ID) {
+    throw new Error(
+      `Refusing ${operation}: this project's deployment and broadcast tooling is restricted to PortalDot V3 testnet chain ID 420420777. ` +
+      `The Mainnet V3 EVM RPC and chain identity have not been verified; no transaction was sent.`
+    );
+  }
+  return actual;
+}
+
 function requiredNetworkConfig() {
   const rpcUrl = (process.env.PORTALDOT_RPC_URL || "").trim();
   const chainIdText = (process.env.PORTALDOT_CHAIN_ID || "").trim();
@@ -106,4 +124,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { requiredNetworkConfig, safeRpcOrigin, rpcResult, rpc };
+module.exports = { requiredNetworkConfig, safeRpcOrigin, rpcResult, rpc, assertPortalDotTestnetChainId };
