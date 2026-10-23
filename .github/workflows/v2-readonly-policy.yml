@@ -1,0 +1,43 @@
+name: V2 read-only policy simulations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/verify-v2-policy-readonly.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/v2-readonly-policy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readonly-policy-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Simulate V2 policy violations against PortalDot RPC using eth_call only
+        run: |
+          set -o pipefail
+          npm run verify:policy:v2:readonly 2>&1 | tee v2-policy-readonly-output.json
+      - name: Preserve simulation output
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: v2-readonly-policy-simulation
+          path: v2-policy-readonly-output.json
+          if-no-files-found: warn
+          retention-days: 30
