@@ -9,6 +9,8 @@ on:
       - "scripts/portal-dot-readiness.mjs"
       - "scripts/portal-dot-readiness.test.mjs"
       - "docs/portal-dot-readiness.md"
+      - "docs/portaldot-v3-network.md"
+      - "docs/hacker-house-check-in.md"
       - ".github/workflows/portal-dot-readiness.yml"
 
 permissions:

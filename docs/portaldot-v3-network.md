@@ -12,21 +12,25 @@
 | Reported Substrate native precision | 14 decimals |
 | EVM native `value` precision | 18 decimal places |
 | Officially announced testnet explorer | https://scanner-testnet-v3.portaldot.dev/ (announced 23 October 2026; EVM receipt/deep-link behavior not independently checked) |
-| Officially announced V3 mainnet explorer | https://scanner-live-v3.portaldot.dev/ (Mainnet V3 launch announced for 24 October 2026 at 04:00 in the announcement's displayed timezone) |
+| Officially announced V3 mainnet explorer | https://scanner-live-v3.portaldot.dev/ (network-endpoints notice supplied 23 October 2026; rollout announced for 23 October at 23:00 UTC) |
 | Mainnet EVM RPC / chain ID | Not confirmed by this project; do not infer these from the explorer URL or reuse testnet settings |
 
-## Mainnet V3 upgrade watch — announcement dated 23 October 2026
+## Mainnet V3.0 rollout watch — network-endpoints notice supplied 23 October 2026
 
-The project maintainer supplied a PortalDot Discord announcement stating that the Mainnet V3.0 upgrade is scheduled for Saturday, 24 October 2026 at 04:00 (the pasted announcement does not state a UTC offset). It lists these official links:
+The supplied PortalDot V3.0 network-endpoints notice schedules rollout for **23 October 2026 at 23:00 UTC** (24 October at 01:00 in Europe/Berlin). The notice lists the following surfaces:
 
+**Mainnet**
 - Node Console: https://node-console.portaldot.dev/
-- V3 mainnet explorer: https://scanner-live-v3.portaldot.dev/
+- Block explorer: https://scanner-live-v3.portaldot.dev/
 - Cross-chain bridge: https://bridge.portaldot.dev/
-- V3 testnet explorer: https://scanner-testnet-v3.portaldot.dev/
-- Testnet Substrate WebSocket: `wss://test-node-v3.portaldot.dev`
-- Testnet EVM RPC: `https://test-evm-rpc-v3.portaldot.dev`
+- Mobile wallet: the notice says an update release is expected; no release URL or build/version is provided.
 
-The testnet RPC and WSS in that announcement match the existing testnet configuration above. The repo's read-only RPC health check passed on 23 October before the announced upgrade time, but that does not prove endpoint continuity after the change. The project’s independent DApp also links to the two V3 explorers; those links are a navigation convenience, not an assertion that a given explorer supports every EVM hash or historical receipt.
+**Testnet**
+- Substrate node endpoint: `wss://test-node-v3.portaldot.dev`
+- EVM-compatible RPC: `https://test-evm-rpc-v3.portaldot.dev`
+- Block explorer: https://scanner-testnet-v3.portaldot.dev/
+
+The announced testnet EVM RPC and Substrate WSS match the project's existing testnet configuration. The notice supplies **no Mainnet EVM RPC URL, EVM chain ID, or Mainnet Substrate WebSocket endpoint**. Mainnet explorer availability must not be treated as proof of EVM RPC parameters. The repo's read-only testnet health check passed earlier on 23 October, before the announced rollout; that result does not prove endpoint continuity or runtime identity after the rollout. The project's DApp links to both V3 explorers for navigation only; it does not claim that either explorer indexes all EVM transactions or retains all historical receipts.
 
 **Do not switch the deployment configuration to Mainnet merely because the mainnet explorer is available.** This announcement, as pasted, does not supply a mainnet EVM RPC URL or EVM chain ID, and the existing V2 contract/transfer evidence is testnet-only. Before considering mainnet work, independently confirm the mainnet EVM RPC, chain ID, Substrate genesis/runtime identity, deployment cost and contract semantics. Do not reuse testnet addresses or signing configuration as mainnet deployment evidence, and do not redeploy the testnet guard to recreate an RPC-pruned historical receipt.
 
