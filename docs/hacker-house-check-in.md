@@ -54,7 +54,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 ## Remaining risks and honest-claim rules
 
 1. Produce the sub-3-minute demo; this is the clearest remaining submission gap.
-2. If broader policy enforcement is claimed, separately verify live over-cap and rolling-window reverts and nonce behavior. Local tests alone are insufficient for a live claim.
+2. If broader policy enforcement is claimed, separately verify live over-cap and time-window cap reverts and nonce behavior. Local tests alone are insufficient for a live claim.
 3. Measure recipient balance before/after only if needed for the final demo; the current transfer evidence does not claim that measurement.
 4. H160-to-SS58 account mapping remains unverified; do not infer it from address conversion or successful EVM execution.
 5. Do not claim independent RPC authentication, a second-provider cross-check, a security audit, or production readiness.
