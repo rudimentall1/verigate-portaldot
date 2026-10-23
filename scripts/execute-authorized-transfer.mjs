@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { ethers } from "ethers";
 
 const require = createRequire(import.meta.url);
-const { requiredNetworkConfig } = require("./preflight.js");
+const { requiredNetworkConfig, assertPortalDotTestnetChainId } = require("./preflight.js");
 const { parseHexQuantity, formatUnitsExact, resolveEstimateFromAddresses } =
   require("./deployment-estimate.js");
 const { validateSignedAuthorization, calculateExecutionBudget } =
@@ -74,6 +74,7 @@ async function main() {
   }
   const artifact = readSignedAuthorization(positional[0]);
   const config = requiredNetworkConfig();
+  if (broadcast) assertPortalDotTestnetChainId(config.expectedChainId, "authorized-transfer broadcast");
 
   const activeGuardConfig = resolveActiveGuardConfig();
   const guardAddress = requireConfiguredAddress(
