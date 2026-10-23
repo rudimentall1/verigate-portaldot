@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "web3-dapp/**"
+      - "scripts/smoke-published-dapp.py"
       - ".github/workflows/deploy-dapp-pages.yml"
   pull_request:
     branches: [main]
