@@ -3,6 +3,10 @@ import fs from "node:fs";
 const RPC_URL = (process.env.PORTALDOT_RPC_URL || "https://test-evm-rpc-v3.portaldot.dev").trim();
 const EXPECTED_CHAIN_ID = 420420777n;
 const TX_HASH = "0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e";
+const rpcParsed = new URL(RPC_URL);
+if (rpcParsed.protocol !== "https:" || rpcParsed.username || rpcParsed.password) {
+  throw new Error("PORTALDOT_RPC_URL must use HTTPS without embedded credentials.");
+}
 const EXPECTED_GUARD = "0x87c494a5e4b0a8e055f283767579667e10e046c6".toLowerCase();
 const OUT = process.env.COST_RECONCILIATION_OUT || "";
 
