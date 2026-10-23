@@ -194,7 +194,7 @@ bullet(d,100,565,"Pre-broadcast checks passed","The executor re-simulated the ex
 bullet(d,100,730,"Public V2 transfer recorded","Receipt status 1 at block 149241 and one matching TransferExecuted event, queried through the configured RPC.",790,GREEN)
 rounded(d,(1030,580,1800,845),24,fill="#301C2A",outline=RED,width=2)
 d.text((1070,620),"IMPORTANT DISTINCTION",font=font(20,True),fill=RED)
-paragraph(d,(1070,680),"The transfer was 0.1 POT. Sender balance fell from 416.1965 to 408.3687 POT across an isolated block, exactly matching the 7.8278 POT receipt-derived amount. One configured RPC only; no runtime fee/storage-deposit split or recipient balance delta was recorded.",font(21),WHITE,max_width=660,leading=1.28)
+paragraph(d,(1070,680),"The transfer was 0.1 POT. Sender balance fell from 416.1965 to 408.3687 POT across an isolated block, exactly matching the 7.8278 POT receipt-derived amount. One configured RPC only; recipient balance increased from 0 to 0.1 POT across the isolated block. Runtime execution-fee vs refundable storage-deposit components were not separately determined.",font(21),WHITE,max_width=660,leading=1.28)
 slides.append(im)
 
 # 7. Roadmap and limitations
@@ -207,7 +207,7 @@ d.text((1080,375),"ECOSYSTEM VALUE",font=font(22,True),fill=CYAN)
 paragraph(d,(1080,435),"A reference middleware path from Verigate Ed25519 authorization off-chain to EIP-712 enforcement by a PortalDot V3 guard. This is not an integration into PortalDot Wallet or DaaS.",font(22,True),WHITE,max_width=620,leading=1.25)
 d.line((1080,580,1745,580),fill="#2C4968",width=2)
 d.text((1080,610),"LIMITATIONS",font=font(20,True),fill=AMBER)
-paragraph(d,(1080,655),"Testnet prototype, no audit. One configured RPC; recipient balance delta not measured. The resettable cap is not a sliding window. Demo video and user validation remain pending.",font(18),BODY,max_width=620,leading=1.28)
+paragraph(d,(1080,655),"Testnet prototype, no audit. One configured RPC; recipient balance delta confirmed on that RPC. Runtime cost breakdown remains unknown. The resettable cap is not a sliding window. Demo video and user validation remain pending.",font(18),BODY,max_width=620,leading=1.28)
 slides.append(im)
 
 # Save previews and multipage PDF.
