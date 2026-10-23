@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { id } from "ethers";
 
 const RPC_URL = (process.env.PORTALDOT_RPC_URL || "https://test-evm-rpc-v3.portaldot.dev").trim();
 const EXPECTED_CHAIN_ID = 420420777n;
@@ -10,6 +11,7 @@ if (rpcParsed.protocol !== "https:" || rpcParsed.username || rpcParsed.password)
 const EXPECTED_GUARD = "0x87c494a5e4b0a8e055f283767579667e10e046c6".toLowerCase();
 const EXPECTED_RECIPIENT = "0xa0fc1a7248955a159d54d84e48681d9cebb86be4".toLowerCase();
 const EXPECTED_ACTION_ID = "0xff2cc7690a604a51db85b1e5c43d02bc7cee12277754ccbf6295e78a7b75f38e";
+const EXPECTED_EVENT_TOPIC0 = id("TransferExecuted(bytes32,address,uint256,uint256)").toLowerCase();
 const EXPECTED_AMOUNT_WEI = 100000000000000000n;
 const OUT = process.env.COST_RECONCILIATION_OUT || "";
 
@@ -106,7 +108,7 @@ try {
 
       const transferLogs = Array.isArray(receipt.logs) ? receipt.logs.filter((log) => {
         const topics = Array.isArray(log.topics) ? log.topics : [];
-        if (String(log.address || "").toLowerCase() !== EXPECTED_GUARD || topics.length !== 3) return false;
+        if (String(log.address || "").toLowerCase() !== EXPECTED_GUARD || topics.length !== 3 || String(topics[0] || "").toLowerCase() !== EXPECTED_EVENT_TOPIC0) return false;
         const indexedRecipient = "0x" + String(topics[2] || "").slice(-40).toLowerCase();
         return String(topics[1] || "").toLowerCase() === EXPECTED_ACTION_ID &&
           indexedRecipient === EXPECTED_RECIPIENT &&
