@@ -200,6 +200,9 @@ if (process.env.GITHUB_STEP_SUMMARY) {
   ].join("\n");
   fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + "\n");
 }
-if (report.status === "balance_delta_mismatch" || report.status === "wrong_chain" || report.status === "transaction_identity_check_failed") {
+// This verifier is green only when the full receipt, event, block-isolation,
+ // sender-debit, and recipient-credit checks all reconcile. Missing historical
+ // RPC data is an unverified result, not a passing verification.
+if (report.status !== "reconciled") {
   process.exitCode = 1;
 }
