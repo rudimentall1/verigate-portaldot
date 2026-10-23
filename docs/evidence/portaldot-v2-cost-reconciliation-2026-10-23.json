@@ -1,16 +1,18 @@
 {
-  "evidenceStatus": "read_only_balance_reconciliation_passed_against_configured_rpc",
-  "checkedAt": "2026-10-23T07:41:42.645Z",
+  "evidenceStatus": "read_only_sender_and_recipient_balance_reconciliation_passed_against_configured_rpc",
+  "checkedAt": "2026-10-23T07:53:13.835Z",
   "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev",
   "transactionHash": "0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e",
   "expectedGuard": "0x87c494a5e4b0a8e055f283767579667e10e046c6",
-  "method": "read-only transaction receipt + block isolation + sender EVM-balance delta",
+  "expectedRecipient": "0xa0fc1a7248955a159d54d84e48681d9cebb86be4",
+  "expectedActionId": "0xff2cc7690a604a51db85b1e5c43d02bc7cee12277754ccbf6295e78a7b75f38e",
+  "expectedTransferAmountWei": "100000000000000000",
+  "method": "read-only transaction receipt + exact event match + block isolation + sender/recipient EVM-balance deltas",
   "broadcastedTransactions": false,
   "status": "reconciled",
   "limitations": [
     "One configured PortalDot RPC was queried; the RPC operator was not independently authenticated.",
-    "The receipt-derived cost is gasUsed × effectiveGasPrice. The balance delta is the reconciliation check; this report does not guess a fee/storage-deposit breakdown.",
-    "This proves the sender's total EVM-balance decrease for the isolated transaction block on the configured RPC. It does not independently authenticate the RPC operator and does not break the debit into runtime execution fee versus storage-deposit components."
+    "The sender debit matches gasUsed × effectiveGasPriceWei and the recipient balance increase matches the TransferExecuted amount. The report does not break down the debit into runtime execution fee and refundable storage deposit components; see the upstream pallet-revive gas/deposit model and PortalDot runtime notes."
   ],
   "chainId": "420420777",
   "transactionAvailable": true,
@@ -24,6 +26,9 @@
   "receiptDerivedCostWei": "7827821481395425510",
   "receiptDerivedCostEvmPOT": "7.82782148139542551",
   "targetMatchesV2Guard": true,
+  "matchingTransferExecutedEvents": 1,
+  "transferEventMatchesExpectedRecipientAndAmount": true,
+  "transferEventAmountWei": "100000000000000000",
   "blockTransactionCount": 1,
   "transactionIsInReceiptBlock": true,
   "senderBalanceBeforeEvmPOT": "416.196502092920504516",
@@ -31,5 +36,10 @@
   "senderBalanceDecreaseWei": "7827821481395425510",
   "senderBalanceDecreaseEvmPOT": "7.82782148139542551",
   "balanceDeltaMatchesReceiptDerivedCost": true,
-  "note": "The sender's EVM-balance decrease equals gasUsed × effectiveGasPriceWei for this isolated block."
+  "recipientBalanceBeforeEvmPOT": "0",
+  "recipientBalanceAfterEvmPOT": "0.1",
+  "recipientBalanceIncreaseWei": "100000000000000000",
+  "recipientBalanceIncreaseEvmPOT": "0.1",
+  "recipientBalanceDeltaMatchesTransferAmount": true,
+  "note": "The isolated block contains only the target transaction; sender balance decrease matches gasUsed × effectiveGasPriceWei, and the expected recipient's balance increase matches the TransferExecuted amount."
 }
