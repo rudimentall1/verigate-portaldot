@@ -59,9 +59,15 @@ Say: “This is the confirmed PortalDot V3 testnet transfer. Verigate returned A
 
 ### 2:25–2:45 — Close
 
-On screen: dashboard and repository.
+On screen: two-column status card with V1 historical proof and the V2 proof separately. Do not show the old “repeat the transfer for a fresh receipt” prompt.
 
-Say: “This is a focused agent-authorization middleware prototype on PortalDot V3 testnet. It is not a production launch or an independent security audit. The public evidence separates live chain reads, local integration tests and recorded testnet transactions.”
+Suggested card text:
+
+- **V1:** recorded 0.1 POT transfer, block 132475. Receipt/event were verified through the configured RPC when captured; a later lookup through that same RPC no longer returned the historical receipt.
+- **V2:** recorded 0.1 POT transfer, block 149241. Receipt, matching event, sender debit and recipient credit were re-queried through the same configured RPC.
+- **Boundary:** no second EVM RPC provider; testnet prototype, not audited or mainnet. Public-chain negative cap/allowlist reverts are not recorded.
+
+Say: “The V1 record is historical because the same RPC no longer returns its receipt. The V2 transfer was re-queried in block 149241, including the matching event and both balance deltas. Both checks used the configured RPC; no second provider was used. This is a testnet prototype, not an audited or mainnet system.”
 
 ## Final checks before publishing
 
