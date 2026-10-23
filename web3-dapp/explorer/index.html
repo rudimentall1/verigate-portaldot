@@ -543,8 +543,8 @@ async function loadIndexer() {
     $('#apiBaseNote').textContent = 'Indexer API unavailable at ' + (apiBaseOverride || location.origin) + '. Direct RPC search remains enabled. ' + error.message;
     $('#blocksSource').textContent = 'Not connected';
     $('#transactionsSource').textContent = 'Not connected';
-    $('#recentBlocks').innerHTML = '<div class="muted">Connect the Explorer API above to browse indexed blocks. The preview's indexed history may reset after a restart.</div>';
-    $('#recentTransactions').innerHTML = '<div class="muted">Connect the Explorer API above to browse indexed transactions. The preview's indexed history may reset after a restart.</div>';
+    $('#recentBlocks').innerHTML = '<div class="muted">Connect the Explorer API above to browse indexed blocks. Indexed history may reset after the service restarts.</div>';
+    $('#recentTransactions').innerHTML = '<div class="muted">Connect the Explorer API above to browse indexed transactions. Indexed history may reset after the service restarts.</div>';
     $('#substrateIndexedBlock').textContent = 'Not connected';
     $('#substrateIndexerHint').textContent = 'Substrate index requires the Explorer API.';
     $('#recentSubstrateBlocks').innerHTML = '<div class="muted">Connect the Explorer API to browse Substrate blocks.</div>';
