@@ -1,6 +1,8 @@
 # Non-dust Verigate-authorized PortalDot V3 transfer
 
-**Status:** independently re-queried successfully from the configured PortalDot V3 EVM RPC. The transaction and receipt were found, receipt status is successful, the receipt block hash matches the fetched block, and the receipt contains the expected `TransferExecuted` event. The guard balance delta was recorded by the executor.
+**Status at capture time (21 Oct 2026):** independently re-queried successfully from the configured PortalDot V3 EVM RPC. The transaction and receipt were found, receipt status was successful, the receipt block hash matched the fetched block, and the receipt contained the expected `TransferExecuted` event. The guard balance delta was recorded by the executor.
+
+**Later historical lookup status (23 Oct 2026):** a subsequent lookup through that same configured RPC no longer returned this historical transaction/receipt. The saved record below documents what was verified at capture time; it must not be presented as a fresh successful receipt lookup today. No second EVM RPC provider was used.
 
 ## Result
 
