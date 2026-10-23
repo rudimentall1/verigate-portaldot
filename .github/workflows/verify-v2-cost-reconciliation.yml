@@ -29,6 +29,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.16.0"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
 
       - name: Reconcile receipt-derived cost against sender balance delta
         id: reconcile
