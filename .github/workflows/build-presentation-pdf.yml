@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build-verify-commit:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Check out current main
         uses: actions/checkout@v4
@@ -37,42 +37,94 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y poppler-utils
 
-      - name: Rebuild presentation from source
-        run: python scripts/build-presentation.py
-
-      - name: Verify PDF structure, source claims and page renders
+      - name: Synchronize with main before rendering
         shell: bash
         run: |
           set -euo pipefail
-          PDF="docs/Verigate-PortalDot-Presentation.pdf"
-          SOURCE="scripts/build-presentation.py"
-          test -s "$PDF"
-          pdfinfo "$PDF" | grep -Eq '^Pages:[[:space:]]+7$'
-          grep -Fq '149241' "$SOURCE"
-          grep -Fq '0.1 POT' "$SOURCE"
-          grep -Fq '7.8278 POT' "$SOURCE"
-          grep -Fq 'resettable 3600-second interval' "$SOURCE"
-          if grep -Eiq 'block 130741|1 base unit|connect a wallet in read-only mode|non-dust amount remain pending' "$SOURCE"; then
-            echo "Stale presentation claim detected in source."
+          git fetch origin main
+          if ! git diff --quiet HEAD origin/main -- scripts/build-presentation.py .github/workflows/build-presentation-pdf.yml; then
+            echo "Presentation source/workflow changed after this run began; a newer source commit must be built instead."
             exit 1
           fi
-          mkdir -p /tmp/presentation-rendered
-          pdftoppm -png -r 90 "$PDF" /tmp/presentation-rendered/slide
-          test "$(find /tmp/presentation-rendered -name '*.png' | wc -l)" -eq 7
-          echo "Seven-page PDF renders successfully; source contains V2 transfer, fee, and accurate time-window claims."
-      - name: Commit regenerated PDF when changed
+          git reset --hard origin/main
+
+      - name: Rebuild, validate and render presentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          verify_and_render() {
+            local pdf="docs/Verigate-PortalDot-Presentation.pdf"
+            local source="scripts/build-presentation.py"
+            test -s "$pdf"
+            pdfinfo "$pdf" | grep -Eq '^Pages:[[:space:]]+7$'
+            grep -Fq '149241' "$source"
+            grep -Fq '0.1 POT' "$source"
+            grep -Fq '7.8278 POT' "$source"
+            grep -Fq 'resettable 3600-second interval' "$source"
+            if grep -Eiq 'block 130741|1 base unit|connect a wallet in read-only mode|non-dust amount remain pending' "$source"; then
+              echo "Stale presentation claim detected in source."
+              return 1
+            fi
+            rm -rf /tmp/presentation-rendered
+            mkdir -p /tmp/presentation-rendered
+            pdftoppm -png -r 90 "$pdf" /tmp/presentation-rendered/slide
+            test "$(find /tmp/presentation-rendered -name '*.png' | wc -l)" -eq 7
+          }
+          python scripts/build-presentation.py
+          verify_and_render
+          echo "Seven-page PDF rendered; V2 transaction, receipt-derived cost caveat and resettable interval wording verified."
+
+      - name: Commit regenerated PDF with race-safe retry
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/Verigate-PortalDot-Presentation.pdf
-          if git diff --cached --quiet; then
-            echo "Presentation PDF already matches its source."
-            exit 0
-          fi
-          git commit -m "Regenerate PortalDot presentation PDF from current evidence"
-          git push origin HEAD:main
+
+          verify_and_render() {
+            local pdf="docs/Verigate-PortalDot-Presentation.pdf"
+            local source="scripts/build-presentation.py"
+            test -s "$pdf"
+            pdfinfo "$pdf" | grep -Eq '^Pages:[[:space:]]+7$'
+            grep -Fq '149241' "$source"
+            grep -Fq '0.1 POT' "$source"
+            grep -Fq '7.8278 POT' "$source"
+            grep -Fq 'resettable 3600-second interval' "$source"
+            if grep -Eiq 'block 130741|1 base unit|connect a wallet in read-only mode|non-dust amount remain pending' "$source"; then
+              echo "Stale presentation claim detected in source."
+              return 1
+            fi
+            rm -rf /tmp/presentation-rendered
+            mkdir -p /tmp/presentation-rendered
+            pdftoppm -png -r 90 "$pdf" /tmp/presentation-rendered/slide
+            test "$(find /tmp/presentation-rendered -name '*.png' | wc -l)" -eq 7
+          }
+
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! git diff --quiet HEAD origin/main -- scripts/build-presentation.py .github/workflows/build-presentation-pdf.yml; then
+              echo "Presentation source changed during publish; the newer source commit will trigger a fresh build."
+              exit 1
+            fi
+            if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]]; then
+              git reset --hard origin/main
+              python scripts/build-presentation.py
+              verify_and_render
+            fi
+            git add docs/Verigate-PortalDot-Presentation.pdf
+            if git diff --cached --quiet; then
+              echo "Presentation PDF already matches the current source."
+              exit 0
+            fi
+            git commit -m "Regenerate PortalDot presentation PDF from current evidence"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "main advanced during push; retrying against its latest commit (attempt $attempt/3)."
+            git reset --hard origin/main
+          done
+          echo "Unable to publish presentation after three race-safe attempts."
+          exit 1
 
       - name: Upload PDF and rendered pages for review
         uses: actions/upload-artifact@v4
