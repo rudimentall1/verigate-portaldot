@@ -488,6 +488,14 @@ def main() -> int:
                     "PORTALDOT_GUARD_ADDRESS": "",
                     "PORTALDOT_GUARD_CODE_HASH": "",
                 })
+                # This subprocess deploys only to the temporary loopback EVM.
+                # Stub the Substrate genesis read as a synthetic, pinned fixture so
+                # the local ALLOW/BLOCK integration is deterministic and cannot
+                # contact a public PortalDot endpoint. This is not network evidence.
+                mock_substrate = project_root / "scripts" / "mock-substrate-websocket.mjs"
+                existing_node_options = deploy_env.get("NODE_OPTIONS", "").strip()
+                mock_option = f"--import={mock_substrate}"
+                deploy_env["NODE_OPTIONS"] = f"{existing_node_options} {mock_option}".strip()
                 deployment = subprocess.run(
                     [
                         "node",
