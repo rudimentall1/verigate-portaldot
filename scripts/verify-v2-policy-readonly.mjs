@@ -52,7 +52,7 @@ function assert(condition, message) {
 
 async function expectEthCallRevert({ guard, recipient, amount, nonce, deadline, actionId, expectedError, relayer }) {
   try {
-    await guard.connect({ provider: guard.runner.provider, address: relayer }).executeTransfer.staticCall(
+    await guard.executeTransfer.staticCall(
       recipient, amount, nonce, deadline, actionId, "0x", { from: relayer }
     );
   } catch (error) {
