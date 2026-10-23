@@ -18,49 +18,61 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
 </style>
 </head>
 <body>
-<header class="topbar"><div class="brand">VERIGATE / PortalDot V3</div><div class="tag" id="deploymentBadge">V1 LIVE · NO CAPS</div></header>
+<header class="topbar"><div class="brand">VERIGATE / PortalDot V3</div><div class="tag" id="deploymentBadge">V2 · POLICY READBACK</div></header>
 <main>
 <section class="hero"><div class="eyebrow">Agent authorization infrastructure</div><h1>A proposal is not authority.</h1><p class="lead">This dashboard only reads the public PortalDot V3 EVM RPC. It does not connect wallets, request signatures, upload authorization files, simulate transfers, or send transactions. Verigate's Ed25519 authorization is verified off-chain by the bridge; the Solidity guard verifies the bridge's EIP-712 signature.</p><div class="actions"><button id="refresh">Refresh live state</button><button id="copyAddress">Copy guard address</button><a href="./explorer/" style="display:inline-flex;align-items:center;border:1px solid #38677c;border-radius:9px;padding:10px 13px;background:#102a37;color:var(--cyan);font-weight:700">Open PortalDot Explorer ↗</a></div></section>
 <div id="message" role="status" aria-live="polite">Reading public PortalDot V3 RPC…</div>
 <section class="grid" aria-label="Live network state">
 <article class="card span3"><h2>RPC status</h2><div class="value" id="rpcStatus">Checking</div><div class="small" id="rpcHint">Waiting for public RPC</div><div class="label">Chain ID</div><div class="value" id="chainId">—</div></article>
 <article class="card span3"><h2>Latest block</h2><div class="value" id="block">—</div><div class="small" id="updated">Not yet refreshed</div></article>
-<article class="card span3"><h2>Runtime code</h2><div class="value" id="codeSize">—</div><div class="small" id="codeStatus">Checking contract bytecode</div></article>
+<article class="card span3"><h2>Runtime code</h2><div class="value" id="codeSize">—</div><div class="small" id="codeStatus">Checking contract bytecode</div><div class="label">Runtime Keccak-256</div><div class="mono" id="codeHash">—</div></article>
 <article class="card span3"><h2>Guard balance</h2><div class="value" id="balance">—</div><div class="small">Native POT · eth_getBalance</div></article>
 </section>
 <section class="grid">
-<article class="card span8"><h2>Guard currently inspected</h2><div class="label">Contract address</div><div class="mono" id="contractAddress">0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b</div><div class="actions"><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/contracts/PortalDotAgentGuard.sol" target="_blank" rel="noopener noreferrer">V1 Solidity source ↗</a><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/contracts/PortalDotAgentGuardV2.sol" target="_blank" rel="noopener noreferrer">V2 Solidity source ↗</a></div><div class="rule"></div><div class="label">Authority signer returned by contract</div><div class="mono" id="signer">Reading authoritySigner()…</div><div class="label">Recorded expected V1 signer</div><div class="mono">0x48F9B07d37b5AF744BA8195c4d6740145b593ea6</div><div class="label">Signer comparison</div><div class="value" id="signerStatus">Checking</div><div class="notice" id="policyNotice">The default address is the historical V1 deployment. V1 has no recipient allowlist or spending caps. After V2 is deployed, inspect it with ?guard=0xYOUR_V2_ADDRESS. A query parameter changes only which address is read; this page cannot send transactions.</div></article>
-<article class="card span4"><h2>V2 policy</h2><div class="small" id="policyStatus">V2 не задеплоен, читать нечего.</div></article>
+<article class="card span8"><h2>Guard currently inspected</h2><div class="label">Contract address</div><div class="mono" id="contractAddress">0x87C494a5e4B0A8E055F283767579667E10E046C6</div><div class="actions"><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/contracts/PortalDotAgentGuard.sol" target="_blank" rel="noopener noreferrer">V1 Solidity source ↗</a><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/contracts/PortalDotAgentGuardV2.sol" target="_blank" rel="noopener noreferrer">V2 Solidity source ↗</a></div><div class="rule"></div><div class="label">Authority signer returned by contract</div><div class="mono" id="signer">Reading authoritySigner()…</div><div class="label">Recorded expected authority signer</div><div class="mono">0x48F9B07d37b5AF744BA8195c4d6740145b593ea6</div><div class="label">Signer comparison</div><div class="value" id="signerStatus">Checking</div><div class="notice" id="policyNotice">This page defaults to the deployed V2 guard and reads policy values from the contract. Use ?guard=0xYOUR_CONTRACT_ADDRESS to inspect another contract. All actions on this page are read-only.</div></article>
+<article class="card span4"><h2>On-chain spending policy</h2><div class="small" id="policyStatus">Reading contract policy…</div><div class="label">Policy admin</div><div class="mono" id="policyAdmin">—</div><div class="label">Maximum per transfer</div><div class="value" id="policyMax">—</div><div class="label">Rolling window limit</div><div class="value" id="policyWindow">—</div><div class="label">Window duration</div><div class="value" id="policySeconds">—</div><div class="label">Demo recipient allowlisted</div><div class="value" id="policyRecipient">—</div><div class="small mono" id="demoRecipient">0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4</div></article>
 </section>
-<section class="grid" aria-label="Historical transaction record">
-<article class="card span12"><h2>Saved historical evidence · not a live result</h2><div class="two">
-<div class="stat"><div class="label" style="margin-top:0">Previously recorded result</div><div class="value green">Receipt status 1 · block 132475</div><div class="small">Historical run reported a matching TransferExecuted event.</div></div>
-<div class="stat"><div class="label" style="margin-top:0">Recorded transfer</div><div class="value">0.1 POT</div><div class="small">Recorded fee: 3.8862179963 POT. Recipient was also the sender/relayer, so this was not a meaningful third-party payment.</div></div>
-</div><div class="label">Historical transaction hash</div><div class="mono" id="historicalHash">0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c</div><div class="actions"><button id="checkReceipt">Check receipt only</button><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/authorized-transfer-evidence-2026-10-21-nondust.md" target="_blank" rel="noopener noreferrer">Evidence record ↗</a></div><div id="receiptResult" class="small">No current lookup has been run. Historical success is not presented as current RPC confirmation.</div><div class="notice">Testnet prototype, not an audit. One RPC provider was used; the EVM genesis pin was not configured for the historical transfer, and H160-to-SS58 account mapping remains unconfirmed. No cross-chain mapping support is claimed.</div></article>
+<section class="grid" aria-label="Confirmed V2 transfer evidence">
+<article class="card span12"><h2>Confirmed V2 transfer · saved evidence, not a live result</h2><div class="two">
+<div class="stat"><div class="label" style="margin-top:0">Recorded receipt</div><div class="value green">Status 1 · block 149241</div><div class="small">The saved read-only verifier reported a matching block hash and exactly one TransferExecuted event from the V2 guard.</div></div>
+<div class="stat"><div class="label" style="margin-top:0">Recorded transfer</div><div class="value">0.1 POT</div><div class="small">Recipient: 0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4. Guard balance after transfer: 0.01 POT.</div></div>
+</div><div class="two" style="margin-top:12px">
+<div class="stat"><div class="label" style="margin-top:0">Actual reported transaction fee</div><div class="value amber">7.82782148139542551 POT</div><div class="small">High relative to the transfer amount; shown explicitly, not hidden.</div></div>
+<div class="stat"><div class="label" style="margin-top:0">Transfer event</div><div class="value">1 matching event</div><div class="small">Recipient and amount matched the authorization. Recipient balance delta was not separately measured.</div></div>
+</div><div class="label">Transaction hash</div><div class="mono" id="historicalHash">0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e</div><div class="actions"><button id="checkReceipt">Re-query receipt + event</button><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json" target="_blank" rel="noopener noreferrer">Full V2 evidence ↗</a><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-deployment-2026-10-22.json" target="_blank" rel="noopener noreferrer">Deployment evidence ↗</a></div><div id="receiptResult" class="small">No fresh receipt lookup has been run. The saved result is historical and is not presented as a live confirmation.</div><div class="notice">Testnet prototype, not an audit. The receipt and event were re-queried through the configured RPC; this does not independently authenticate the RPC operator. No second EVM provider or EVM-genesis pin was used for this transfer. H160-to-SS58 mapping remains unverified.</div></article>
 </section>
 </main>
 <footer><span>Verigate PortalDot · read-only testnet dashboard</span><span><a href="https://github.com/rudimentall1/verigate-portaldot">Source repository ↗</a> · <a href="https://node-console.portaldot.dev/">PortalDot node console ↗</a></span></footer>
 <script>
 (() => {
   const RPC = "https://test-evm-rpc-v3.portaldot.dev";
-  const DEFAULT_V1 = "0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b";
+  const DEFAULT_V2 = "0x87C494a5e4B0A8E055F283767579667E10E046C6";
+  const V1_ADDRESS = "0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b";
   const EXPECTED_SIGNER = "0x48F9B07d37b5AF744BA8195c4d6740145b593ea6";
-  const HISTORICAL_TX = "0x21acff99d30652161f7e4ba6e1d76e6b6b67e8b9e02b09edd64d8bd7f2d5dd9c";
+  const EXPECTED_V2_CODE_HASH = "0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859";
+  const DEMO_RECIPIENT = "0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4";
+  const V2_TRANSFER_TX = "0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e";
+  const HISTORICAL_TX = V2_TRANSFER_TX;
   const candidate = new URLSearchParams(location.search).get("guard");
-  const ADDRESS = candidate && /^0x[0-9a-fA-F]{40}$/.test(candidate) ? candidate : DEFAULT_V1;
+  const ADDRESS = candidate && /^0x[0-9a-fA-F]{40}$/.test(candidate) ? candidate : DEFAULT_V2;
   const el = (id) => document.getElementById(id);
-  let provider, contract, iface;
+  let provider, contract, iface, ethersApi;
   const abi = [
     "function authoritySigner() view returns (address)",
     "function admin() view returns (address)",
     "function maxPerTransfer() view returns (uint256)",
     "function windowLimit() view returns (uint256)",
-    "function windowSeconds() view returns (uint256)"
+    "function windowSeconds() view returns (uint256)",
+    "function allowedRecipients(address recipient) view returns (bool)"
   ];
+  const transferEventAbi = ["event TransferExecuted(bytes32 indexed actionId,address indexed recipient,uint256 amount,uint256 nonce)"];
+  let transferEventInterface;
   async function initEthers() {
     const { ethers } = await import("https://cdn.jsdelivr.net/npm/ethers@6.13.4/+esm");
+    ethersApi = ethers;
     provider = new ethers.JsonRpcProvider(RPC, 420420777, { staticNetwork: true });
     iface = new ethers.Interface(abi);
+    transferEventInterface = new ethers.Interface(transferEventAbi);
     contract = new ethers.Contract(ADDRESS, abi, provider);
   }
   async function rpc(method, params = []) {
@@ -73,8 +85,8 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
     if (body.error) throw new Error(body.error.message || "RPC error");
     return body.result;
   }
-  async function readMethod(name) {
-    const data = iface.encodeFunctionData(name);
+  async function readMethod(name, args = []) {
+    const data = iface.encodeFunctionData(name, args);
     const result = await rpc("eth_call", [{ to: ADDRESS, data }, "latest"]);
     return iface.decodeFunctionResult(name, result)[0];
   }
@@ -99,31 +111,63 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
       el("rpcStatus").className = "value green";
       el("rpcHint").textContent = "Live RPC response received";
       const chainNumber = quantity(chain);
+      const isV1 = ADDRESS.toLowerCase() === V1_ADDRESS.toLowerCase();
+      const isV2 = ADDRESS.toLowerCase() === DEFAULT_V2.toLowerCase();
+      el("deploymentBadge").textContent = isV2 ? "V2 · ALLOWLIST + CAPS" : isV1 ? "V1 · NO CAPS" : "CUSTOM CONTRACT";
       el("chainId").textContent = chainNumber.toString();
       el("chainId").className = "value " + (chainNumber === 420420777n ? "green" : "red");
       el("block").textContent = quantity(block).toLocaleString("en-US");
       el("updated").textContent = "Updated " + new Date().toLocaleString();
       const bytes = code && code !== "0x" ? (code.length - 2) / 2 : 0;
+      const runtimeHash = bytes ? ethersApi.keccak256(code) : "";
       el("codeSize").textContent = bytes + " bytes";
-      el("codeStatus").textContent = bytes ? "Runtime bytecode present" : "No runtime bytecode at this address";
-      el("codeStatus").className = "small " + (bytes ? "green" : "red");
+      el("codeHash").textContent = runtimeHash || "No bytecode";
+      const hashMatches = isV2 && runtimeHash.toLowerCase() === EXPECTED_V2_CODE_HASH.toLowerCase();
+      el("codeStatus").textContent = !bytes ? "No runtime bytecode at this address" : hashMatches ? "V2 runtime hash matches recorded deployment" : isV2 ? "Runtime code present; hash differs from recorded V2 hash" : "Runtime bytecode present; hash is shown above";
+      el("codeStatus").className = "small " + (!bytes || (isV2 && !hashMatches) ? "red" : "green");
       el("balance").textContent = pot(quantity(balance));
       el("contractAddress").textContent = ADDRESS;
       el("signer").textContent = signer;
-      const isV1 = ADDRESS.toLowerCase() === DEFAULT_V1.toLowerCase();
       const signerMatches = signer.toLowerCase() === EXPECTED_SIGNER.toLowerCase();
-      el("signerStatus").textContent = isV1 ? (signerMatches ? "Matches recorded V1 signer" : "V1 signer differs from recorded value") : "V2 signer, not compared with V1";
-      el("signerStatus").className = "value " + (isV1 && signerMatches ? "green" : "amber");
-      try {
-        const [admin, max, limit, seconds] = await Promise.all([
-          readMethod("admin"), readMethod("maxPerTransfer"),
-          readMethod("windowLimit"), readMethod("windowSeconds")
-        ]);
-        el("policyStatus").textContent = "V2 policy methods respond on the selected contract.";
-      } catch (_) {
-        el("policyStatus").textContent = "V2 не задеплоен, читать нечего.";
+      el("signerStatus").textContent = signerMatches ? "Matches recorded authority signer" : "Signer differs from the recorded authority signer";
+      el("signerStatus").className = "value " + (signerMatches ? "green" : "amber");
+      if (isV1) {
+        el("policyStatus").textContent = "V1 has no on-chain recipient allowlist or spending caps.";
+        el("policyAdmin").textContent = "Not implemented in V1";
+        el("policyMax").textContent = "No per-transfer cap";
+        el("policyWindow").textContent = "No rolling-window cap";
+        el("policySeconds").textContent = "Not implemented in V1";
+        el("policyRecipient").textContent = "Not implemented in V1";
+        el("policyNotice").textContent = "The selected address is the historical V1 guard. V1 has no recipient allowlist or spending caps. The dashboard remains read-only.";
+      } else {
+        try {
+          const [admin, max, limit, seconds, recipientAllowed] = await Promise.all([
+            readMethod("admin"), readMethod("maxPerTransfer"),
+            readMethod("windowLimit"), readMethod("windowSeconds"),
+            readMethod("allowedRecipients", [DEMO_RECIPIENT])
+          ]);
+          el("policyAdmin").textContent = admin;
+          el("policyMax").textContent = pot(max);
+          el("policyWindow").textContent = pot(limit);
+          el("policySeconds").textContent = seconds.toString() + " seconds";
+          el("policyRecipient").textContent = recipientAllowed ? "Allowed" : "Not allowed";
+          el("policyRecipient").className = "value " + (recipientAllowed ? "green" : "red");
+          el("policyStatus").textContent = "Read from the selected contract using eth_call; no transaction sent.";
+          el("policyNotice").textContent = isV2
+            ? "V2 policy values below are read live from the deployed contract using eth_call. No wallet, signature, or transaction is requested."
+            : "Policy methods responded on this custom contract address. Verify its source and runtime code hash before relying on these values.";
+        } catch (policyError) {
+          el("policyStatus").textContent = "The selected contract did not return the expected V2 policy methods: " + policyError.message;
+          el("policyAdmin").textContent = "Unavailable";
+          el("policyMax").textContent = "Unavailable";
+          el("policyWindow").textContent = "Unavailable";
+          el("policySeconds").textContent = "Unavailable";
+          el("policyRecipient").textContent = "Unavailable";
+          el("policyNotice").textContent = "The selected address is not confirmed as a working V2 policy guard. Values are not assumed or hardcoded.";
+        }
       }
-      setMessage(chainNumber === 420420777n && bytes ? "Live RPC responds. Expected chain ID and runtime code are present." : "RPC responds, but chain ID or contract code did not match expectations.", chainNumber === 420420777n && bytes ? "good" : "warn");
+      const allExpected = chainNumber === 420420777n && bytes > 0 && (!isV2 || hashMatches);
+      setMessage(allExpected ? "Live RPC responds. Chain ID, runtime code, and V2 runtime hash checks passed." : "RPC responds, but the chain ID, runtime code, or recorded V2 runtime hash did not match expectations.", allExpected ? "good" : "warn");
     } catch (error) {
       el("rpcStatus").textContent = "Unavailable";
       el("rpcStatus").className = "value red";
@@ -131,18 +175,40 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
     } finally { el("refresh").disabled = false; }
   }
   async function checkReceipt() {
-    el("receiptResult").textContent = "Querying eth_getTransactionReceipt and eth_getTransactionByHash…";
+    el("receiptResult").textContent = "Re-querying the saved V2 transaction, receipt, containing block, and TransferExecuted event…";
     try {
+      const chainId = quantity(await rpc("eth_chainId"));
+      if (chainId !== 420420777n) throw new Error("RPC chain ID mismatch: " + chainId.toString());
       const [receipt, tx] = await Promise.all([
         rpc("eth_getTransactionReceipt", [HISTORICAL_TX]),
         rpc("eth_getTransactionByHash", [HISTORICAL_TX])
       ]);
       if (!receipt || !tx) {
-        el("receiptResult").textContent = "Current RPC returned null for transaction or receipt. This is not current live confirmation; saved historical evidence remains separately labelled.";
-      } else {
-        el("receiptResult").textContent = "Current RPC returned transaction and receipt only. Receipt status: " + receipt.status + "; block: " + quantity(receipt.blockNumber).toString() + ". TransferExecuted is not decoded or validated by this check.";
+        el("receiptResult").textContent = "The current RPC returned null for this historical transaction or receipt. Saved evidence remains separate; this lookup did not confirm current availability.";
+        return;
       }
-    } catch (error) { el("receiptResult").textContent = "Live receipt lookup failed: " + error.message; }
+      if (quantity(receipt.status) !== 1n) throw new Error("Receipt status is not success: " + receipt.status);
+      if (!tx.to || tx.to.toLowerCase() !== DEFAULT_V2.toLowerCase()) throw new Error("Transaction target does not match the configured V2 guard.");
+      const block = await rpc("eth_getBlockByHash", [receipt.blockHash, false]);
+      if (!block || block.hash.toLowerCase() !== receipt.blockHash.toLowerCase() ||
+          quantity(block.number) !== quantity(receipt.blockNumber)) {
+        throw new Error("Receipt block hash/number did not match the returned block.");
+      }
+      const transferTopic = transferEventInterface.getEvent("TransferExecuted").topicHash.toLowerCase();
+      const matches = (receipt.logs || []).filter(log =>
+        log.address?.toLowerCase() === DEFAULT_V2.toLowerCase() &&
+        log.topics?.[0]?.toLowerCase() === transferTopic
+      );
+      if (matches.length !== 1) throw new Error("Expected exactly one TransferExecuted event from V2; found " + matches.length);
+      const event = transferEventInterface.decodeEventLog("TransferExecuted", matches[0].data, matches[0].topics);
+      if (event.recipient.toLowerCase() !== DEMO_RECIPIENT.toLowerCase() ||
+          BigInt(event.amount) !== 100000000000000000n) {
+        throw new Error("Decoded event recipient or amount did not match the saved expected transfer.");
+      }
+      el("receiptResult").textContent = "Fresh RPC lookup succeeded: receipt status 1 in block " +
+        quantity(receipt.blockNumber).toString() + "; block hash matched; exactly one V2 TransferExecuted event confirmed for recipient " +
+        event.recipient + " and amount " + pot(event.amount) + ". This verifies the configured RPC response, not the RPC operator independently.";
+    } catch (error) { el("receiptResult").textContent = "Receipt/event re-query failed: " + error.message; }
   }
   el("refresh").addEventListener("click", refresh);
   el("checkReceipt").addEventListener("click", checkReceipt);
