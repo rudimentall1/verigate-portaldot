@@ -41,12 +41,17 @@
     "to": "0x87C494a5e4B0A8E055F283767579667E10E046C6",
     "gasUsed": "227354675614157",
     "effectiveGasPriceWei": "34430",
-    "actualFeeWei": "7827821481395425510",
-    "actualFeePot": "7.82782148139542551",
     "logsCount": 1,
     "guardBalanceAfterWei": "10000000000000000",
     "guardBalanceAfterPot": "0.01",
-    "guardBalanceAfterReadSucceeded": true
+    "guardBalanceAfterReadSucceeded": true,
+    "receiptDerivedCostWei": "7827821481395425510",
+    "receiptDerivedCostPot": "7.82782148139542551",
+    "costInterpretation": {
+      "formula": "gasUsed * effectiveGasPriceWei",
+      "status": "receipt-derived cost figure; not independently reconciled against the relayer's before/after native balance",
+      "caveat": "PortalDot uses pallet-revive. Do not infer a gas-only fee or separate fee/storage-deposit breakdown from these receipt fields alone. Runtime cost semantics and the relayer balance delta were not captured in this verification."
+    }
   },
   "transferExecutedEvent": {
     "confirmed": true,
@@ -79,6 +84,7 @@
     "Evidence is recorded from operator-provided terminal output. The follow-up verifier queried the configured RPC separately, but both queries rely on that RPC and do not independently authenticate its operator.",
     "The verified event confirms the guard call and the emitted recipient and amount. Recipient balance delta was not measured by the reported verifier.",
     "This is testnet execution evidence, not a security audit or a production-readiness claim.",
-    "Historical lookup limitations previously affected the V2 deployment transaction; this transfer receipt was available and matched the reported block hash at the time of verification."
+    "Historical lookup limitations previously affected the V2 deployment transaction; this transfer receipt was available and matched the reported block hash at the time of verification.",
+    "The value previously named actualFeePot was calculated as gasUsed × effectiveGasPriceWei from the EVM receipt. It is now labelled receiptDerivedCostPot because the relayer's before/after native balance and any runtime fee/storage-deposit breakdown were not captured for this transaction."
   ]
 }
