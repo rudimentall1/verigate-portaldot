@@ -24,16 +24,25 @@ function assertPortalDotTestnetRpcUrl(value, operation = "operation") {
   try {
     parsed = new URL(String(value || "").trim());
   } catch {
-    throw new Error(`Refusing ${operation}: use the confirmed PortalDot V3 testnet EVM RPC endpoint.`);
+    throw new Error(`Refusing ${operation}: use the confirmed PortalDot V3 testnet EVM RPC endpoint or an isolated loopback simulator.`);
   }
-  if (
-    parsed.protocol !== "https:" ||
-    parsed.hostname.toLowerCase() !== "test-evm-rpc-v3.portaldot.dev" ||
-    parsed.username || parsed.password || parsed.search || parsed.hash ||
-    (parsed.pathname !== "" && parsed.pathname !== "/")
-  ) {
+
+  const hasNoUrlCredentialsOrOverrides =
+    !parsed.username && !parsed.password && !parsed.search && !parsed.hash &&
+    (parsed.pathname === "" || parsed.pathname === "/");
+  const isOfficialTestnetRpc =
+    parsed.protocol === "https:" &&
+    parsed.hostname.toLowerCase() === "test-evm-rpc-v3.portaldot.dev" &&
+    hasNoUrlCredentialsOrOverrides;
+  const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+  const isLoopbackSimulator =
+    parsed.protocol === "http:" &&
+    loopbackHosts.has(parsed.hostname.toLowerCase()) &&
+    hasNoUrlCredentialsOrOverrides;
+
+  if (!isOfficialTestnetRpc && !isLoopbackSimulator) {
     throw new Error(
-      `Refusing ${operation}: this project's write path is restricted to https://test-evm-rpc-v3.portaldot.dev. ` +
+      `Refusing ${operation}: remote write paths are restricted to https://test-evm-rpc-v3.portaldot.dev; HTTP is allowed only for a loopback simulator. ` +
       `A Mainnet V3 EVM RPC has not been verified; no transaction was sent.`
     );
   }
