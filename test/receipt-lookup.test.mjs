@@ -76,8 +76,8 @@ test("rejects a different RPC chain ID", () => {
   assert.throws(() => evaluateReceiptResponse(data), /chain ID mismatch/);
 });
 
-test("accepts any status-independent TransferExecuted event data from the tx target without a fixed amount/recipient", () => {
-  const data = response("0x0");
+test("matches TransferExecuted logs by destination and topic without a fixed recipient or amount", () => {
+  const data = response("0x1");
   const targetEvent = {
     address: destination,
     topics: [eventTopic],
