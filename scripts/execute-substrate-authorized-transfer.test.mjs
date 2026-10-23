@@ -145,14 +145,22 @@ test("rejects inconsistent base-unit amount, numeric coercion and zero transfer"
   );
 
   const numeric = validResponse();
+  numeric.decision_receipt.payload.intent.amount_exact = 100000000000000;
   numeric.execution_authorization.payload.action.amount_exact = 100000000000000;
+  numeric.execution_authorization.payload.action_sha256 = actionDigest(
+    numeric.execution_authorization.payload.action,
+  );
   assert.throws(
     () => validateSubstrateTransferBinding(numeric, { now: 2_000_000_000 }),
     /canonical positive decimal integer string/,
   );
 
   const zero = validResponse();
+  zero.decision_receipt.payload.intent.amount_exact = "0";
   zero.execution_authorization.payload.action.amount_exact = "0";
+  zero.execution_authorization.payload.action_sha256 = actionDigest(
+    zero.execution_authorization.payload.action,
+  );
   assert.throws(
     () => validateSubstrateTransferBinding(zero, { now: 2_000_000_000 }),
     /canonical positive decimal integer string/,
@@ -217,7 +225,7 @@ test("authorization id and policy digest are bound to the signed decision receip
   wrongId.execution_authorization.payload.authorization_id = "f".repeat(64);
   assert.throws(
     () => validateSubstrateTransferBinding(wrongId, { now: 2_000_000_000 }),
-    /Authorization ID does not match/,
+    /authorization ID does not match/,
   );
 
   const wrongPolicy = validResponse();
