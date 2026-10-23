@@ -14,7 +14,7 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
 .hero{padding:34px 0 20px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}h1{font-size:clamp(30px,4vw,44px);line-height:1.1;letter-spacing:-.04em;margin:10px 0}.lead{color:var(--muted);max-width:780px;font-size:15px}.actions{display:flex;gap:9px;flex-wrap:wrap;margin:15px 0}button{border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:#151f36;color:var(--text);font:inherit;font-weight:700;cursor:pointer}button:disabled{opacity:.5;cursor:wait}
 #message{padding:11px 13px;border:1px solid var(--line);background:#0e192b;border-radius:10px;color:var(--muted);margin:12px 0 16px;font-size:12px}#message.good{color:var(--green);border-color:#285947}#message.warn{color:var(--amber);border-color:#63502b}#message.bad{color:var(--red);border-color:#65313d}
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:13px;margin-bottom:13px}.card{min-width:0;border:1px solid var(--line);border-radius:15px;padding:18px;background:linear-gradient(145deg,rgba(20,32,54,.98),rgba(14,23,40,.98))}.span3{grid-column:span 3}.span4{grid-column:span 4}.span6{grid-column:span 6}.span8{grid-column:span 8}.span12{grid-column:span 12}.card h2{margin:0 0 13px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}.value{font-size:clamp(20px,2.2vw,28px);line-height:1.25;font-weight:820;overflow-wrap:anywhere}.small{font-size:12px;color:var(--muted);margin-top:7px}.label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 5px}.mono{font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere;color:#d7e4fa}.rule{height:1px;background:var(--line);margin:14px 0}.green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.notice{padding:12px 14px;border:1px solid #61502d;background:#241f16;color:#e9d5a2;border-radius:10px;font-size:12px;margin-top:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.stat{border:1px solid var(--line);border-radius:11px;padding:13px;background:#0c1628;min-width:0}.stat .value{font-size:20px}footer{padding:20px 0 30px;margin-top:12px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;font-size:11px;color:var(--muted)}
-@media(max-width:800px){.span3,.span4,.span8{grid-column:span 6}}@media(max-width:540px){main,.topbar,footer{width:calc(100% - 22px)}.span3,.span4,.span6,.span8,.span12{grid-column:span 12}.two{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}}
+.receipt-lookup{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}.receipt-lookup input{flex:1;min-width:260px;max-width:100%;background:#080f1a;border:1px solid #30445d;border-radius:9px;padding:10px 12px;color:var(--text);font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.receipt-lookup input:focus{outline:2px solid var(--cyan);outline-offset:2px}#receiptResult{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.receipt-lookup button{white-space:nowrap}@media(max-width:800px){.span3,.span4,.span8{grid-column:span 6}}@media(max-width:540px){main,.topbar,footer{width:calc(100% - 22px)}.span3,.span4,.span6,.span8,.span12{grid-column:span 12}.two{grid-template-columns:1fr}.receipt-lookup{flex-direction:column}.receipt-lookup input{min-width:0;width:100%}.topbar{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
@@ -39,7 +39,18 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
 </div><div class="two" style="margin-top:12px">
 <div class="stat"><div class="label" style="margin-top:0">Reconciled sender debit</div><div class="value amber">7.82782148139542551 POT</div><div class="small">A read-only balance check for the isolated block showed sender balance falling from 416.196502092920504516 to 408.368680611525079006 POT, exactly matching gasUsed × effectiveGasPriceWei. Checked through one configured RPC only; runtime execution-fee vs storage-deposit components are not separated.</div></div>
 <div class="stat"><div class="label" style="margin-top:0">Transfer event</div><div class="value">1 matching event</div><div class="small">Recipient and amount matched the authorization. A later read-only check measured recipient balance increasing from 0 to 0.1 POT across the isolated block using the same RPC; no second-provider check is claimed.</div></div>
-</div><div class="label">Transaction hash</div><div class="mono" id="historicalHash">0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e</div><div class="actions"><button id="checkReceipt">Re-query receipt + event</button><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json" target="_blank" rel="noopener noreferrer">Full V2 evidence ↗</a><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-cost-reconciliation-2026-10-23.json" target="_blank" rel="noopener noreferrer">Cost reconciliation ↗</a><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-deployment-2026-10-22.json" target="_blank" rel="noopener noreferrer">Deployment evidence ↗</a></div><div id="receiptResult" class="small">No fresh receipt lookup has been run. The saved result is historical and is not presented as a live confirmation.</div><div class="notice">Testnet prototype, not an audit. The receipt and event were re-queried through the configured RPC; this does not independently authenticate the RPC operator. No second EVM provider or EVM-genesis pin was used for this transfer. H160-to-SS58 mapping remains unverified.</div></article>
+</div><div class="label">Recorded V2 transaction hash</div><div class="mono" id="historicalHash">0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e</div>
+<div class="rule"></div>
+<form id="receiptLookup">
+  <label class="label" for="receiptTxHash" style="display:block;margin-top:0">Look up any transaction visible through the configured PortalDot V3 RPC</label>
+  <div class="receipt-lookup">
+    <input id="receiptTxHash" name="transactionHash" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-describedby="receiptLookupHint" value="0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e" placeholder="0x + 64 hexadecimal characters" required>
+    <button id="checkReceipt" type="submit">Look up receipt + event</button>
+  </div>
+</form>
+<div id="receiptLookupHint" class="small">Accepts any 32-byte EVM transaction hash. A null response means this RPC did not return the transaction or receipt; it does not prove the transaction never existed.</div>
+<div class="actions"><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json" target="_blank" rel="noopener noreferrer">Saved V2 evidence ↗</a><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-cost-reconciliation-2026-10-23.json" target="_blank" rel="noopener noreferrer">Cost reconciliation ↗</a><a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-deployment-2026-10-22.json" target="_blank" rel="noopener noreferrer">Deployment evidence ↗</a></div>
+<div id="receiptResult" class="small" role="status" aria-live="polite">No live transaction lookup has been run. The saved V2 record above is historical evidence and is not itself a live RPC result.</div><div class="notice">Testnet prototype, not an audit. The receipt and event were re-queried through the configured RPC; this does not independently authenticate the RPC operator. No second EVM provider or EVM-genesis pin was used for this transfer. H160-to-SS58 mapping remains unverified.</div></article>
 </section>
 </main>
 <footer><span>Verigate PortalDot · read-only testnet dashboard</span><span><a href="https://github.com/rudimentall1/verigate-portaldot">Source repository ↗</a> · <a href="https://node-console.portaldot.dev/">PortalDot node console ↗</a></span></footer>
@@ -51,8 +62,6 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
   const EXPECTED_SIGNER = "0x48F9B07d37b5AF744BA8195c4d6740145b593ea6";
   const EXPECTED_V2_CODE_HASH = "0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859";
   const DEMO_RECIPIENT = "0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4";
-  const V2_TRANSFER_TX = "0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e";
-  const HISTORICAL_TX = V2_TRANSFER_TX;
   const candidate = new URLSearchParams(location.search).get("guard");
   const ADDRESS = candidate && /^0x[0-9a-fA-F]{40}$/.test(candidate) ? candidate : DEFAULT_V2;
   const el = (id) => document.getElementById(id);
@@ -181,44 +190,107 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
       setMessage("Live RPC check failed: " + error.message, "bad");
     } finally { el("refresh").disabled = false; }
   }
-  async function checkReceipt() {
-    el("receiptResult").textContent = "Re-querying the saved V2 transaction, receipt, containing block, and TransferExecuted event…";
+  async function checkReceipt(event) {
+    if (event) event.preventDefault();
+    const requestedHash = el("receiptTxHash").value.trim();
+    const output = el("receiptResult");
+    const button = el("checkReceipt");
+    if (!/^0x[0-9a-fA-F]{64}$/.test(requestedHash)) {
+      output.textContent = "Invalid transaction hash. Enter 0x followed by exactly 64 hexadecimal characters.";
+      return;
+    }
+
+    button.disabled = true;
+    output.textContent = "Querying transaction, receipt, block and TransferExecuted events through the configured PortalDot V3 RPC…";
     try {
       const chainId = quantity(await rpc("eth_chainId"));
-      if (chainId !== 420420777n) throw new Error("RPC chain ID mismatch: " + chainId.toString());
+      if (chainId !== 420420777n) throw new Error("RPC chain ID mismatch: expected 420420777, received " + chainId.toString() + ".");
+
       const [receipt, tx] = await Promise.all([
-        rpc("eth_getTransactionReceipt", [HISTORICAL_TX]),
-        rpc("eth_getTransactionByHash", [HISTORICAL_TX])
+        rpc("eth_getTransactionReceipt", [requestedHash]),
+        rpc("eth_getTransactionByHash", [requestedHash])
       ]);
-      if (!receipt || !tx) {
-        el("receiptResult").textContent = "The current RPC returned null for this historical transaction or receipt. Saved evidence remains separate; this lookup did not confirm current availability.";
+
+      if (!tx || !receipt) {
+        const missing = [];
+        if (!tx) missing.push("transaction");
+        if (!receipt) missing.push("receipt");
+        output.textContent = "The configured RPC returned null for the " + missing.join(" and ") +
+          ". The transaction may be unknown, pending, pruned or unavailable through this provider. " +
+          "This lookup did not confirm a mined receipt and does not prove the transaction never existed. " +
+          "Saved evidence shown elsewhere on this page remains separate.";
         return;
       }
-      if (quantity(receipt.status) !== 1n) throw new Error("Receipt status is not success: " + receipt.status);
-      if (!tx.to || tx.to.toLowerCase() !== DEFAULT_V2.toLowerCase()) throw new Error("Transaction target does not match the configured V2 guard.");
-      const block = await rpc("eth_getBlockByHash", [receipt.blockHash, false]);
-      if (!block || block.hash.toLowerCase() !== receipt.blockHash.toLowerCase() ||
-          quantity(block.number) !== quantity(receipt.blockNumber)) {
-        throw new Error("Receipt block hash/number did not match the returned block.");
+
+      if (!tx.hash || tx.hash.toLowerCase() !== requestedHash.toLowerCase()) {
+        throw new Error("The transaction hash returned by RPC does not match the requested hash.");
       }
+      if (!receipt.transactionHash || receipt.transactionHash.toLowerCase() !== requestedHash.toLowerCase()) {
+        throw new Error("The receipt transaction hash does not match the requested hash.");
+      }
+      if (!receipt.blockHash || !receipt.blockNumber) {
+        throw new Error("The RPC returned a receipt without a mined block hash/number.");
+      }
+      if (tx.blockHash && tx.blockHash.toLowerCase() !== receipt.blockHash.toLowerCase()) {
+        throw new Error("Transaction and receipt block hashes differ.");
+      }
+      if (tx.blockNumber && quantity(tx.blockNumber) !== quantity(receipt.blockNumber)) {
+        throw new Error("Transaction and receipt block numbers differ.");
+      }
+
+      const block = await rpc("eth_getBlockByHash", [receipt.blockHash, false]);
+      if (!block || !block.hash || block.hash.toLowerCase() !== receipt.blockHash.toLowerCase() ||
+          quantity(block.number) !== quantity(receipt.blockNumber)) {
+        throw new Error("Receipt block hash/number did not match the block returned by RPC.");
+      }
+
+      const status = quantity(receipt.status);
+      if (status !== 0n && status !== 1n) throw new Error("Unexpected receipt status: " + String(receipt.status));
+      const target = tx.to || "(contract creation; no transaction destination)";
+      const targetLower = (tx.to || "").toLowerCase();
+      const targetKind = targetLower === DEFAULT_V2.toLowerCase()
+        ? "known PortalDot V2 guard"
+        : targetLower === V1_ADDRESS.toLowerCase()
+          ? "known PortalDot V1 guard"
+          : tx.to ? "unclassified transaction target" : "contract creation";
+
       const transferTopic = transferEventInterface.getEvent("TransferExecuted").topicHash.toLowerCase();
       const matches = (receipt.logs || []).filter(log =>
-        log.address?.toLowerCase() === DEFAULT_V2.toLowerCase() &&
+        tx.to && log.address?.toLowerCase() === tx.to.toLowerCase() &&
         log.topics?.[0]?.toLowerCase() === transferTopic
       );
-      if (matches.length !== 1) throw new Error("Expected exactly one TransferExecuted event from V2; found " + matches.length);
-      const event = transferEventInterface.decodeEventLog("TransferExecuted", matches[0].data, matches[0].topics);
-      if (event.recipient.toLowerCase() !== DEMO_RECIPIENT.toLowerCase() ||
-          BigInt(event.amount) !== 100000000000000000n) {
-        throw new Error("Decoded event recipient or amount did not match the saved expected transfer.");
+
+      const lines = [
+        "RPC lookup returned a mined receipt.",
+        "Transaction: " + requestedHash,
+        "Outcome: " + (status === 1n ? "SUCCESS (receipt status 1)." : "REVERTED (receipt status 0; no successful execution)."),
+        "Block: " + quantity(receipt.blockNumber).toString() + " · block hash matched.",
+        "Destination: " + target + " (" + targetKind + ").",
+        "TransferExecuted events from the transaction target: " + matches.length + "."
+      ];
+
+      matches.forEach((log, index) => {
+        const decoded = transferEventInterface.decodeEventLog("TransferExecuted", log.data, log.topics);
+        lines.push(
+          "Event " + (index + 1) + ": actionId " + decoded.actionId +
+          "; recipient " + decoded.recipient +
+          "; amount " + pot(decoded.amount) +
+          "; nonce " + decoded.nonce.toString() + "."
+        );
+      });
+      if (matches.length === 0) {
+        lines.push("No matching TransferExecuted event was found from the transaction target. This can be normal for an unrelated transaction.");
       }
-      el("receiptResult").textContent = "Fresh RPC lookup succeeded: receipt status 1 in block " +
-        quantity(receipt.blockNumber).toString() + "; block hash matched; exactly one V2 TransferExecuted event confirmed for recipient " +
-        event.recipient + " and amount " + pot(event.amount) + ". This verifies the configured RPC response, not the RPC operator independently.";
-    } catch (error) { el("receiptResult").textContent = "Receipt/event re-query failed: " + error.message; }
+      lines.push("Scope: these are responses from one configured RPC. An event alone does not prove a Verigate ALLOW decision, independently authenticate the RPC operator, or replace the saved evidence record.");
+      output.textContent = lines.join("\n");
+    } catch (error) {
+      output.textContent = "Transaction lookup could not be validated: " + error.message;
+    } finally {
+      button.disabled = false;
+    }
   }
   el("refresh").addEventListener("click", refresh);
-  el("checkReceipt").addEventListener("click", checkReceipt);
+  el("receiptLookup").addEventListener("submit", checkReceipt);
   el("copyAddress").addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(ADDRESS); setMessage("Guard address copied.", "good"); }
     catch (_) { setMessage("Clipboard access is unavailable in this browser.", "warn"); }
