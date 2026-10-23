@@ -206,7 +206,7 @@ test("signed fee ceiling is bound and rejects malformed or mismatched metadata",
   );
   assert.throws(
     () => validateSubstrateTransferBinding(mismatch, { now: 2_000_000_000 }),
-    /does not exactly match the signed decision receipt intent/,
+    /Signed max_fee_base_units must match/,
   );
 
   const missing = validResponse();
