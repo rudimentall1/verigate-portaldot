@@ -64,7 +64,7 @@ PortalDot V3 offers an EVM-compatible deployment target for a narrow, reusable s
 2. The specific H160-to-SS58 mapping for the wallet-displayed address has not been confirmed by the runtime storage lookup. The deployment evidence explicitly records this limitation.
 3. The public RPC's reported chain/genesis values are consistency checks, not independent authentication of the RPC operator.
 4. This is a testnet prototype, not a production deployment or independent security audit.
-5. The V2 allowlist, per-transfer cap and rolling-window cap are confirmed by deployment/configuration readback, and the positive transfer path has public testnet evidence. Negative cap/window behavior is currently proven by local contract tests rather than paid public-chain revert transactions. The recipient balance delta has not been separately measured. The end-user demo recording has not yet been added; do not submit a placeholder or present the static slide preview as a live demo.
+5. The V2 allowlist, per-transfer cap and resettable time-window cap are confirmed by deployment/configuration readback, and the positive transfer path has public testnet evidence. Negative cap/window behavior is currently proven by local contract tests rather than paid public-chain revert transactions. The recipient balance delta has not been separately measured. The end-user demo recording has not yet been added; do not submit a placeholder or present the static slide preview as a live demo.
 
 ## Remaining before submitting
 
