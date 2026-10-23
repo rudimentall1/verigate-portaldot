@@ -78,6 +78,16 @@
   "limitations": [
     "Independent transaction, receipt, block, event, and balance queries were made against the configured PortalDot V3 RPC, not a second independent provider.",
     "The EVM genesis hash pin was not configured. The Substrate genesis hash pin was configured.",
-    "The recipient and relayer are the same address, so its net balance decreases by the gas fee minus the 0.1 POT received from the guard; this is expected."
-  ]
+    "The recipient and relayer are the same address, so its net balance decreases by the gas fee minus the 0.1 POT received from the guard; this is expected.",
+    "The original transaction/receipt query succeeded during verification on 2026-10-21. A later lookup on 2026-10-23 against the same configured RPC no longer returned the historic transaction/receipt; no second EVM RPC provider was used."
+  ],
+  "historicalLookupStatus": {
+    "verificationAtCapture": "confirmed_on_configured_rpc",
+    "verificationDate": "2026-10-21",
+    "laterLookupDate": "2026-10-23",
+    "laterLookupResult": "historical_transaction_and_receipt_not_returned",
+    "rpcOrigin": "https://test-evm-rpc-v3.portaldot.dev",
+    "secondEvmProviderUsed": false,
+    "note": "The original verification succeeded when captured. A later request to the same configured RPC no longer returned this historical transaction/receipt. Preserve the saved evidence as historical; do not claim the receipt is retrievable now."
+  }
 }
