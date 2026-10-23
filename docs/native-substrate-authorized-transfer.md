@@ -24,6 +24,7 @@ The signed intent/action must exactly bind:
 | `metadata.portaldot_substrate_v3.genesis_hash` | `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd` |
 | `metadata.portaldot_substrate_v3.recipient_ss58` | Same address as `target` |
 | `metadata.portaldot_substrate_v3.amount_base_units` | Same integer string as `amount_exact` |
+| `metadata.portaldot_substrate_v3.max_fee_base_units` | Positive integer string defining the maximum fee estimate accepted by preflight; identical in signed intent and authorization |
 
 The same metadata and action values must be present in the signed intent and execution authorization. Authorization ID, policy digest, intent ID, agent ID, action digest, issue time and expiry are checked. Only `ALLOW` continues; `WARN` and `BLOCK` fail closed.
 
@@ -65,9 +66,11 @@ This mode:
 2. verifies the Ed25519 artifacts locally and through `/v1/verify`;
 3. checks the connected Substrate genesis hash and runtime `specName`;
 4. queries sender/recipient balances, runtime existential deposit, and `paymentInfo` fee estimate;
-5. prints JSON with authorization identifiers, amount, estimated fee, current free balance and chain/runtime version.
+5. prints JSON with authorization identifiers, amount, estimated fee, signed fee ceiling, current free balance and chain/runtime version.
 
-No extrinsic is signed or sent in this mode. `paymentInfo` is a fee estimate, not a full execution dry-run. A successful result means the checked preconditions passed at that time, not that a transfer has been submitted.
+The signed intent must include `metadata.portaldot_substrate_v3.max_fee_base_units`. The adapter refuses to continue if the current `paymentInfo` estimate exceeds this ceiling. The ceiling is part of the signed action digest, so it cannot be raised in the execution artifact without invalidating authorization.
+
+No extrinsic is signed or sent in this mode. `paymentInfo` is a fee estimate, not a full execution dry-run. The signed ceiling blocks preflight when the estimate is already too high, but it is not a runtime-enforced maximum on the final charged fee. A successful result means the checked preconditions passed at that time, not that a transfer has been submitted.
 
 The remote URL is restricted to the recorded PortalDot V3 testnet WSS. Loopback WebSocket is allowed for isolated local testing when a local genesis hash is explicitly pinned. Other remote endpoints are refused.
 
