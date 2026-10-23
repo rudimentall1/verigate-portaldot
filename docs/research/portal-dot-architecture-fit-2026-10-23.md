@@ -4,9 +4,9 @@ Updated: 2026-10-23
 
 ## Decision
 
-Do not expand the EVM Guard or build another explorer feature yet. The strongest next integration hypothesis is a **Substrate-native Verigate execution adapter** that authorizes the exact runtime call before a signer can submit it, then binds the resulting extrinsic outcome to portable Verigate evidence.
+Do not expand the EVM Guard or build another explorer feature yet. A Substrate-native Verigate adapter already exists in `scripts/execute-substrate-authorized-transfer.mjs`; treating "build a Substrate adapter" as the next task would duplicate existing work. The next narrow improvement is to bind a maximum estimated native fee into the signed action and refuse preflight when the live `paymentInfo` estimate exceeds it.
 
-This is a research-backed hypothesis, not a claim that PortalDot's team has requested or endorsed it.
+This is a research-backed product hypothesis, not a claim that PortalDot's team has requested or endorsed it. The repository's V2 EVM transfer produced a reconciled sender debit of 7.82782148139542551 EVM POT for a 0.1 POT transfer at block 149241. That observation is real but does not yet establish how much was execution fee versus refundable storage deposit. The product should therefore make cost risk explicit without claiming the full debit is an irrecoverable fee.
 
 ## What the public architecture indicates
 
@@ -21,7 +21,7 @@ This is a research-backed hypothesis, not a claim that PortalDot's team has requ
 |---|---|---|
 | Another EVM Guard feature | Only protects calls routed through the EVM contract; does not cover native Substrate extrinsics | Defer |
 | Another explorer / transaction lookup | Overlaps with existing read-only lookup and community explorer work | Defer |
-| Substrate-native authority adapter | Complements runtime simulation and fee estimation with exact-action authority, policy enforcement, and portable proof | Investigate first |
+| Substrate-native authority adapter | Complements runtime simulation and fee estimation with exact-action authority, policy enforcement, and portable proof | Already present; improve fee binding instead of duplicating |
 | Indexer / freshness monitor | Potentially useful, but requires evidence of a concrete PortalDot indexing or RPC pain point | Keep as follow-up hypothesis |
 
 ## Proposed vertical slice
@@ -30,7 +30,7 @@ One native POT transfer, with no custody by Verigate:
 
 1. Parse a native transfer intent into a canonical typed action: genesis/spec identity, pallet + call, sender identity, destination SS58 account, exact base-unit amount, nonce, and mortality/era.
 2. Query runtime metadata and reject unsupported or ambiguous call encodings. Never infer H160-to-SS58 identity mapping.
-3. Run runtime dry-run and fee estimation where the target node supports them; bind the simulation result and fee ceiling to the intent. Simulation is advisory state, not authorization.
+3. Run fee estimation and runtime dry-run where the target node supports them. Bind a maximum estimated fee to the signed intent and fail closed if the current quote exceeds it. The estimate is advisory and does not guarantee the final charged fee.
 4. Ask Verigate for authority over that exact canonical action. Any change to destination, amount, call, chain identity, or nonce invalidates the authorization.
 5. Enforce at the signing/submission boundary: a denied or stale authorization must not call the signer or submit the extrinsic. Verigate does not hold the user's private key.
 6. For an allowed action, observe the finalized extrinsic and relevant events, then emit a portable evidence bundle linking the original intent, policy decision, authorization, extrinsic hash, block hash, runtime identity, fee observation, and outcome.
@@ -44,6 +44,7 @@ The slice is not complete until all are true:
 - A destination mutation and an amount mutation are denied before signing/submission.
 - A denied path records zero signer calls and zero submitted extrinsics.
 - Replayed, expired, or chain-mismatched authorization fails closed.
+- A maximum fee estimate is part of the signed action; missing, altered, or exceeded fee ceilings fail before signing/submission.
 - Evidence can be verified offline without querying the Verigate service.
 - RPC timeout, stale indexer data, null receipt, and ambiguous submission are represented as unavailable/unknown rather than proof that an action did not happen.
 - Test output distinguishes local integration evidence from public PortalDot testnet evidence.
