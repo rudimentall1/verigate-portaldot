@@ -26,10 +26,10 @@ Modular Cloud Solutions and Middleware.
 - Public DApp: https://rudimentall1.github.io/verigate-portaldot/
 - V2 guard view: https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
 - V2 guard: `0x87C494a5e4B0A8E055F283767579667E10E046C6`
-- Successful testnet transaction: https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
-- Transaction hash: `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`
+- Public DApp guard view and transaction lookup: https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
+- Successful transaction hash: `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`
 - Block: `149241`
-- Evidence: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json
+- Recorded transaction evidence: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json
 
 ## Current progress
 
@@ -37,7 +37,7 @@ Modular Cloud Solutions and Middleware.
 - One 0.1 POT transfer completed after Verigate ALLOW, bridge signing and pre-broadcast simulation; receipt status was 1 and one matching TransferExecuted event was recorded.
 - The public DApp provides read-only policy state and transaction lookup.
 - Local contract tests cover over-cap transfers, recipient allowlisting, time-window overflow, replay protection and altered signed fields.
-- A read-only verifier now simulates over-cap and non-allowlisted-recipient reverts against the deployed contract via eth_call only. The dedicated GitHub Actions run still needs to pass and its output be inspected before these results can be claimed. These simulations do not submit transactions and are not mined public-chain revert evidence.
+- A read-only verifier simulated two invalid requests against the deployed contract using `eth_call`: an amount above the per-transfer cap returned `AmountExceedsCap`, and a non-allowlisted recipient returned `InvalidRecipient`. The recorded guard balance and spending state did not change, and the probe nonces remained unused. The GitHub Actions run passed and its result is saved in the evidence JSON. These were read-only simulations, not mined public-chain revert transactions.
 - A separate native Substrate adapter exists in code and offline tests, but no native Substrate transfer is claimed as live evidence.
 
 ## Known limitations
