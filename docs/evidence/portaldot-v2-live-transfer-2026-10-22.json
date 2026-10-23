@@ -81,7 +81,7 @@
     "exactlyOneTransferExecutedEventFromGuard": true
   },
   "limitations": [
-    "Evidence is recorded from operator-provided terminal output. The follow-up verifier queried the configured RPC separately, but both queries rely on that RPC and do not independently authenticate its operator.",
+    "The original evidence was captured from operator-provided terminal output. Later read-only verification queried the configured RPC again, but none of these checks independently authenticates the RPC operator.",
     "This is testnet execution evidence, not a security audit or a production-readiness claim.",
     "Historical lookup limitations previously affected the V2 deployment transaction; this transfer receipt was available and matched the reported block hash at the time of verification.",
     "A later read-only reconciliation on 2026-10-23 queried the sender's EVM balance before and after the receipt block. The block contained exactly one EVM transaction, and the sender balance decrease matched gasUsed × effectiveGasPriceWei exactly. This reconciles the sender's total balance debit on the configured RPC; runtime execution-fee versus storage-deposit components were not separately decomposed.",
@@ -104,6 +104,8 @@
     "recipientBalanceBeforeEvmPOT": "0",
     "recipientBalanceAfterEvmPOT": "0.1",
     "recipientBalanceIncreaseEvmPOT": "0.1",
-    "recipientBalanceIncreaseMatchesTransferAmount": true
+    "recipientBalanceIncreaseMatchesTransferAmount": true,
+    "costInterpretation": "Sender gross EVM balance decrease is reconciled to gasUsed × effectiveGasPriceWei. Upstream pallet-revive documentation indicates that gas budgeting can include refundable storage deposits; this verification does not determine how this PortalDot V3 debit divides between execution fee and any storage deposit.",
+    "upstreamBackground": "https://docs.polkadot.com/smart-contracts/for-eth-devs/gas-model/"
   }
 }
