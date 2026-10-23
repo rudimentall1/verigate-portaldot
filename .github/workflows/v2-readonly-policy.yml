@@ -32,12 +32,12 @@ jobs:
       - name: Simulate V2 policy violations against PortalDot RPC using eth_call only
         run: |
           set -o pipefail
-          npm run verify:policy:v2:readonly 2>&1 | tee v2-policy-readonly-output.json
+          npm run verify:policy:v2:readonly 2>&1 | tee v2-policy-readonly-output.txt
       - name: Preserve simulation output
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: v2-readonly-policy-simulation
-          path: v2-policy-readonly-output.json
+          path: v2-policy-readonly-output.txt
           if-no-files-found: warn
           retention-days: 30
