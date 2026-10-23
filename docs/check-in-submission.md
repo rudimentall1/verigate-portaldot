@@ -1,6 +1,8 @@
 # DoraHacks submission draft: Verigate PortalDot
 
-**Status:** V1 is deployed on PortalDot V3 testnet. The 0.1 EVM POT transfer is preserved as historical evidence from block `132475`, with recorded receipt status `1` and a matching `TransferExecuted` event. A later RPC lookup did not return that historical receipt, so do not describe it as currently live-verified. V2 source/tests, the guarded deployment script, runbook and read-only dashboard are merged into `main`; the PR checks passed with 171 Hardhat tests, successful compile step, dependency audit and isolated Verigate ALLOW/BLOCK integration. The GitHub Pages deploy workflow also completed successfully. V2 itself has not been deployed, so no V2 caps or policy values may be described as live. The EVM genesis pin was not configured for the historical transfer and no second EVM RPC provider was used. The under-three-minute demo video is still pending. DoraHacks build entry: [50065](https://dorahacks.io/build/50065); confirm saved/published state in the DoraHacks UI.
+**Status (updated 2026-10-23):** V1 and V2 are deployed on PortalDot V3 testnet. V2 is `PortalDotAgentGuardV2` at `0x87C494a5e4B0A8E055F283767579667E10E046C6`; its runtime code hash and configuration readback are recorded in [`docs/evidence/portaldot-v2-deployment-2026-10-22.json`](evidence/portaldot-v2-deployment-2026-10-22.json). A real Verigate `ALLOW` was converted by the V2 bridge into a signed action and executed as a `0.1 POT` transfer in block `149241`; the read-only follow-up verifier reported receipt status `1` and exactly one matching `TransferExecuted` event. The reported fee was `7.82782148139542551 POT`. Full evidence: [`docs/evidence/portaldot-v2-live-transfer-2026-10-22.json`](evidence/portaldot-v2-live-transfer-2026-10-22.json). This verification used the configured PortalDot RPC; it is not independent authentication of that RPC operator. The recipient balance delta has not been measured, no second EVM RPC provider was used, and the EVM genesis hash pin was not configured for this transfer. This is testnet evidence, not an audit or production-readiness claim.
+
+**CI on `main` at `d44ab38` (2026-10-23):** `Test`, `PortalDot CI`, and `PortalDot RPC health` all completed successfully: [Test](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39907855335), [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39907855331), [RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39907855326). The demo video is still pending. DoraHacks build entry: [50065](https://dorahacks.io/build/50065); confirm saved/published state in the DoraHacks UI.
 
 ## Submission fields
 
@@ -18,7 +20,7 @@ Verigate PortalDot is open-source authorization middleware that turns a signed V
 
 AI agents can propose payments, but a proposal should not grant spending authority. In V1, the bridge checks Verigate authorization off-chain and creates a short-lived EIP-712 authorization bound to one recipient, exact amount, nonce, deadline, action ID, chain and contract. The deployed V1 guard verifies the EIP-712 signer, rejects altered fields, expired authorizations and replayed nonces, and transfers only native POT from its own balance. V1 does not enforce a recipient allowlist or spending caps. V2 source in the repository adds an admin-controlled allowlist, maximum per-transfer amount and spending-window cap, but those controls must not be described as deployed until V2 is deployed and verified on PortalDot.
 
-The project uses PortalDot V3's EVM-compatible execution environment for the Solidity guard and records separate Substrate runtime/genesis checks for network configuration. Verigate Ed25519 is verified off-chain by the bridge; the contract itself does not verify Ed25519. The proposed dashboard is read-only and cannot connect a wallet, request signatures, or send transactions.
+The V2 guard is deployed on PortalDot V3 testnet and enforces an allowlisted-recipient check, a `0.1 POT` per-transfer maximum and a `0.5 POT` rolling limit per 3600 seconds according to the recorded configuration readback. The live transfer proves the positive path, not every negative policy case on the public network; the cap/window/allowlist negative cases are covered by local contract tests. Verigate Ed25519 is verified off-chain by the bridge; the contract itself verifies the bridge's EIP-712 authorization. The dashboard is read-only and cannot connect a wallet, request signatures, or send transactions.
 
 ## Status and evidence
 
@@ -27,6 +29,8 @@ The project uses PortalDot V3's EVM-compatible execution environment for the Sol
 - **Live Web3 DApp:** https://rudimentall1.github.io/verigate-portaldot/
 - **Read-only DApp source:** https://github.com/rudimentall1/verigate-portaldot/blob/main/web3-dapp/index.html
 - **V2 deployment runbook:** [docs/v2-deployment-runbook.md](v2-deployment-runbook.md)
+- **V2 live transfer evidence:** [docs/evidence/portaldot-v2-live-transfer-2026-10-22.json](evidence/portaldot-v2-live-transfer-2026-10-22.json)
+- **V2 deployment/configuration evidence:** [docs/evidence/portaldot-v2-deployment-2026-10-22.json](evidence/portaldot-v2-deployment-2026-10-22.json)
 - **V2 deployment script:** [scripts/deploy-v2.mjs](../scripts/deploy-v2.mjs)
 - **Architecture:** [docs/architecture.md](architecture.md)
 - **Presentation PDF:** [Verigate-PortalDot-Presentation.pdf](Verigate-PortalDot-Presentation.pdf)
@@ -36,8 +40,9 @@ The project uses PortalDot V3's EVM-compatible execution environment for the Sol
 - **Operations runbook:** [docs/testnet-operations-2026-10-20.md](testnet-operations-2026-10-20.md)
 - **PortalDot node console:** https://node-console.portaldot.dev/
 - **EVM chain ID:** `420420777`
-- **Contract:** `PortalDotAgentGuard`
-- **Contract address:** `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`
+- **V1 contract:** `PortalDotAgentGuard` at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`
+- **V2 contract:** `PortalDotAgentGuardV2` at `0x87C494a5e4B0A8E055F283767579667E10E046C6`
+- **V2 live transfer:** `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`, block `149241`, amount `0.1 POT`, receipt status `1`, reported actual fee `7.82782148139542551 POT`
 - **Deployment transaction:** `0xb1cf9cca75bb029b0a723f13c398479d2c18704c1138c02c6d92a02c1fcdce3c`
 - **Receipt:** success (`0x1`), block `116872`
 - **Initial minimal authorized transfer:** transaction 0xbe3ade2ba3209cf0df3647cea50fb6608a77bb837213a25b8ec419fa9914cc14 at block 130741; the original record documents the one-base-unit `TransferExecuted` event.
@@ -52,16 +57,16 @@ PortalDot V3 offers an EVM-compatible deployment target for a narrow, reusable s
 
 ## Current limitations (disclose, do not hide)
 
-1. The contract is deployed on PortalDot V3 testnet; its runtime code hash and authority signer are recorded. A minimal transfer and a non-dust 0.1 EVM POT transfer are documented. The non-dust report preserves the successful receipt, matching event, and balance reconciliation observed during verification. A later historical RPC lookup became unavailable; the EVM genesis pin was not configured and no second provider was used.
+1. V1 and V2 are deployed on PortalDot V3 testnet. The V2 live transfer receipt and `TransferExecuted` event were re-queried through the configured RPC, but no second RPC provider or EVM-genesis pin was used. The V2 recipient balance delta has not been separately measured.
 2. The specific H160-to-SS58 mapping for the wallet-displayed address has not been confirmed by the runtime storage lookup. The deployment evidence explicitly records this limitation.
 3. The public RPC's reported chain/genesis values are consistency checks, not independent authentication of the RPC operator.
 4. This is a testnet prototype, not a production deployment or independent security audit.
-5. V2 is not deployed yet. The source and read-only dashboard are merged and the Pages deploy workflow passed, but V2 still needs a real deployment, readback, and a transfer to a recipient distinct from the sender/relayer. The end-user demo recording has not yet been added; do not submit a placeholder or present the static slide preview as a live demo.
+5. The V2 allowlist, per-transfer cap and rolling-window cap are confirmed by deployment/configuration readback, and the positive transfer path has public testnet evidence. Negative cap/window behavior is currently proven by local contract tests rather than paid public-chain revert transactions. The recipient balance delta has not been separately measured. The end-user demo recording has not yet been added; do not submit a placeholder or present the static slide preview as a live demo.
 
 ## Remaining before submitting
 
 - [x] Publish the implementation on `main`; verify the repository and current CI runs are publicly accessible.
-- [x] Merge the read-only dashboard source and complete the GitHub Pages deployment workflow. [ ] Verify the published page in a clean browser and confirm live RPC reads.
+- [x] Merge the read-only dashboard source and complete the GitHub Pages deployment workflow. [ ] Verify the published page in a clean browser at the V2 guard URL and confirm live RPC reads of the deployed V2 configuration.
 - [ ] Add the short live/demo recording (under 3 minutes) showing the real product behavior and clearly separating local simulation from testnet deployment evidence. **Still pending.**
 - [x] Presentation PDF is published in the repository. (This is not the demo video.)
 - [ ] Enter the final repository, deployment address, transaction hash, demo link, and PDF/public presentation link in DoraHacks.
@@ -73,4 +78,4 @@ The submission should distinguish existing Verigate components from work specifi
 
 ## Suggested build update
 
-Verigate PortalDot has a deployed PortalDot V3 testnet guard, a public Web3 DApp with live RPC reads and an explicit wallet-gated execution panel, documented deployment/transfer evidence, and a local ALLOW/BLOCK integration harness. A 0.1 EVM POT transfer is recorded with a successful receipt and matching `TransferExecuted` event; the configured RPC later stopped serving the historical receipt. The EVM genesis pin and a second-provider cross-check remain absent. A short demo video is still required, and fresh CI for the latest documentation/dashboard commits has not yet been confirmed.
+Verigate PortalDot has V1 and V2 guards deployed on PortalDot V3 testnet, a public read-only DApp, and local ALLOW/BLOCK integration evidence. The V2 path completed a real `0.1 POT` transfer after Verigate returned `ALLOW`; the receipt and matching `TransferExecuted` event were re-queried successfully in block `149241`. The reported actual fee was `7.82782148139542551 POT`. Main-branch `Test`, `PortalDot CI`, and `PortalDot RPC health` passed for commit `d44ab38`. Remaining work is the short demo recording, a clean-browser check of the published V2 dashboard, and optionally a recipient-balance-delta read. The EVM genesis pin and a second-provider cross-check remain absent; negative cap/window behavior is covered by local tests, not a live paid revert test.
