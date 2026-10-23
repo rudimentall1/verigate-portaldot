@@ -1,0 +1,20 @@
+# Reference policy for a dedicated Verigate + PortalDot V3 Substrate testnet demo.
+# Do not replace a production/global policy with this file without reviewing the impact.
+# Replace the placeholder with one known SS58 recipient before using it.
+
+allowed_action_types:
+  - portaldot.substrate_transfer
+allowed_targets:
+  - REPLACE_WITH_PORTALDOT_TESTNET_SS58_RECIPIENT
+allowed_networks:
+  - portaldot-v3-substrate
+allowed_assets:
+  - POT
+
+# Verigate sees amount_exact in native base units, not human POT.
+# PortalDot reports 14 native decimals: 0.1 POT = 10000000000000 base units.
+per_tx_cap:
+  POT: 10000000000000
+
+# Keep the demo intentionally slow; the policy is a template, not a production baseline.
+rate_limit_per_minute: 1
