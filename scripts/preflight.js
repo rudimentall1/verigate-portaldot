@@ -19,6 +19,27 @@ function assertPortalDotTestnetChainId(chainId, operation = "operation") {
   return actual;
 }
 
+function assertPortalDotTestnetRpcUrl(value, operation = "operation") {
+  let parsed;
+  try {
+    parsed = new URL(String(value || "").trim());
+  } catch {
+    throw new Error(`Refusing ${operation}: use the confirmed PortalDot V3 testnet EVM RPC endpoint.`);
+  }
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.hostname.toLowerCase() !== "test-evm-rpc-v3.portaldot.dev" ||
+    parsed.username || parsed.password || parsed.search || parsed.hash ||
+    (parsed.pathname !== "" && parsed.pathname !== "/")
+  ) {
+    throw new Error(
+      `Refusing ${operation}: this project's write path is restricted to https://test-evm-rpc-v3.portaldot.dev. ` +
+      `A Mainnet V3 EVM RPC has not been verified; no transaction was sent.`
+    );
+  }
+  return parsed.origin;
+}
+
 function requiredNetworkConfig() {
   const rpcUrl = (process.env.PORTALDOT_RPC_URL || "").trim();
   const chainIdText = (process.env.PORTALDOT_CHAIN_ID || "").trim();
@@ -124,4 +145,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { requiredNetworkConfig, safeRpcOrigin, rpcResult, rpc, assertPortalDotTestnetChainId };
+module.exports = { requiredNetworkConfig, safeRpcOrigin, rpcResult, rpc, assertPortalDotTestnetChainId, assertPortalDotTestnetRpcUrl };
