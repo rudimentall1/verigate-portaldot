@@ -9,7 +9,7 @@
   },
   "scripts": {
     "compile": "hardhat build",
-    "test": "hardhat test && npm run test:explorer && npm run test:dapp && npm run test:network-readiness && npm run test:substrate-adapter && npm run test:receipt-quorum",
+    "test": "hardhat test && npm run test:explorer && npm run test:dapp && npm run test:network-readiness && npm run test:substrate-adapter && npm run test:receipt-quorum && npm run test:rpc-monitor",
     "preflight": "node scripts/preflight.js",
     "deploy:portaldot": "npm run preflight && hardhat run scripts/deploy.mjs --network portaldot",
     "deploy:v2:portaldot": "npm run preflight && hardhat run scripts/deploy-v2.mjs --network portaldot",
@@ -38,7 +38,8 @@
     "test:substrate-adapter": "node --test scripts/execute-substrate-authorized-transfer.test.mjs",
     "verify:policy:v2:readonly": "node scripts/verify-v2-policy-readonly.mjs",
     "test:receipt-quorum": "node --test test/receipt-quorum.test.mjs",
-    "verify:receipt:quorum": "node scripts/verify-receipt-quorum.mjs"
+    "verify:receipt:quorum": "node scripts/verify-receipt-quorum.mjs",
+    "test:rpc-monitor": "node --test scripts/monitor-rpc.test.cjs"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^4.0.0",
