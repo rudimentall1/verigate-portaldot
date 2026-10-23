@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { parseExpectedSubstrateGenesisHash, validateSubstrateRpcUrl, verifySubstrateGenesisHash } = require("./substrate-genesis.js");
+const { assertPortalDotTestnetRpcUrl } = require("./preflight.js");
 const { rpcResult } = require("./preflight.js");
 const { parseHexQuantity, calculateDeploymentCost, buildDeploymentTransactionOverrides, formatUnitsExact } = require("./deployment-estimate.js");
 const hre = (await import("hardhat")).default;
@@ -13,6 +14,7 @@ async function main() {
   if (!rpcUrl || expectedChainIdText !== "420420777") {
     throw new Error("Refusing V2 deployment: configure the confirmed PortalDot RPC and PORTALDOT_CHAIN_ID=420420777.");
   }
+  assertPortalDotTestnetRpcUrl(rpcUrl, "V2 deployment");
   const network = await ethers.provider.getNetwork();
   const rpcChainId = parseHexQuantity(await rpcResult(rpcUrl, "eth_chainId", []), "eth_chainId");
   if (network.chainId !== 420420777n || rpcChainId !== 420420777n) {
