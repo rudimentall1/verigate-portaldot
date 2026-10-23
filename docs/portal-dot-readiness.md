@@ -21,7 +21,7 @@ npm ci
 npm run --silent portal:readiness -- --json > readiness-report.json
 ```
 
-The JSON report includes the check timestamp, per-endpoint status, latest EVM block/hash/time, Substrate finalized block and runtime identity, HTTP response status/content type, latency, and known limitations. Archive reports around a planned upgrade and compare them with `diff -u before.json after.json`; timestamps and block heights are expected to change, while chain/genesis identity and runtime changes should be reviewed explicitly.
+The JSON report includes the check timestamp, per-endpoint status, latest EVM block/hash/time, Substrate finalized block and runtime identity, HTTP response status/content type, latency, and known limitations. For the announced V3.0 rollout at 23 October 2026 23:00 UTC, run one snapshot before and one after the upgrade, then compare them with `diff -u before.json after.json`. Timestamps and block heights are expected to change; chain/genesis identity, runtime version, finality progress and endpoint availability should be reviewed explicitly. The notice supplied to this project does not publish Mainnet EVM RPC/chain ID or Mainnet Substrate WSS, so these testnet checks cannot establish Mainnet EVM readiness.
 
 Exit codes for automation:
 
