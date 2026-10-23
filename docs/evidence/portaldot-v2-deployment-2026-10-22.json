@@ -38,7 +38,8 @@
     "The deployment transaction and receipt were confirmed in an earlier read-only query on 2026-10-22, but the configured RPC later stopped returning that historical deployment transaction and receipt.",
     "Current runtime code and every V2 policy readback check passed at block 148800.",
     "The recent 0.11 POT funding transaction was re-queried successfully, including receipt block hash, Deposited event and runtime code hash.",
-    "PortalDot V3 testnet prototype. Verigate Ed25519 verification remains off-chain."
+    "PortalDot V3 testnet prototype. Verigate Ed25519 verification remains off-chain.",
+    "Receipt-derived gas-cost figures are calculated as gasUsed × effectiveGasPriceWei. PortalDot's pallet-revive gas/fee and storage-deposit semantics must be checked separately; do not treat every receipt-derived value as a balance-reconciled gas-only execution fee."
   ],
   "funding": {
     "evidenceStatus": "independently_requeried_from_configured_RPC; RPC operator not independently authenticated",
@@ -52,7 +53,6 @@
     "amountPot": "0.11",
     "gasUsed": "365693076823",
     "effectiveGasPriceWei": "34485",
-    "actualFeePot": "0.012610925754241155",
     "guardBalancePotAtCheck": "0.11",
     "deployerBalancePotAtCheck": "416.196502092920504516",
     "runtimeCodeHash": "0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859",
@@ -76,7 +76,9 @@
       "oneMatchingDepositedEvent": true
     },
     "checkedAt": "2026-10-22T17:13:34.412Z",
-    "verifierCommand": "npm run verify:funding:v2"
+    "verifierCommand": "npm run verify:funding:v2",
+    "receiptDerivedCostPot": "0.012610925754241155",
+    "costInterpretation": "Calculated as gasUsed × effectiveGasPriceWei from the receipt. The supplied record does not capture a pre/post relayer balance delta at the transaction block or a runtime fee/storage-deposit breakdown."
   },
   "verificationHistory": {
     "earlierReadOnlyVerification": {
@@ -96,9 +98,10 @@
     }
   },
   "actualDeployment": {
-    "actualFeePot": "295.6052222496556935",
     "deployerBalanceAfterDeploymentPot": "416.319113018674745671",
-    "source": "Reported in earlier successful verification output from the configured RPC."
+    "source": "Reported in earlier successful verification output from the configured RPC.",
+    "receiptDerivedDeploymentCostPot": "295.6052222496556935",
+    "costInterpretation": "Value reported from gasUsed × effectiveGasPriceWei. The stored deployer balance before/after records are rounded/differently timed, so this is not labelled as an exact independently reconciled fee."
   },
   "currentStateVerification": {
     "checkedAt": "2026-10-22T17:13:31.334Z",
