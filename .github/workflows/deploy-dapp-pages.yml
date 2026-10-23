@@ -44,6 +44,8 @@ jobs:
           Path("/tmp/verigate-dapp-inline.js").write_text("\n\n".join(scripts))
           PY
           node --check /tmp/verigate-dapp-inline.js
+      - name: Validate receipt lookup module syntax
+        run: node --check web3-dapp/receipt-lookup.mjs
       - name: Validate Explorer inline JavaScript syntax
         shell: bash
         run: |
@@ -68,11 +70,15 @@ jobs:
           grep -q "test-evm-rpc-v3.portaldot.dev" web3-dapp/index.html
           grep -q "eth_chainId" web3-dapp/index.html
           grep -q "authoritySigner" web3-dapp/index.html
+          grep -q 'import("./receipt-lookup.mjs")' web3-dapp/index.html
+          test -s web3-dapp/receipt-lookup.mjs
+          node --check web3-dapp/receipt-lookup.mjs
           test -s web3-dapp/explorer/index.html
           grep -q "eth_getTransactionByHash" web3-dapp/explorer/index.html
           grep -q "test-evm-rpc-v3.portaldot.dev" web3-dapp/explorer/index.html
           mkdir -p _site/explorer
           cp web3-dapp/index.html _site/index.html
+          cp web3-dapp/receipt-lookup.mjs _site/receipt-lookup.mjs
           cp web3-dapp/explorer/index.html _site/explorer/index.html
           touch _site/.nojekyll
       - name: Upload Pages artifact
