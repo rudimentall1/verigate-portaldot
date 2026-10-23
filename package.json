@@ -35,7 +35,8 @@
     "verify:funding:v2": "node scripts/verify-v2-funding.mjs",
     "test:dapp": "node scripts/validate-dapp.mjs && node --test test/receipt-lookup.test.mjs",
     "test:network-readiness": "node --test scripts/portal-dot-readiness.test.mjs",
-    "test:substrate-adapter": "node --test scripts/execute-substrate-authorized-transfer.test.mjs"
+    "test:substrate-adapter": "node --test scripts/execute-substrate-authorized-transfer.test.mjs",
+    "verify:policy:v2:readonly": "node scripts/verify-v2-policy-readonly.mjs"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^4.0.0",
