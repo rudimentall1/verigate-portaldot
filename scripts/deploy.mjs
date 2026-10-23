@@ -2,7 +2,7 @@ import "dotenv/config";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { parseExpectedSubstrateGenesisHash, validateSubstrateRpcUrl, verifySubstrateGenesisHash } = require("./substrate-genesis.js");
-const { rpcResult, assertPortalDotTestnetChainId } = require("./preflight.js");
+const { rpcResult, assertPortalDotTestnetChainId, assertPortalDotTestnetRpcUrl } = require("./preflight.js");
 const { parseHexQuantity, calculateDeploymentCost, buildDeploymentTransactionOverrides, formatUnitsExact } = require("./deployment-estimate.js");
 const hre = (await import("hardhat")).default;
 const { ethers } = await hre.network.create();
@@ -17,6 +17,7 @@ async function main() {
     throw new Error("Refusing deployment: PORTALDOT_CHAIN_ID must be explicitly set to the confirmed positive decimal chain ID.");
   }
   const expectedChainId = assertPortalDotTestnetChainId(BigInt(chainIdText), "V1 deployment");
+  assertPortalDotTestnetRpcUrl(rpcUrl, "V1 deployment");
   const network = await ethers.provider.getNetwork();
   const rpcChainIdHex = await rpcResult(rpcUrl, "eth_chainId", []);
   const rpcChainId = parseHexQuantity(rpcChainIdHex, "eth_chainId result");
