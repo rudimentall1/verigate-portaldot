@@ -88,6 +88,16 @@ def run() -> None:
                 && document.querySelector('#chainId')?.textContent.trim() !== '—'""",
             timeout=60000,
         )
+        # refresh() reads base network state first, then awaits the separate
+        # V2 policy eth_call group. Wait for that second stage to finish before
+        # asserting policy values; otherwise the smoke test races the UI.
+        page.wait_for_function(
+            """() => {
+                const value = document.querySelector('#policyStatus')?.textContent.trim() || '';
+                return value !== '' && value !== 'Reading contract policy…';
+            }""",
+            timeout=30000,
+        )
         checks = {
             "url": page.url,
             "title": page.title(),
