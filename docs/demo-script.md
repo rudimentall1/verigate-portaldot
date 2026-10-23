@@ -53,9 +53,9 @@ Say: “The local integration sends allowed and denied actions through Verigate'
 
 ### 1:45–2:25 — Confirmed public testnet transfer
 
-On screen: show the actual V2 transfer report: transaction hash, block `149241`, receipt status `1`, amount `0.1 POT`, receipt-derived cost figure `7.82782148139542551 POT` (`gasUsed × effectiveGasPriceWei`; not balance-reconciled), recipient, and matching `TransferExecuted` event. The recipient differs from the relayer/sender. Show the saved dated report and label the RPC verification timestamp; do not imply a new lookup succeeded unless you have just repeated it. The reported guard balance after the transfer was `0.01 POT`; the recipient balance delta was not separately measured.
+On screen: show the actual V2 transfer report: transaction hash, block `149241`, receipt status `1`, amount `0.1 POT`, sender debit `7.82782148139542551 POT`, reconciled by read-only before/after sender-balance reads for the isolated block, recipient, and matching `TransferExecuted` event. The recipient differs from the relayer/sender. Show the saved dated report and label the RPC verification timestamp; do not imply a new lookup succeeded unless you have just repeated it. The reported guard balance after the transfer was `0.01 POT`; the recipient balance delta was not separately measured.
 
-Say: “This is the confirmed PortalDot V3 testnet transfer. Verigate returned ALLOW, the bridge signed the exact action, and the V2 guard emitted the matching execution event. The receipt-derived cost figure was 7.8278 POT for a 0.1 POT transfer. The relayer's before/after balance delta and runtime fee/storage-deposit breakdown were not captured for this transaction, so do not call this an independently reconciled execution fee. The guard enforces allowlist and spending limits at the contract boundary; Verigate Ed25519 verification remains off-chain in the bridge.”
+Say: “This is the confirmed PortalDot V3 testnet transfer. Verigate returned ALLOW, the bridge signed the exact action, and the V2 guard emitted the matching execution event. The sender's balance fell from 416.196502092920504516 to 408.368680611525079006 POT in a block containing exactly one EVM transaction. The 7.8278 POT decrease matches gasUsed × effectiveGasPriceWei. This is a single-RPC balance reconciliation; the runtime cost was not split into execution-fee and storage-deposit components. The guard enforces allowlist and spending limits at the contract boundary; Verigate Ed25519 verification remains off-chain in the bridge.”
 
 ### 2:25–2:45 — Close
 
@@ -68,7 +68,7 @@ Say: “This is a focused agent-authorization middleware prototype on PortalDot 
 - [ ] Video is under three minutes with clear audio.
 - [ ] Dashboard URL points at the deployed V2 address, and all shown values are read from RPC.
 - [ ] Live RPC, local Hardhat ALLOW/BLOCK, and public testnet transfer are clearly distinguished.
-- [ ] Transfer recipient is not the sender/relayer; amount and receipt-derived cost are visible together, and the missing balance/fee-breakdown verification is disclosed.
+- [ ] Transfer recipient is not the sender/relayer; amount and receipt-derived cost are visible together, and the single-RPC basis and missing fee/storage-deposit breakdown are disclosed.
 - [ ] Local cap/window/allowlist tests are labelled local; no implication of public-chain negative tests.
 - [ ] No raw authorization JSON, secret files, private keys or mnemonics appear.
 - [ ] No H160-to-SS58 mapping claim is made unless a real runtime storage entry was verified.
@@ -77,4 +77,4 @@ Say: “This is a focused agent-authorization middleware prototype on PortalDot 
 
 ## Known limits
 
-V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`; the live 0.1 POT transfer is documented, but the public-chain negative cap/window cases are not recorded as mined revert transactions. The receipt-derived cost figure is 7.82782148139542551 POT, but the relayer balance delta and runtime fee/storage-deposit breakdown were not recorded for this V2 transfer. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support.
+V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`; the live 0.1 POT transfer is documented, but the public-chain negative cap/window cases are not recorded as mined revert transactions. The sender debit of 7.82782148139542551 POT was reconciled against the sender's before/after balance using the configured RPC. No independent second-RPC check or runtime execution-fee/storage-deposit breakdown is available. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support.
