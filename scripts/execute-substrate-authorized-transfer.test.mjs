@@ -9,6 +9,7 @@ import {
   EXPECTED_ASSET,
   NATIVE_SCALE,
   formatNativePot,
+  assertEstimatedFeeWithinCeiling,
   normalizeSs58Address,
   validateSubstrateRpcUrl,
   resolveExpectedGenesisHash,
@@ -216,6 +217,25 @@ test("signed fee ceiling is bound and rejects malformed or mismatched metadata",
   );
   assert.throws(
     () => validateSubstrateTransferBinding(missing, { now: 2_000_000_000 }),
+    /canonical positive decimal integer string/,
+  );
+});
+
+test("fee estimate must remain within the signed fee ceiling", () => {
+  assert.deepEqual(assertEstimatedFeeWithinCeiling("100", "100"), {
+    estimatedFeeBaseUnits: "100",
+    maxFeeBaseUnits: "100",
+  });
+  assert.deepEqual(assertEstimatedFeeWithinCeiling("99", "100"), {
+    estimatedFeeBaseUnits: "99",
+    maxFeeBaseUnits: "100",
+  });
+  assert.throws(
+    () => assertEstimatedFeeWithinCeiling("101", "100"),
+    /exceeds the signed max_fee_base_units ceiling/,
+  );
+  assert.throws(
+    () => assertEstimatedFeeWithinCeiling("1", "01"),
     /canonical positive decimal integer string/,
   );
 });
