@@ -31,7 +31,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 | PortalDot V2 deployment and policy readback | Previously confirmed via configured RPC | [V2 deployment record](evidence/portaldot-v2-deployment-2026-10-22.json). Deployment receipt is no longer returned by that RPC; current runtime code and policy readbacks were reported successful. Do not redeploy to recreate RPC history. |
 | Core Verigate ALLOW → bridge signature → PortalDot execution | Live testnet transfer recorded | [V2 live-transfer evidence](evidence/portaldot-v2-live-transfer-2026-10-22.json): receipt status 1, block 149241, exactly one matching `TransferExecuted` event, recipient and amount 0.1 POT. |
 | Independent verification limits | Explicitly documented | The recorded checks use the configured PortalDot RPC; they do not independently authenticate the RPC operator or use a second provider. Recipient balance delta and post-transaction nonce state were not recorded by the live verifier. |
-| V2 policy negative cases | Local tests exist; live negative cases not verified | [V2 contract tests](../test/PortalDotAgentGuardV2.test.js) cover over-cap transfer, rolling-window overflow, and nonce non-consumption on revert. Do not describe those tests as live testnet evidence. |
+| V2 policy negative cases | Local tests exist; live negative cases not verified | [V2 contract tests](../test/PortalDotAgentGuardV2.test.js) cover over-cap transfer, time-window cap overflow, and nonce non-consumption on revert. Do not describe those tests as live testnet evidence. |
 | Public DApp | Published, read-only view | Use the V2 guard URL above. Dashboard state is not itself proof that Verigate authorized or executed a transaction. |
 | Demo video under 3 minutes | **Pending** | Record one real ALLOW → V2 receipt path and one meaningful blocked/rejected case. Clearly label local tests versus live testnet evidence. |
 | Presentation | Published | [Presentation PDF](Verigate-PortalDot-Presentation.pdf). |
@@ -46,7 +46,7 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 - Address: `0x87C494a5e4B0A8E055F283767579667E10E046C6`.
 - Runtime code hash recorded: `0x010a565cad83a33442d0f23f6fcb6f605a76082a5b58434813bedf84c54f0859`.
 - Deployment transaction recorded: `0x331c1fc027da51af26ed5ee92ef22a8250fe4efdf0d84526f5fe2203f5d3494b`, block 148397. Historical receipt availability later failed on the configured RPC; the current code/configuration readback was reported successful.
-- Initial policy: 0.1 POT maximum per transfer, 0.5 POT per 3600-second window, initial recipient allowlisted.
+- Initial policy: 0.1 POT maximum per transfer, 0.5 POT per resettable 3600-second interval, initial recipient allowlisted.
 - Successful live transfer: `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`, block 149241, amount 0.1 POT, one matching `TransferExecuted` event. Reported actual fee: 7.82782148139542551 POT.
 - The actual transfer was preceded by a fresh Verigate `ALLOW`, bridge signature, pre-broadcast re-simulation, refreshed gas quote and fee-budget check.
 - Current CI on commit `0133188cbe8bca6de06e72794a1da8e4d7a2b672`: Test, PortalDot CI, PortalDot RPC health, and Explorer live smoke check workflows reported success. These checks do not replace the live transaction evidence or the pending demo video.
