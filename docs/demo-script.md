@@ -1,8 +1,8 @@
 # PortalDot Hacker House demo script
 
-Recording status: not recorded. Target duration: 2:40–2:45. Public dashboard: https://rudimentall1.github.io/verigate-portaldot/
+Recording status: working render exists (2:39, 1920×1080, 30 fps, H.264/AAC). Do not submit this render as final until the stale outro is replaced and the complete audio/subtitle timing is checked. The MP4 is user-provided outside the repo; its matching SRT is not present in this repository snapshot. Target maximum: 3:00. Public dashboard: https://rudimentall1.github.io/verigate-portaldot/
 
-## Gate before recording
+## Gate before final render/submission
 
 V2 deployment/configuration and a positive live transfer are now documented in `docs/evidence/portaldot-v2-deployment-2026-10-22.json` and `docs/evidence/portaldot-v2-live-transfer-2026-10-22.json`. Before recording, check these gates:
 - The current V2 code and configuration are read live from chain ID `420420777` if the RPC serves them; the historical deployment receipt may no longer be returned by this RPC, so distinguish a saved deployment receipt from a fresh lookup.
@@ -11,7 +11,7 @@ V2 deployment/configuration and a positive live transfer are now documented in `
 - Show the cap, time-window and allowlist negative cases from the local Solidity tests as **local tests**. Do not imply these negative cases were submitted as paid transactions on public PortalDot.
 - The published GitHub Pages site has the read-only dashboard, and `?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6` reads the actual deployed V2 state.
 
-If a current RPC read is unavailable, show the dated evidence as historical and say so explicitly. Never describe a saved receipt as a fresh lookup.
+If a current RPC read is unavailable, show dated evidence as historical and say so explicitly. Never describe a saved receipt as a fresh lookup. V1's block-132475 transaction was successfully re-queried from the configured RPC when the 21 Oct evidence was captured; a later lookup shown in the current video no longer returned that historical receipt. V2's block-149241 receipt, exact event and sender/recipient balance deltas were subsequently re-queried through the same configured RPC.
 
 ## Recording setup
 
@@ -53,7 +53,7 @@ Say: “The local integration sends allowed and denied actions through Verigate'
 
 ### 1:45–2:25 — Confirmed public testnet transfer
 
-On screen: show the actual V2 transfer report: transaction hash, block `149241`, receipt status `1`, amount `0.1 POT`, sender debit `7.82782148139542551 POT`, reconciled by read-only before/after sender-balance reads for the isolated block, recipient, and matching `TransferExecuted` event. The recipient differs from the relayer/sender. Show the saved dated report and label the RPC verification timestamp; do not imply a new lookup succeeded unless you have just repeated it. The reported guard balance after the transfer was `0.01 POT`; a later read-only balance check showed the recipient increase from `0` to `0.1 POT` across the isolated block using the same RPC.
+On screen: show the actual V2 transfer report: transaction hash, block `149241`, receipt status `1`, amount `0.1 POT`, sender debit `7.82782148139542551 POT`, reconciled by read-only before/after sender-balance reads for the isolated block, recipient, and matching `TransferExecuted` event. The V2 recipient differs from the relayer/sender. Show the saved dated report and label the RPC verification timestamp; do not imply a new lookup succeeded unless you have just repeated it. The reported guard balance after the transfer was `0.01 POT`; a later read-only balance check showed the recipient increase from `0` to `0.1 POT` across the isolated block using the same RPC.
 
 Say: “This is the confirmed PortalDot V3 testnet transfer. Verigate returned ALLOW, the bridge signed the exact action, and the V2 guard emitted the matching execution event. The sender's balance fell from 416.196502092920504516 to 408.368680611525079006 POT in a block containing exactly one EVM transaction. The 7.8278 POT decrease matches gasUsed × effectiveGasPriceWei. This is a single-RPC balance reconciliation; the runtime cost was not split into execution-fee and storage-deposit components. The guard enforces allowlist and spending limits at the contract boundary; Verigate Ed25519 verification remains off-chain in the bridge.”
 
@@ -77,4 +77,4 @@ Say: “This is a focused agent-authorization middleware prototype on PortalDot 
 
 ## Known limits
 
-V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`; the live 0.1 POT transfer is documented, but the public-chain negative cap/window cases are not recorded as mined revert transactions. The sender debit of 7.82782148139542551 POT was reconciled against the sender's before/after balance using the configured RPC. No independent second-RPC check or runtime execution-fee/storage-deposit breakdown is available. The recipient balance delta was reconciled through the same RPC. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support.
+V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`; the live 0.1 POT transfer is documented, but the public-chain negative cap/window cases are not recorded as mined revert transactions. The sender debit of 7.82782148139542551 POT was reconciled against the sender's before/after balance using the configured RPC. No independent second-RPC check or runtime execution-fee/storage-deposit breakdown is available. The recipient balance delta was reconciled through the same RPC. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support. The current working MP4's outro still asks to repeat the transfer, so replace that line with a V1/V2 evidence summary before submission.
