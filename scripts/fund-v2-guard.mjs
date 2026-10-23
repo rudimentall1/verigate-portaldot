@@ -15,6 +15,7 @@ import {
 } from "ethers";
 
 const require = createRequire(import.meta.url);
+const { assertPortalDotTestnetRpcUrl } = require("./preflight.js");
 const {
   parseExpectedSubstrateGenesisHash,
   validateSubstrateRpcUrl,
@@ -62,6 +63,7 @@ async function main() {
   if (!rpcUrl || chainIdText !== EXPECTED_CHAIN_ID.toString() || !substrateUrl || !genesisPin || !privateKeyText) {
     throw new Error("Require PortalDot RPC, chain ID 420420777, Substrate RPC/genesis pin and DEPLOYER_PRIVATE_KEY in .env.");
   }
+  if (broadcast) assertPortalDotTestnetRpcUrl(rpcUrl, "V2 guard funding broadcast");
   const wallet = new Wallet(privateKeyText.startsWith("0x") ? privateKeyText : `0x${privateKeyText}`);
   const sender = getAddress(wallet.address);
   if (sender !== getAddress(EXPECTED_DEPLOYER)) {
