@@ -121,4 +121,13 @@ jobs:
       - name: Test the published page in Chromium
         env:
           VERIGATE_DAPP_URL: https://rudimentall1.github.io/verigate-portaldot/
+          VERIGATE_DAPP_SMOKE_OUTPUT: ${{ runner.temp }}/published-dapp-smoke.json
         run: python scripts/smoke-published-dapp.py
+      - name: Upload published DApp smoke evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: published-dapp-browser-smoke
+          path: ${{ runner.temp }}/published-dapp-smoke.json
+          if-no-files-found: warn
+          retention-days: 14
