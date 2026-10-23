@@ -78,7 +78,7 @@ async function main() {
 
     const observedCodeHash = code === "0x" ? null : keccak256(code);
     const receiptContractAddress = receipt?.contractAddress ? getAddress(receipt.contractAddress) : null;
-    const actualFeeWei = receipt ? receipt.gasUsed * receipt.gasPrice : null;
+    const receiptDerivedCostWei = receipt ? receipt.gasUsed * receipt.gasPrice : null;
     const stateChecks = {
       chainIdMatches: network.chainId === EXPECTED_CHAIN_ID,
       runtimeCodePresent: code !== "0x",
@@ -125,7 +125,8 @@ async function main() {
       observedRuntimeBytecodeHash: observedCodeHash,
       gasUsed: receipt ? receipt.gasUsed.toString() : null,
       effectiveGasPriceWei: receipt ? receipt.gasPrice.toString() : null,
-      actualDeploymentFeePot: actualFeeWei === null ? null : formatEther(actualFeeWei),
+      costInterpretation: "gasUsed * effectiveGasPriceWei; receipt-derived value, not a gas-only fee or balance reconciliation. Review pallet-revive fee/storage-deposit semantics separately.",
+      receiptDerivedDeploymentCostPot: receiptDerivedCostWei === null ? null : formatEther(receiptDerivedCostWei),
       deployerCurrentBalancePot: formatEther(deployerBalance),
       guardCurrentBalancePot: formatEther(guardBalance),
       readback: {
