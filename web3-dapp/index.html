@@ -119,6 +119,54 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
   }
   function setMessage(text, cls="") { el("message").textContent = text; el("message").className = cls; }
 
+  async function probeRpcEnvelope(method, params = []) {
+    let lastError;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const response = await fetch(RPC, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: Date.now() + attempt, method, params })
+        });
+        if (!response.ok) {
+          const error = new Error("RPC HTTP " + response.status);
+          if ((response.status === 429 || response.status >= 500) && attempt === 0) {
+            lastError = error;
+            await new Promise(resolve => setTimeout(resolve, 350));
+            continue;
+          }
+          throw error;
+        }
+        return await response.json();
+      } catch (error) {
+        lastError = error;
+        const message = String(error?.message || error);
+        const transient = /failed to fetch|networkerror|network request failed|RPC HTTP (?:429|5\d\d)/i.test(message);
+        if (attempt === 0 && transient) {
+          await new Promise(resolve => setTimeout(resolve, 350));
+          continue;
+        }
+        throw new Error(method + " request failed after " + (attempt + 1) + " attempt(s): " + message);
+      }
+    }
+    throw new Error(method + " request failed after retry: " + String(lastError?.message || lastError));
+  }
+
+  async function probeRpcResult(method, params = []) {
+    const body = await probeRpcEnvelope(method, params);
+    if (body.error) throw new Error(method + " RPC error: " + (body.error.message || "unknown error"));
+    if (!Object.prototype.hasOwnProperty.call(body, "result")) {
+      throw new Error(method + " returned neither result nor a JSON-RPC error.");
+    }
+    return body.result;
+  }
+
+  async function probeReadMethod(name, args = []) {
+    const data = iface.encodeFunctionData(name, args);
+    const result = await probeRpcResult("eth_call", [{ to: ADDRESS, data }, "latest"]);
+    return iface.decodeFunctionResult(name, result)[0];
+  }
+
   function extractRpcRevertData(error) {
     const queue = [error];
     const seen = new Set();
@@ -144,9 +192,9 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
       throw new Error("Live denial probes run only against the recorded V2 guard; switch back to its default address.");
     }
     const [chainHex, code, block] = await Promise.all([
-      rpc("eth_chainId"),
-      rpc("eth_getCode", [DEFAULT_V2, "latest"]),
-      rpc("eth_getBlockByNumber", ["latest", false])
+      probeRpcResult("eth_chainId"),
+      probeRpcResult("eth_getCode", [DEFAULT_V2, "latest"]),
+      probeRpcResult("eth_getBlockByNumber", ["latest", false])
     ]);
     if (quantity(chainHex) !== 420420777n) {
       throw new Error("PortalDot chain ID mismatch; no denial result is accepted.");
@@ -157,7 +205,7 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
     }
     if (!block || !block.timestamp) throw new Error("The RPC did not return a latest block timestamp.");
 
-    const maxPerTransfer = BigInt(await readMethod("maxPerTransfer"));
+    const maxPerTransfer = BigInt(await probeReadMethod("maxPerTransfer"));
     let recipient;
     let amount;
     let expectedError;
@@ -168,7 +216,7 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
         "0xdead00000000000000000000000000000000beef"
       ];
       for (const candidateAddress of candidates) {
-        if (!(await readMethod("allowedRecipients", [candidateAddress]))) {
+        if (!(await probeReadMethod("allowedRecipients", [candidateAddress]))) {
           recipient = candidateAddress;
           break;
         }
@@ -178,7 +226,7 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
       expectedError = "InvalidRecipient";
     } else if (kind === "over-cap") {
       recipient = DEMO_RECIPIENT;
-      if (!(await readMethod("allowedRecipients", [recipient]))) {
+      if (!(await probeReadMethod("allowedRecipients", [recipient]))) {
         throw new Error("The recorded demo recipient is no longer allowlisted; no cap probe was accepted.");
       }
       amount = maxPerTransfer + 1n;
@@ -194,18 +242,10 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
     const data = denialSimulationInterface.encodeFunctionData("executeTransfer", [
       recipient, amount, nonce, deadline, actionId, dummySignature
     ]);
-    const response = await fetch(RPC, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: Date.now(),
-        method: "eth_call",
-        params: [{ to: DEFAULT_V2, data }, "latest"]
-      })
-    });
-    if (!response.ok) throw new Error("RPC HTTP " + response.status + " during read-only eth_call.");
-    const body = await response.json();
+    const body = await probeRpcEnvelope(
+      "eth_call",
+      [{ to: DEFAULT_V2, data }, "latest"]
+    );
     if (!body.error) {
       throw new Error("eth_call did not revert. This probe is not counted as denial evidence.");
     }
