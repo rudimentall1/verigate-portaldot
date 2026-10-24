@@ -91,33 +91,6 @@ def run() -> None:
             if denial.get_by_role("link", name=link_name).count() != 1:
                 fail("Denial proof panel is missing exactly one evidence link: " + link_name)
 
-        # The public contract must reject both attacks through read-only eth_call.
-        page.get_by_role("button", name="Simulate unlisted recipient (read-only)").click()
-        page.wait_for_function(
-            """() => {
-                const value = document.querySelector('#liveProbeResult')?.textContent || '';
-                return value.startsWith('PASS — on-chain eth_call returned InvalidRecipient()')
-                    || value.startsWith('UNVERIFIED —');
-            }""",
-            timeout=30000,
-        )
-        live_unlisted_probe = text_of(page, "#liveProbeResult")
-        if not live_unlisted_probe.startswith("PASS — on-chain eth_call returned InvalidRecipient()"):
-            fail("Live unlisted-recipient eth_call did not confirm the expected custom error: " + live_unlisted_probe)
-
-        page.get_by_role("button", name="Simulate over-cap amount (read-only)").click()
-        page.wait_for_function(
-            """() => {
-                const value = document.querySelector('#liveProbeResult')?.textContent || '';
-                return value.startsWith('PASS — on-chain eth_call returned AmountExceedsCap(amount, cap)')
-                    || value.startsWith('UNVERIFIED —');
-            }""",
-            timeout=30000,
-        )
-        live_cap_probe = text_of(page, "#liveProbeResult")
-        if not live_cap_probe.startswith("PASS — on-chain eth_call returned AmountExceedsCap(amount, cap)"):
-            fail("Live over-cap eth_call did not confirm the expected custom error: " + live_cap_probe)
-
         # Exercise the same first-screen demonstration at a narrow mobile width.
         page.set_viewport_size({"width": 375, "height": 812})
         mobile_layout = page.evaluate(
@@ -184,9 +157,6 @@ def run() -> None:
             "policySeconds": text_of(page, "#policySeconds"),
             "policyRecipient": text_of(page, "#policyRecipient"),
             "receiptModuleStatus": module["status"],
-            "liveUnlistedProbe": live_unlisted_probe,
-            "liveOverCapProbe": live_cap_probe,
-            "liveDenialProbeBroadcasted": False,
         }
 
         if checks["rpcStatus"] != "Responding":
@@ -209,6 +179,39 @@ def run() -> None:
             fail("Live V2 policy values differ from the recorded deployment: " + json.dumps(checks, ensure_ascii=False))
         if checks["policyRecipient"] != "Allowed":
             fail("The recorded demo recipient is not reported as allowlisted: " + json.dumps(checks, ensure_ascii=False))
+
+        # The public contract must reject both attacks through read-only eth_call.
+        page.get_by_role("button", name="Simulate unlisted recipient (read-only)").click()
+        page.wait_for_function(
+            """() => {
+                const value = document.querySelector('#liveProbeResult')?.textContent || '';
+                return value.startsWith('PASS — on-chain eth_call returned InvalidRecipient()')
+                    || value.startsWith('UNVERIFIED —');
+            }""",
+            timeout=30000,
+        )
+        live_unlisted_probe = text_of(page, "#liveProbeResult")
+        if not live_unlisted_probe.startswith("PASS — on-chain eth_call returned InvalidRecipient()"):
+            fail("Live unlisted-recipient eth_call did not confirm the expected custom error: " + live_unlisted_probe)
+
+        # Let the first read-only call settle before issuing the second to the public endpoint.
+        page.wait_for_timeout(500)
+        page.get_by_role("button", name="Simulate over-cap amount (read-only)").click()
+        page.wait_for_function(
+            """() => {
+                const value = document.querySelector('#liveProbeResult')?.textContent || '';
+                return value.startsWith('PASS — on-chain eth_call returned AmountExceedsCap(amount, cap)')
+                    || value.startsWith('UNVERIFIED —');
+            }""",
+            timeout=30000,
+        )
+        live_cap_probe = text_of(page, "#liveProbeResult")
+        if not live_cap_probe.startswith("PASS — on-chain eth_call returned AmountExceedsCap(amount, cap)"):
+            fail("Live over-cap eth_call did not confirm the expected custom error: " + live_cap_probe)
+
+        checks["liveUnlistedProbe"] = live_unlisted_probe
+        checks["liveOverCapProbe"] = live_cap_probe
+        checks["liveDenialProbeBroadcasted"] = False
 
         # Exercise the deployed generic lookup with the known V2 transfer.
         # Archive/pruning differences are reported as unavailable (not success),
