@@ -42,7 +42,8 @@ GENESIS_HASH = "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283
 ACTION_TYPE = "portaldot.substrate_transfer"
 NETWORK = "portaldot-v3-substrate"
 ASSET = "POT"
-DEFAULT_AMOUNT_BASE_UNITS = "10000000000000"  # 0.1 POT at 14 decimals
+DEFAULT_AMOUNT_BASE_UNITS = "1000000000000"  # 0.01 POT; fits the default 10% PROBATION multiplier of a 0.1 POT ceiling
+DEFAULT_CAPABILITY_MAX_BASE_UNITS = "10000000000000"  # 0.1 POT policy/capability ceiling
 DEFAULT_MAX_FEE_BASE_UNITS = "1000000000000"  # 0.01 POT; preflight ceiling, not an on-chain fee cap
 MAX_AMOUNT = (1 << 128) - 1
 
@@ -252,7 +253,7 @@ def verify_agent_key(server_cwd: Path, db_path: Path, plan: dict, agent_key) -> 
 
 
 def ensure_capability(server_cwd: Path, db_path: Path, plan: dict, capability_id: str,
-                      recipient: str, amount: int) -> str:
+                      recipient: str, capability_max: int) -> str:
     sys.path.insert(0, str(server_cwd))
     from core.capabilities import CapabilityRegistry
     from core.models import Capability
@@ -274,7 +275,7 @@ def ensure_capability(server_cwd: Path, db_path: Path, plan: dict, capability_id
                 and tuple(existing.allowed_targets) == (recipient,)
                 and tuple(existing.allowed_networks) == (NETWORK,)
                 and tuple(existing.allowed_assets) == (ASSET,)
-                and Decimal(str(existing.max_per_action.get(ASSET, "0"))) == Decimal(amount)
+                and Decimal(str(existing.max_per_action.get(ASSET, "0"))) == Decimal(capability_max)
             )
             if not valid:
                 die("The native capability ID already exists with different or inactive authority; refusing to overwrite.")
@@ -288,12 +289,12 @@ def ensure_capability(server_cwd: Path, db_path: Path, plan: dict, capability_id
             allowed_targets=(recipient,),
             allowed_networks=(NETWORK,),
             allowed_assets=(ASSET,),
-            max_per_action={ASSET: amount},
+            max_per_action={ASSET: capability_max},
             metadata={
                 "purpose": "Native PortalDot Substrate testnet system_dryRun only; no broadcast performed by preparation helper",
                 "recipient_ss58": recipient,
                 "genesis_hash": GENESIS_HASH,
-                "max_authorized_amount_base_units": str(amount),
+                "max_authorized_amount_base_units": str(capability_max),
             },
         )
         CapabilityRegistry(storage).register(cap)
@@ -317,13 +318,18 @@ def main() -> int:
     validate_ss58(client_root, recipient)
 
     amount_text = client_env.get("PORTALDOT_SUBSTRATE_AUTH_AMOUNT_BASE_UNITS", "").strip() or DEFAULT_AMOUNT_BASE_UNITS
+    capability_max_text = client_env.get("PORTALDOT_SUBSTRATE_CAPABILITY_MAX_BASE_UNITS", "").strip() or DEFAULT_CAPABILITY_MAX_BASE_UNITS
     fee_text = client_env.get("PORTALDOT_SUBSTRATE_MAX_FEE_BASE_UNITS", "").strip() or DEFAULT_MAX_FEE_BASE_UNITS
     for label, value in (("PORTALDOT_SUBSTRATE_AUTH_AMOUNT_BASE_UNITS", amount_text),
+                         ("PORTALDOT_SUBSTRATE_CAPABILITY_MAX_BASE_UNITS", capability_max_text),
                          ("PORTALDOT_SUBSTRATE_MAX_FEE_BASE_UNITS", fee_text)):
         if not re.fullmatch(r"[1-9][0-9]*", value) or int(value) > MAX_AMOUNT:
             die(f"{label} must be a canonical positive integer string within the native balance range.")
     amount = int(amount_text)
+    capability_max = int(capability_max_text)
     max_fee = int(fee_text)
+    if amount > capability_max:
+        die("PORTALDOT_SUBSTRATE_AUTH_AMOUNT_BASE_UNITS cannot exceed PORTALDOT_SUBSTRATE_CAPABILITY_MAX_BASE_UNITS.")
     signer_address = client_env.get("PORTALDOT_SUBSTRATE_SIGNER_ADDRESS", "").strip()
     if signer_address:
         validate_ss58(client_root, signer_address)
@@ -391,9 +397,9 @@ def main() -> int:
         "allowed_networks": [NETWORK],
         "allowed_assets": [ASSET],
         "allowed_targets": [recipient],
-        # The action amount is deliberately expressed in native base units to
-        # match the signed exact amount and capability ceiling in this test path.
-        "per_tx_cap": {ASSET: amount},
+        # This is the policy ceiling. The requested action may be lower so the
+        # dynamic-authority PROBATION multiplier can constrain the first action.
+        "per_tx_cap": {ASSET: capability_max},
         "rate_limit_per_minute": 10,
     }
     import yaml
@@ -482,7 +488,7 @@ def main() -> int:
     from core.policy import Policy
     Policy.load(str(policy_path))
 
-    cap_status = ensure_capability(server_cwd, db_path, plan, capability_id, recipient, amount)
+    cap_status = ensure_capability(server_cwd, db_path, plan, capability_id, recipient, capability_max)
 
     # Verify the loopback verifier exposes the same pinned issuer key.
     from cryptography.hazmat.primitives import serialization
@@ -581,6 +587,8 @@ def main() -> int:
         "recipientSs58": recipient,
         "amountBaseUnits": amount_text,
         "amountPOT": str(Decimal(amount_text) / Decimal(10**14)),
+        "capabilityMaxBaseUnits": capability_max_text,
+        "capabilityMaxPOT": str(Decimal(capability_max_text) / Decimal(10**14)),
         "maxFeeBaseUnits": fee_text,
         "maxFeePOT": str(Decimal(fee_text) / Decimal(10**14)),
         "authorizationResponseFile": str(response_path),
