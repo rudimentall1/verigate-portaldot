@@ -58,6 +58,9 @@ jobs:
             test -s "$pdf"
             pdfinfo "$pdf" | grep -Eq '^Pages:[[:space:]]+7$'
             grep -Fq '149241' "$source"
+            grep -Fq 'InvalidRecipient()' "$source"
+            grep -Fq 'AmountExceedsCap' "$source"
+            grep -Fq 'read-only eth_call' "$source"
             grep -Fq '0.1 POT' "$source"
             grep -Fq '7.8278 POT' "$source"
             grep -Fq 'resettable 3600-second interval' "$source"
@@ -87,6 +90,9 @@ jobs:
             test -s "$pdf"
             pdfinfo "$pdf" | grep -Eq '^Pages:[[:space:]]+7$'
             grep -Fq '149241' "$source"
+            grep -Fq 'InvalidRecipient()' "$source"
+            grep -Fq 'AmountExceedsCap' "$source"
+            grep -Fq 'read-only eth_call' "$source"
             grep -Fq '0.1 POT' "$source"
             grep -Fq '7.8278 POT' "$source"
             grep -Fq 'resettable 3600-second interval' "$source"

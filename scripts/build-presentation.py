@@ -181,33 +181,42 @@ paragraph(d,(1254,710),"TRUST BOUNDARY",font(18,True),fill=MUTED,max_width=450)
 paragraph(d,(1254,744),"Ed25519 stays off-chain; V2 checks the bridge EIP-712 signature.",font(19),BODY,max_width=470,leading=1.2)
 slides.append(im)
 
-# 6. Tests
-im,d=base("Evidence and unresolved limits","The V2 positive execution path is recorded; negative policy cases are local tests.",6)
-stats=[("LOCAL","contract tests",BLUE),("ALLOW","signed artifacts accepted",GREEN),("BLOCK","denied path refused",RED)]
-x=82
-for val,desc,col in stats:
-    rounded(d,(x,330,x+530,500),22,fill=PANEL,outline="#2C4968")
-    d.text((x+28,360),val,font=font(42,True),fill=col)
-    d.text((x+28,430),desc,font=font(21),fill=BODY)
-    x+=575
-bullet(d,100,565,"V1 transfer evidence is historical","A 0.1 POT transfer was recorded in block 132475 with a successful receipt and matching TransferExecuted event. A later lookup through the same configured RPC returned no historical receipt.",790,BLUE)
-bullet(d,100,730,"V2 transfer re-queried","Receipt status 1, one matching TransferExecuted event, sender debit and 0.1 POT recipient credit were checked through the same configured RPC in block 149241.",790,GREEN)
-rounded(d,(1030,580,1800,845),24,fill="#301C2A",outline=RED,width=2)
-d.text((1070,620),"IMPORTANT DISTINCTION",font=font(20,True),fill=RED)
-paragraph(d,(1070,680),"The transfer was 0.1 POT. Sender balance fell from 416.1965 to 408.3687 POT across an isolated block, exactly matching the 7.8278 POT receipt-derived amount. One configured RPC only; recipient balance increased from 0 to 0.1 POT across the isolated block. Runtime execution-fee vs refundable storage-deposit components were not separately determined.",font(21),WHITE,max_width=660,leading=1.28)
+# 6. Live enforcement evidence
+im,d=base("Live enforcement evidence","Two deployed-contract rejections were observed by read-only eth_call; the successful payment is separate testnet evidence.",6)
+cards=[
+    ("UNLISTED RECIPIENT","InvalidRecipient()","The V2 contract rejected an address outside the live allowlist.",RED),
+    ("OVER-CAP AMOUNT","AmountExceedsCap","0.100000000000000001 POT was rejected against the live 0.1 POT cap.",AMBER),
+    ("PUBLIC TRANSFER","SUCCESS • block 149241","A separate 0.1 POT transfer has a matching receipt and TransferExecuted event.",GREEN),
+]
+x_positions=[80,680,1280]
+for x,(title,result,desc,col) in zip(x_positions,cards):
+    rounded(d,(x,315,x+550,535),24,fill=PANEL,outline="#2C4968")
+    d.rounded_rectangle((x,315,x+550,328),radius=7,fill=col)
+    d.text((x+26,355),title,font=font(19,True),fill=MUTED)
+    result_font=font(30 if len(result)<22 else 23,True)
+    d.text((x+26,402),result,font=result_font,fill=col)
+    paragraph(d,(x+26,455),desc,font(18),BODY,max_width=495,leading=1.22,max_lines=3)
+rounded(d,(82,590,1010,850),24,fill=PANEL,outline="#2C4968")
+d.text((118,622),"WHAT THE BROWSER VERIFIED",font=font(20,True),fill=CYAN)
+paragraph(d,(118,669),"Chain ID 420420777, the recorded V2 runtime hash, authority signer, live policy values, allowlisted demo recipient and the known transfer receipt/event. The denial probes ran at observed block 171216 in the 24 October smoke test.",font(21),BODY,max_width=835,leading=1.32)
+paragraph(d,(118,790),"Verigate ALLOW/BLOCK itself remains a separate local end-to-end integration result.",font(18,True),fill=GREEN,max_width=835)
+rounded(d,(1040,590,1818,850),24,fill="#301C2A",outline=RED,width=2)
+d.text((1077,622),"PROOF BOUNDARY",font=font(20,True),fill=RED)
+paragraph(d,(1077,670),"The two negative results are read-only eth_call responses, not mined reverts. No transaction, signature or fee was involved. One configured RPC was used; the probes do not independently authenticate the operator or prove that Verigate returned BLOCK for those exact probe inputs.",font(20),WHITE,max_width=690,leading=1.28)
 slides.append(im)
 
-# 7. Roadmap and limitations
-im,d=base("Remaining technical and adoption gaps","The public positive path is recorded; cost semantics, live negative cases and ecosystem demand remain open.",7)
-bullet(d,95,310,"Explain the sender debit","The sender debit reconciles to 7.8278 POT for a 0.1 POT recipient credit. This is a gross balance debit; runtime execution-fee versus refundable storage-deposit components remain unresolved.",800,BLUE)
-bullet(d,95,475,"Prove negative policy paths","The cap and allowlist rejection cases are backed by local Solidity tests, not recorded public-testnet reverts.",800,CYAN)
-bullet(d,95,640,"Validate ecosystem need","No PortalDot Wallet/DaaS integration, team endorsement, or external user adoption is currently confirmed. The current contribution is a reference middleware path; independent user demand remains to be demonstrated.",800,GREEN)
-rounded(d,(1035,325,1800,800),28,fill=PANEL,outline="#2C4968")
-d.text((1080,375),"ECOSYSTEM VALUE",font=font(22,True),fill=CYAN)
-paragraph(d,(1080,435),"A reference middleware path from Verigate Ed25519 authorization off-chain to EIP-712 enforcement by a PortalDot V3 guard. This is not an integration into PortalDot Wallet or DaaS.",font(22,True),WHITE,max_width=620,leading=1.25)
-d.line((1080,580,1745,580),fill="#2C4968",width=2)
-d.text((1080,610),"LIMITATIONS",font=font(20,True),fill=AMBER)
-paragraph(d,(1080,655),"Testnet prototype, not audited or mainnet. One configured RPC only; no second-provider check or EVM genesis pin. V2 cap/allowlist failures have local-test evidence, not public-chain revert transactions. The cap is resettable, not sliding-window.",font(17),BODY,max_width=620,leading=1.28)
+# 7. Remaining gaps
+im,d=base("What is proven — and what remains open","Live policy rejections improve the proof; they do not establish production safety or universal wallet control.",7)
+bullet(d,90,310,"Sender cost remains unresolved","The recipient received 0.1 POT while the sender debit was 7.82782148139542551 POT across the isolated block. It reconciles to gasUsed × effectiveGasPriceWei, but execution fee versus refundable storage deposit is not separated.",830,BLUE)
+bullet(d,90,495,"Independent RPC verification is missing","Receipt, runtime hash and denial probes were read through one configured PortalDot RPC. No second-provider check or EVM genesis-hash pin was used for these transfers.",830,CYAN)
+bullet(d,90,680,"Native integration and demand remain unproven","A separate native Substrate adapter has offline tests, but no native transfer is claimed. H160-to-SS58 mapping, Wallet/DaaS integration and external user adoption remain unverified.",830,GREEN)
+rounded(d,(1040,320,1818,845),28,fill=PANEL,outline="#2C4968")
+d.text((1080,365),"TRUST AND SCOPE",font=font(22,True),fill=CYAN)
+paragraph(d,(1080,420),"The guard only controls payments routed through its own balance. It is not a global wallet interceptor.",font(22,True),WHITE,max_width=675,leading=1.27)
+d.line((1080,540,1770,540),fill="#2C4968",width=2)
+paragraph(d,(1080,570),"The admin can change the recipient allowlist and caps. The spending counter resets after its interval; it is not a sliding-window sum. Verigate Ed25519 is verified off-chain by the bridge; the contract verifies the bridge EIP-712 signer.",font(19),BODY,max_width=675,leading=1.28)
+d.line((1080,710,1770,710),fill="#2C4968",width=2)
+paragraph(d,(1080,742),"Testnet prototype • unaudited • not mainnet • no independent RPC authentication.",font(18,True),fill=AMBER,max_width=675,leading=1.2)
 slides.append(im)
 
 # Save previews and multipage PDF.
