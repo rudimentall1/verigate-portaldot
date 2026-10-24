@@ -127,13 +127,25 @@ The helper's normal invocation intentionally stops before broadcast. It writes p
 
 These results came from the configured PortalDot RPC. The separate verifier is a separate query path, not independent authentication of the RPC operator. The recipient balance delta was subsequently verified in a separate read-only check; post-transaction nonce state was not separately verified. The old deployment transaction receipt later became unavailable through this RPC; do not redeploy just to recreate historical RPC access.
 
-### Still open before claiming broader policy-enforcement coverage
+### V2 negative-path test status (CI run 24 October 2026)
 
-1. Verify that a transfer above the per-transfer cap reverts.
-2. Verify that a transfer exceeding the time-window cap reverts.
-3. For those negative tests, confirm that a reverted operation does not consume its nonce. Prefer local tests or a dedicated test fixture first; live revert transactions may still consume a material testnet fee.
-4. Measure the recipient's balance delta with before/after reads if that proof is needed for the demo.
-5. Confirm H160-to-SS58 mapping separately using a real runtime mapping entry. Do not infer it from an address conversion or a successful EVM transaction.
-6. The dashboard can be opened with `?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6`; it is read-only and cannot deploy, authorize, sign, or execute.
+The latest successful [Test workflow](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40088327004) ran on commit `059cfc8ba53adb67e31b1dfbe92dc5b46eb2068e`. `npm ci` and `npm test` passed. During `npm test`, Hardhat compiled four Solidity files with `solc 0.8.24` and ran the contract suite.
 
-If live RPC history becomes unavailable, preserve transaction evidence captured at the time. Never label a saved receipt as a current live lookup.
+The following V2 behaviours are confirmed by **local Hardhat contract tests**:
+
+- `rejects a transfer above maxPerTransfer without consuming its nonce`: rejects an amount one wei above the configured per-transfer cap; the nonce remains unused.
+- `rejects spending-window overflow without consuming the nonce`: after a successful 2 POT local transfer against a 3 POT test cap, an additional 1.01 POT transfer reverts with `WindowLimitExceeded`; the second nonce remains unused and `spentInWindow` remains at 2 POT.
+- `resets window accounting after the configured interval`: after advancing local EVM time by 3,601 seconds, a new 2 POT transfer succeeds and the interval counter reflects the new interval.
+- Other tests also verify that an unlisted recipient is rejected without consuming its nonce.
+
+These are local contract tests. They do not represent mined public PortalDot revert transactions. The published DApp separately has read-only live `eth_call` evidence for `InvalidRecipient()` and `AmountExceedsCap(amount, cap)`; no public transaction was broadcast for those probes. No live transaction is necessary just to re-prove the already passing local state-reversion tests.
+
+### Remaining evidence boundaries
+
+1. A mined public-testnet rejection for time-window overflow is **not recorded**. Do not claim a live on-chain window-overflow rejection. Do not send a costly transaction solely to obtain one unless there is a specific evaluation reason and a reviewed budget.
+2. H160-to-SS58 mapping still needs a separate same-finalized-block lookup; do not infer it from address conversion or successful EVM execution.
+3. Independent EVM RPC authentication is not established; the recorded live transfer and read-only denial probes used one configured provider.
+
+The dashboard can be opened with `?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6`; it is read-only and cannot deploy, authorize, sign, or execute.
+
+If live RPC history becomes unavailable, preserve evidence captured at the time. Never label a saved receipt as a current live lookup.
