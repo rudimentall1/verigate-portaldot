@@ -468,11 +468,15 @@ export function selectMortalEraConfig(currentBlock, blockHashCount, maximumPerio
   // runtimes that retain fewer historical block hashes.
   let period = 4n;
   while (period * 2n <= maxPeriod && period * 2n <= retention) period *= 2n;
-  const phase = current % period;
+  // Match sp_runtime::generic::Era::birth. For periods above 4096,
+  // the encoded phase is quantized before the checkpoint block is derived.
+  const quantizeFactor = period >> 12n;
+  const phaseStep = quantizeFactor > 1n ? quantizeFactor : 1n;
+  const phase = ((current % period) / phaseStep) * phaseStep;
   return {
     period: Number(period),
     phase,
-    birthBlock: current - phase,
+    birthBlock: current - (current % period) + phase,
   };
 }
 
@@ -515,12 +519,20 @@ async function simulateTransfer(api, signer, transfer, preflight) {
     api.query.system.account.at(blockHash, signer.address),
     api.rpc.state.getRuntimeVersion(blockHash),
   ]);
+  const simulationBlockNumber = BigInt(header.number.toString());
+  if (simulationBlockNumber < 2n) {
+    fail("Finalized head is too early to anchor a dry-run mortal era to its previous block.");
+  }
+  // system_dryRun evaluates against the state at the finalized head. That
+  // state does not yet contain System.BlockHash(head), so the signed era must
+  // start at the previous block, whose hash is available in this state.
+  const eraContextBlock = simulationBlockNumber - 1n;
   const blockHashCountCodec = api.consts.system?.blockHashCount;
   if (!blockHashCountCodec) {
     fail("Runtime does not expose System.BlockHashCount; refusing to sign a dry-run extrinsic.");
   }
   const eraConfig = selectMortalEraConfig(
-    header.number.toString(),
+    eraContextBlock.toString(),
     blockHashCountCodec.toString(),
   );
   const eraBirthHash = await api.rpc.chain.getBlockHash(eraConfig.birthBlock.toString());
@@ -530,7 +542,7 @@ async function simulateTransfer(api, signer, transfer, preflight) {
 
   const extrinsic = api.tx.balances.transferKeepAlive(transfer.recipient, transfer.amount);
   const era = api.registry.createType("ExtrinsicEra", {
-    current: header.number,
+    current: eraContextBlock.toString(),
     period: eraConfig.period,
   });
 
@@ -562,6 +574,7 @@ async function simulateTransfer(api, signer, transfer, preflight) {
     simulationRpc: "system_dryRun",
     simulationAtBlockHash: blockHash.toHex(),
     simulationAtBlockNumber: header.number.toString(),
+    simulationEraContextBlock: eraContextBlock.toString(),
     simulationEraPeriod: eraConfig.period,
     simulationEraBirthBlock: eraConfig.birthBlock.toString(),
     simulationEraBirthHash: eraBirthHash.toHex(),

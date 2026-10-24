@@ -87,17 +87,33 @@ function validResponse(now = 2_000_000_000) {
 }
 
 
-test("mortal-era birth checkpoint respects runtime block-hash retention", () => {
+test("mortal-era checkpoint matches the runtime birth formula and respects hash retention", () => {
   const selected = selectMortalEraConfig(175214, 16);
   assert.equal(selected.period, 16);
   assert.equal(selected.phase, 14n);
-  assert.equal(selected.birthBlock, 175200n);
+  assert.equal(selected.birthBlock, 175214n);
   assert.ok(175214n - selected.birthBlock < 16n);
 
   const shortHistory = selectMortalEraConfig(175214, 5);
   assert.equal(shortHistory.period, 4);
-  assert.equal(shortHistory.birthBlock, 175212n);
+  assert.equal(shortHistory.phase, 2n);
+  assert.equal(shortHistory.birthBlock, 175214n);
   assert.ok(175214n - shortHistory.birthBlock < 5n);
+});
+
+test("dry-run mortal era uses the previous block so its birth hash exists at the simulation state", () => {
+  const simulationBlock = 175261n;
+  const eraContextBlock = simulationBlock - 1n;
+  const selected = selectMortalEraConfig(eraContextBlock, 2400);
+  const period = BigInt(selected.period);
+
+  // sp_runtime::generic::Era::birth(current) at the simulation block.
+  const runtimeBirthBlock =
+    ((simulationBlock - selected.phase) / period) * period + selected.phase;
+
+  assert.equal(selected.birthBlock, eraContextBlock);
+  assert.equal(runtimeBirthBlock, eraContextBlock);
+  assert.ok(simulationBlock - runtimeBirthBlock <= 2400n);
 });
 
 test("mortal-era selection fails closed when block-hash retention is too small", () => {
