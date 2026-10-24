@@ -14,6 +14,7 @@ import {
   validateSubstrateRpcUrl,
   resolveExpectedGenesisHash,
   validateSubstrateTransferBinding,
+  interpretDryRunResult,
 } from "./execute-substrate-authorized-transfer.mjs";
 import { cryptoWaitReady, encodeAddress } from "@polkadot/util-crypto";
 import { createRequire } from "node:module";
@@ -298,5 +299,47 @@ test("authorization nonce, signed action digest and action/intent equality are c
   assert.throws(
     () => validateSubstrateTransferBinding(wrongDigest, { now: 2_000_000_000 }),
     /action digest does not match/,
+  );
+});
+
+
+test("runtime dry-run requires nested transaction-validity and dispatch success", () => {
+  assert.deepEqual(
+    interpretDryRunResult({}, { isOk: true, asOk: { isOk: true, isErr: false } }),
+    { status: "SIMULATION_SUCCESS", failureLayer: null, reason: null },
+  );
+
+  assert.deepEqual(
+    interpretDryRunResult({}, {
+      isOk: false,
+      isErr: true,
+      asErr: { toHuman: () => "Invalid Transaction: BadProof" },
+    }),
+    {
+      status: "SIMULATION_REJECTED",
+      failureLayer: "transaction-validity",
+      reason: "Invalid Transaction: BadProof",
+    },
+  );
+
+  assert.deepEqual(
+    interpretDryRunResult({}, {
+      isOk: true,
+      asOk: {
+        isOk: false,
+        isErr: true,
+        asErr: { isModule: false, toString: () => "Balances.InsufficientBalance" },
+      },
+    }),
+    {
+      status: "SIMULATION_REJECTED",
+      failureLayer: "dispatch",
+      reason: "Balances.InsufficientBalance",
+    },
+  );
+
+  assert.throws(
+    () => interpretDryRunResult({}, { isOk: true, asOk: {} }),
+    /unexpected ApplyExtrinsicResult shape/,
   );
 });
