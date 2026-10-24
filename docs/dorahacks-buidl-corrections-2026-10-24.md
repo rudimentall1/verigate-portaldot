@@ -19,7 +19,7 @@ The supplied excerpt does **not** expose the complete long-form description or s
 
 The published event listing names four tracks: Modular Cloud & Middleware, Multi-Chain & Cross-Chain Infra, Node Operations & Tooling, and Ecosystem DApps. See https://www.hackathonradar.com/database/hackathon/portaldot-hacker-house-2026.
 
-**Recommended fit: Modular Cloud & Middleware.** The submission is a policy-to-execution middleware component with a bridge, EVM guard and read-only DApp. It is not primarily node monitoring/staking, a cross-chain asset bridge, or a consumer-facing DApp. This is a recommendation, not proof that this track is currently selected in the BUIDL form. Confirm the selected field in DoraHacks before final submission.
+**Recommended fit: Modular Cloud & Middleware.** The submission is a policy-to-execution middleware component with a bridge, EVM guard and read-only DApp. It is not primarily node monitoring/staking, a cross-chain asset bridge, or a consumer-facing DApp. Earlier project notes record Node Operations & Tooling as the original track choice, but the latest supplied account-view excerpt does not show the currently selected track. If the form still permits a change, switch to **Modular Cloud & Middleware**; otherwise, confirm the existing selection and do not describe the recommendation as the actual selected track.
 
 ## Mandatory factual wording for the spending policy
 
