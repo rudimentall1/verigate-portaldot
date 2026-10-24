@@ -1,6 +1,6 @@
 # PortalDot Hacker House demo script
 
-Recording status: working render exists (2:39, 1920×1080, 30 fps, H.264/AAC). Do not submit this render as final until the stale outro is replaced and the complete audio/subtitle timing is checked. The MP4 is user-provided outside the repo; its matching SRT is not present in this repository snapshot. Target maximum: 3:00. Public dashboard: https://rudimentall1.github.io/verigate-portaldot/
+Recording status: the user reports the updated demo has been published in the BUIDL as https://www.youtube.com/watch?v=9WhBdwGgXLk. The working render inspected in this conversation is 174.733 seconds (2:54.7), 1920×1080, 30 fps, H.264/AAC; it is 5.267 seconds under the three-minute cap. Metadata and sampled frames were checked, but no full end-to-end listen/watch was completed. The sidecar SRT currently available in working materials still has the earlier wording at cues 4–8 and 46, so confirm that the public YouTube cut contains the corrected voice lines and synchronized burned-in captions before closing the video gate. Public dashboard: https://rudimentall1.github.io/verigate-portaldot/
 
 ## Gate before final render/submission
 
@@ -72,20 +72,17 @@ On screen: show the repository, deployed V2 contract address, demo URL, and repl
 
 Say: “Verigate demonstrates off-chain policy authorization, exact-action signing, live on-chain recipient and amount checks, and a recorded PortalDot testnet payment. It is an unaudited testnet prototype. It does not protect payments that bypass this guard, and we have not independently authenticated the RPC provider.”
 
-## Final checks before publishing
+## Final checks before submission
 
-- [ ] Video is under three minutes with clear audio. Replace the Status/Next segment from approximately 02:18 through the final frame using [the video edit brief](video-edit-brief.md) and [the replacement card](media/portaldot-v1-v2-outro.svg).
-- [ ] Dashboard URL points at the deployed V2 address, and all shown values are read from RPC.
-- [ ] Live RPC, local Hardhat ALLOW/BLOCK, and public testnet transfer are clearly distinguished.
-- [ ] Transfer recipient is not the sender/relayer; amount and reconciled sender debit are visible together, and the single-RPC basis and missing fee/storage-deposit breakdown are disclosed.
-- [ ] Live `eth_call` probes are labelled read-only simulation; do not present them as mined reverts or evidence that Verigate's API returned BLOCK for those exact calls.
-- [ ] Local cap/window/allowlist/replay/signature/reentrancy tests are labelled local.
-- [ ] No raw authorization JSON, secret files, private keys or mnemonics appear.
-- [ ] No H160-to-SS58 mapping claim is made unless a real runtime storage entry was verified.
-- [ ] No explorer claim is made unless the matching transaction hash was personally confirmed there.
-- [ ] Full-playback verification of narration/subtitle sync is complete; the architecture subtitle collision near 01:02 is corrected.
-- [ ] Upload the actual corrected recording and paste its exact public/judge-accessible URL into DoraHacks.
+- [x] A sub-three-minute demo URL is present on the BUIDL: https://www.youtube.com/watch?v=9WhBdwGgXLk.
+- [ ] Watch and listen to that exact public YouTube upload from start to finish; verify the new V1-recording wording, final PortalDot-testnet wording, stitched narration in segment 5, and all subtitle transitions.
+- [ ] Confirm burned-in subtitles match the voice track and the sidecar SRT. The currently attached SRT in working materials still has the previous lines “Here is the live, read-only console” and “Verigate and PortalDot demonstrate…”. It may predate the new public upload; verify rather than assuming either way.
+- [ ] Open the BUIDL page, YouTube video, repository, presentation PDF and public DApp in a logged-out/private browser window.
+- [x] Keep V1 historical proof (block 132475) separate from V2 transaction proof (block 149241).
+- [x] Keep live read-only `eth_call` denial results separate from mined transactions and local Verigate ALLOW/BLOCK integration results.
+- [x] Preserve the one-RPC/no-independent-authentication caveat and unresolved sender fee/storage-deposit split.
+- [ ] Confirm the final long-form BUIDL description uses the resettable 3,600-second interval wording, not “rolling window”.
 
 ## Known limits
 
-V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`. The published dashboard now runs read-only `eth_call` probes against the live V2 runtime: an unlisted recipient returns `InvalidRecipient()`, and a request one wei over the live per-transfer cap returns `AmountExceedsCap(amount, cap)`. These results were verified by the 24 October published Chromium smoke test, but are not mined revert transactions, incur no transaction fee, and use one configured RPC. The recorded positive transfer remains 0.1 POT in block 149241, receipt status 1, one matching event and reconciled sender/recipient balance changes. The sender debit of 7.82782148139542551 POT was reconciled against the sender's before/after balance using the configured RPC; the runtime execution-fee/storage-deposit split remains unresolved. No independent second-RPC check is available. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support. The current working MP4 still has the stale repeat-transfer outro and an architecture-caption overlap near 01:02. The replacement V1/V2 outro card is versioned at `docs/media/portaldot-v1-v2-outro.svg`; follow `docs/video-edit-brief.md` and do not mark the video complete until the edited render and full audio/subtitle playback have been reviewed.
+V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`. The published dashboard now runs read-only `eth_call` probes against the live V2 runtime: an unlisted recipient returns `InvalidRecipient()`, and a request one wei over the live per-transfer cap returns `AmountExceedsCap(amount, cap)`. These results were verified by the 24 October published Chromium smoke test, but are not mined revert transactions, incur no transaction fee, and use one configured RPC. The recorded positive transfer remains 0.1 POT in block 149241, receipt status 1, one matching event and reconciled sender/recipient balance changes. The sender debit of 7.82782148139542551 POT was reconciled against the sender's before/after balance using the configured RPC; the runtime execution-fee/storage-deposit split remains unresolved. No independent second-RPC check is available. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support. The user reports that a revised 2:54.7 cut is now published. Do not assume the old render warnings still apply to the public cut; the current attached sidecar SRT has two older voice lines, so full playback of the exact public upload and caption synchronization remain the only video acceptance gate. The replacement V1/V2 card is retained as historical source material in `docs/media/portaldot-v1-v2-outro.svg`.
