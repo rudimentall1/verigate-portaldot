@@ -451,6 +451,90 @@ export async function createTransferPreflight(api, transfer, signerAddress) {
   };
 }
 
+
+export function interpretDryRunResult(api, result) {
+  if (result?.isErr) {
+    return {
+      status: "SIMULATION_REJECTED",
+      failureLayer: "transaction-validity",
+      reason: typeof result.asErr?.toHuman === "function"
+        ? result.asErr.toHuman()
+        : String(result.asErr ?? "Unknown transaction-validity error"),
+    };
+  }
+
+  const dispatchOutcome = result?.isOk ? result.asOk : null;
+  if (dispatchOutcome && typeof dispatchOutcome.isErr === "boolean") {
+    if (dispatchOutcome.isErr) {
+      return {
+        status: "SIMULATION_REJECTED",
+        failureLayer: "dispatch",
+        reason: decodeDispatchError(api, dispatchOutcome.asErr),
+      };
+    }
+    if (dispatchOutcome.isOk) {
+      return { status: "SIMULATION_SUCCESS", failureLayer: null, reason: null };
+    }
+  }
+
+  fail("system_dryRun returned an unexpected ApplyExtrinsicResult shape; refusing to label it successful.");
+}
+
+async function simulateTransfer(api, signer, transfer, preflight) {
+  if (typeof api.rpc.system?.dryRun !== "function") {
+    fail("Connected node does not expose system_dryRun; no extrinsic was broadcast.");
+  }
+
+  const blockHash = await api.rpc.chain.getFinalizedHead();
+  const [header, account, runtimeVersion] = await Promise.all([
+    api.rpc.chain.getHeader(blockHash),
+    api.query.system.account.at(blockHash, signer.address),
+    api.rpc.state.getRuntimeVersion(blockHash),
+  ]);
+
+  const extrinsic = api.tx.balances.transferKeepAlive(transfer.recipient, transfer.amount);
+  const era = api.registry.createType("ExtrinsicEra", {
+    current: header.number,
+    period: 64,
+  });
+
+  extrinsic.sign(signer, {
+    nonce: account.nonce,
+    era,
+    blockHash,
+    genesisHash: api.genesisHash,
+    runtimeVersion,
+    tip: 0,
+  });
+
+  let outcome;
+  try {
+    // This submits the encoded payload only to the node's dry-run RPC.
+    // It does not call author_submitExtrinsic/signAndSend or mutate the chain.
+    outcome = await api.rpc.system.dryRun(extrinsic.toHex(), blockHash);
+  } catch (error) {
+    fail("PortalDot system_dryRun RPC call failed; no transaction was broadcast. " +
+      String(error?.message || error));
+  }
+
+  const interpreted = interpretDryRunResult(api, outcome);
+  return {
+    ...preflight,
+    ...interpreted,
+    simulationRpc: "system_dryRun",
+    simulationAtBlockHash: blockHash.toHex(),
+    simulationAtBlockNumber: header.number.toString(),
+    signedExtrinsicHash: extrinsic.hash.toHex(),
+    signedLocally: true,
+    transactionBroadcast: false,
+    extrinsicSubmitted: false,
+    runtimeDryRunPerformed: true,
+    message: interpreted.status === "SIMULATION_SUCCESS"
+      ? "The exact signed native transfer passed system_dryRun at the recorded finalized block. It was not broadcast; this does not guarantee a later inclusion or final fee."
+      : "system_dryRun rejected the signed native transfer. It was not broadcast.",
+  };
+}
+
 export async function runSubstrateTransfer(response, options = {}) {
   await cryptoWaitReady();
   const rpcUrl = String(options.rpcUrl ?? process.env.PORTALDOT_SUBSTRATE_RPC_URL ?? TESTNET_RPC).trim();
@@ -476,7 +560,11 @@ export async function runSubstrateTransfer(response, options = {}) {
     if (!signerAddress) fail("PORTALDOT_SUBSTRATE_SIGNER_ADDRESS is required for a read-only fee/balance preflight.");
     const preflight = await createTransferPreflight(api, transfer, signerAddress);
 
-    if (!options.broadcast) {
+    if (options.broadcast && options.simulate) {
+      fail("Choose either --simulate or --broadcast, not both.");
+    }
+
+    if (!options.broadcast && !options.simulate) {
       return {
         ...preflight,
         status: "DRY_RUN_READY",
@@ -487,15 +575,22 @@ export async function runSubstrateTransfer(response, options = {}) {
     }
 
     if (!network.officialTestnet && !network.localSimulator) {
-      fail("Broadcast is restricted to the confirmed PortalDot testnet or a loopback development node.");
+      fail("Signing/simulation is restricted to the confirmed PortalDot testnet or a loopback development node.");
     }
     const suri = String(options.signerUri ?? process.env.PORTALDOT_SUBSTRATE_SIGNER_URI ?? "");
-    if (!suri) fail("PORTALDOT_SUBSTRATE_SIGNER_URI is required only for explicit --broadcast.");
+    if (!suri) {
+      fail("PORTALDOT_SUBSTRATE_SIGNER_URI is required only for explicit --simulate or --broadcast.");
+    }
     const keyring = new Keyring({ type: "sr25519", ss58Format: SS58_FORMAT });
     const signer = keyring.addFromUri(suri);
     if (normalizeSs58Address(signer.address) !== normalizeSs58Address(signerAddress)) {
       fail("PORTALDOT_SUBSTRATE_SIGNER_URI does not match PORTALDOT_SUBSTRATE_SIGNER_ADDRESS.");
     }
+
+    if (options.simulate) {
+      return await simulateTransfer(api, signer, transfer, preflight);
+    }
+
     const replayDirectory = options.replayDirectory ||
       process.env.PORTALDOT_SUBSTRATE_REPLAY_DIR ||
       path.resolve(".verigate-substrate-replay");
@@ -509,16 +604,25 @@ async function main() {
   const args = process.argv.slice(2);
   const inputFile = args.find((arg) => !arg.startsWith("--"));
   const broadcast = args.includes("--broadcast");
-  const unknown = args.filter((arg) => arg.startsWith("--") && arg !== "--broadcast");
+  const simulate = args.includes("--simulate");
+  const unknown = args.filter((arg) =>
+    arg.startsWith("--") && arg !== "--broadcast" && arg !== "--simulate"
+  );
   if (unknown.length) fail("Unknown argument(s): " + unknown.join(", "));
+  if (broadcast && simulate) fail("Choose either --simulate or --broadcast, not both.");
   if (!inputFile || args.filter((arg) => !arg.startsWith("--")).length !== 1) {
-    fail("Usage: npm run substrate:execute -- ./authorization-response.json [--broadcast]");
+    fail("Usage: npm run substrate:execute -- ./authorization-response.json [--simulate | --broadcast]");
   }
   const response = parseJsonPreservingNumbers(fs.readFileSync(inputFile, "utf8"));
-  const report = await runSubstrateTransfer(response, { broadcast });
+  const report = await runSubstrateTransfer(response, { broadcast, simulate });
   process.stdout.write(JSON.stringify(report, null, 2) + "\n");
-  if (!broadcast && report.status === "DRY_RUN_READY") {
-    process.stdout.write("DRY-RUN ONLY: no Substrate extrinsic was signed or sent. Add --broadcast only after reviewing the exact action.\n");
+  if (!broadcast && !simulate && report.status === "DRY_RUN_READY") {
+    process.stdout.write("READ-ONLY PREFLIGHT: no Substrate extrinsic was signed or sent.\n");
+  }
+  if (simulate && report.status !== "SIMULATION_SUCCESS") {
+    process.exitCode = 2;
+  } else if (simulate) {
+    process.stdout.write("RUNTIME SIMULATION ONLY: the signed extrinsic was not broadcast.\n");
   }
 }
 
