@@ -1,41 +1,50 @@
-# Video correction brief — Verigate PortalDot Hacker House
+# Video review brief — Verigate PortalDot Hacker House
 
-Use this as an edit checklist for the existing working render.
+Updated: 24 October 2026. This file describes the current candidate render, not a claim that it has been approved after full playback.
 
-## Input and output
+## Current candidate render
 
-- Input: `Verigate-PortalDot-Hacker-House-Demo(1).mp4`.
-- Source render: 159.43 s, 1920×1080, 30 fps, H.264/AAC.
-- Target: keep the output under 3:00 and at 1920×1080 / 30 fps.
-- Replacement closing card: [`docs/media/portaldot-v1-v2-outro.svg`](media/portaldot-v1-v2-outro.svg); a 1920×1080 PNG handoff is supplied separately.
-- Keep the earlier project narration and clips unless required for the caption collision described below.
+- File supplied for review: `Verigate-PortalDot-Hacker-House-Demo (1).mp4`; sidecar captions: `Verigate-PortalDot-Hacker-House-Demo.srt`.
+- Duration: 174.733 seconds (2:54.7), 5.267 seconds under the 3-minute limit.
+- Video: 1920×1080, 30 fps, H.264 High, yuv420p.
+- Audio: AAC-LC, 48 kHz, stereo. Independent FFmpeg checks measured peak -4.2 dBFS and integrated loudness -17.3 LUFS.
+- The supplied SRT has 49 cues; its last cue ends at 172.716 seconds, about 2.017 seconds before video end.
+- A black-frame scan found no black segment of 0.5 seconds or longer.
+- Metadata, sampled frames and selected updated scenes have been checked. The MP4 has not been watched and listened to continuously; a human full-playback check is still required.
 
-## Required edits
+## Evidence framing in this cut
 
-### 1. Replace the stale final card and final narration
+- The dashboard footage is explicitly labelled as a recording of the V1 guard dated 21 October 2026. It is not a live V2 dashboard demonstration.
+- V1 historical transfer: block 132475. It is shown as saved evidence because the configured RPC later stopped returning that old receipt.
+- V2 transfer: block 149241. V2 is shown as a text evidence card, not as live dashboard footage. The card describes a successful receipt, one matching `TransferExecuted` event and sender/recipient balance reconciliation from the same configured RPC.
+- The final card says that only one RPC provider was used and that independent verification is absent. Keep that caveat.
+- The sender debit of 7.82782148139542551 POT reconciles with `gasUsed × effectiveGasPriceWei`; the split between execution fee and any refundable storage deposit remains unresolved. Do not call the full debit an irrecoverable fee.
+- The video must not imply a PortalDot team endorsement, global wallet interception, a public-chain policy-revert transaction, a security audit or production readiness.
 
-- The obsolete “Status / Next” card starts at approximately **02:18 (138 seconds)**. Its bullet says “Repeat the authorized transfer and capture a fresh receipt that can be independently verified”. That claim is outdated because the V2 transfer in block 149241 has a recorded successful receipt, matching event and same-RPC balance reconciliation.
-- Replace the entire image from about **02:18 to the final frame** with the new V1/V2 evidence card. Cover the old burned-in subtitles in this segment too; do not leave any old “repeat the transfer” caption visible.
-- Replace the original voice-over from about **02:18 to the end** with the text below. Use the supplied narrator/audio in the editing project; do not generate fake terminal or live RPC footage. If a new audio take runs longer than the slot, extend the closing card or trim preceding dead space, staying under 3:00.
-- End on the new card with the repository URL visible.
+## Two wording refinements recommended before submission
 
-### 2. Fix the architecture caption overlap
+### 1. Clarify the V1 console recording
 
-- Around **01:02 (62 seconds)** the subtitle “decision receipt and execution authorization” crosses the `executeTransfer — explicit broadcast is opt-in` annotation/arrow and the dashed evidence footer.
-- Rebuild this subtitle cue from the original text/caption source. Move it into a safe bottom caption area or retime it to a shot with less visual density. Preserve the complete sentence and avoid covering the trust-boundary label or the evidence footnote.
-- The visible subtitles in the MP4 are already composited into the frame. Editing only a separate SRT will not remove the old pixels from this MP4; export again from the editable timeline/source or cover/rebuild the affected shot.
+The visible label says “DASHBOARD RECORDING · V1 GUARD · 21 OCT 2026”, but the voice-over still says “Here is the live, read-only console” and then says it reads the “current” chain state and “latest block”. That can sound like current live V2 footage.
 
-### 3. Leave these evidence boundaries intact
+Replace the narration with wording along these lines:
 
-- V1: recorded 0.1 POT transfer, block 132475. Receipt/event was verified when captured; a later lookup through the same configured RPC no longer returned that historical receipt.
-- V2: recorded 0.1 POT transfer, block 149241. Receipt status 1, one matching `TransferExecuted` event and sender/recipient balance changes were re-queried through the same configured RPC.
-- Sender gross debit: 7.82782148139542551 POT, matching `gasUsed × effectiveGasPriceWei`. Do not describe this whole amount as an irrecoverable execution fee; the runtime fee vs refundable storage-deposit split is unresolved.
-- One configured EVM RPC only; no second-provider authentication and no EVM genesis hash pin for this transfer.
-- Testnet prototype; not audited, not mainnet.
-- Do not blur the recorded public address by default; it is part of the public evidence, unless the user explicitly chooses to conceal address-to-activity correlation.
+> This is a recording of the read-only console captured with the V1 guard on October 21. At capture time, it read the PortalDot V3 chain ID, latest block, guard bytecode, native balance and on-chain authority signer from the public RPC.
 
-## Replacement final narration (English)
+Update the voice track, burned-in captions and SRT together. Do not present the V1 footage as a live V2 view.
 
-“V1: 0.1 POT recorded in block 132475; its receipt is no longer returned by this RPC. V2: 0.1 POT in block 149241, with receipt, event and both balance changes re-queried through the same RPC. No second provider. Testnet only; unaudited, not mainnet.”
+### 2. Avoid implying a joint PortalDot demonstration
 
-Approx. 42 words. Retiming subtitles to the actual voice recording is mandatory; these instructions do not claim that a final MP4 has already been rendered or listened to in full.
+Replace:
+
+> Verigate and PortalDot demonstrate an authorization-gated transfer on testnet.
+
+With:
+
+> This prototype demonstrates an authorization-gated transfer on PortalDot’s EVM testnet.
+
+Update the voice track, burned-in subtitles and SRT consistently. This describes what the prototype demonstrates without implying PortalDot endorsement or co-authorship.
+
+## Final human check
+
+Before uploading, play the MP4 from start to finish with sound and captions enabled. In particular, verify the stitched segment 5 narration, the transitions between audio fragments, subtitle timing on all 49 cues, the architecture caption near 01:02, and the final 2-second closing card. The technical checks alone do not establish intelligibility or natural audio continuity.
