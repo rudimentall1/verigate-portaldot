@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "dotenv/config";
 /**
  * Execute one Verigate-authorized native PortalDot Substrate transfer.
  *
