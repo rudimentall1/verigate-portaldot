@@ -9,33 +9,51 @@ The user-provided account view shows a populated Verigate PortalDot BUIDL entry 
 
 The published event mirror lists the check-in deadline as 24 October 2026 at 20:00 UTC+8 (12:00 UTC). The workflow timestamps checked at 07:58 UTC on 24 October were still before that deadline. Confirm the saved check-in state in the DoraHacks UI now.
 
-## Mandatory factual correction
+## Audit of the current account-view excerpt
 
-The current BUIDL text calls the V2 spending restriction a “rolling spending limit” and a “rolling limit of 0.5 POT over a 3,600-second window”. This misdescribes the contract.
+The latest account view supplied for this review shows the project positioning line, tags `Crypto / Web3`, `Crypto-AI`, `Security`, `Substrate`, the current YouTube link, repository and social links. These are consistent with the project's implemented scope.
 
-The contract logic starts a new interval when the current interval has expired. It is not a continuously sliding rolling-window sum.
+The supplied excerpt does **not** expose the complete long-form description or selected track. Direct public-page retrieval was not available during this audit, so those two fields are not marked verified. Do not infer that a field is correct merely because the title, tags and links are visible.
 
-Use this exact wording wherever the restriction is described:
+## Track recommendation
+
+The published event listing names four tracks: Modular Cloud & Middleware, Multi-Chain & Cross-Chain Infra, Node Operations & Tooling, and Ecosystem DApps. See https://www.hackathonradar.com/database/hackathon/portaldot-hacker-house-2026.
+
+**Recommended fit: Modular Cloud & Middleware.** The submission is a policy-to-execution middleware component with a bridge, EVM guard and read-only DApp. It is not primarily node monitoring/staking, a cross-chain asset bridge, or a consumer-facing DApp. This is a recommendation, not proof that this track is currently selected in the BUIDL form. Confirm the selected field in DoraHacks before final submission.
+
+## Mandatory factual wording for the spending policy
+
+A previously inspected BUIDL text used “rolling spending limit” / “rolling limit of 0.5 POT over a 3,600-second window”. That wording is inaccurate for the deployed contract. The latest account-view excerpt does not include the complete long-form text, so this audit cannot confirm whether that sentence has since been corrected.
+
+Use this exact wording wherever the policy is described:
 
 > The current V2 configuration includes a recipient allowlist, a maximum of 0.1 POT per transfer, and a spending cap of 0.5 POT per resettable 3,600-second interval. The counter resets after the interval expires; this is not a continuously sliding rolling-window sum.
 
-Replace the sentence about a “live testnet simulation of a rolling-window violation” with:
+Do not say the live chain demonstrated a window-cap violation. The window-overflow and nonce non-consumption behaviour are established by local Hardhat tests, including the successful CI run on 24 October. The live DApp probes are read-only `eth_call` simulations for an unlisted recipient and a transfer above the per-transfer cap, not mined reverts.
 
-> A separate live testnet simulation of a time-window cap violation has not been completed. Local contract tests cover window-cap overflow and nonce non-consumption on revert.
+## Claim-by-claim audit
 
-## Tags
+### Supported by current repo evidence
 
-Recommended: keep Crypto / Web3, Crypto-AI and Security. Consider removing Account Abstraction and Chain Abstraction. The current proof does not establish ERC-4337-style account abstraction or a cross-chain execution flow. Substrate is relevant to PortalDot's runtime and preflight tooling, but do not imply a live native Substrate transfer.
+- Positive path: V2 transaction `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`, block `149241`, receipt status 1 and one matching `TransferExecuted` event. Sender and recipient balance deltas were reconciled through the configured RPC.
+- Live denial simulations: `InvalidRecipient()` for an unlisted recipient and `AmountExceedsCap(amount, cap)` for `0.100000000000000001 POT` against the live `0.1 POT` limit. These were read-only `eth_call` probes and incurred no transaction fee.
+- Local tests: spending-window overflow reverts without consuming the nonce or changing the accumulated window spend; window accounting resets after the configured interval. Latest CI run: https://github.com/rudimentall1/verigate-portaldot/actions/runs/40088327004.
+- The guard controls only transfers routed through its own contract balance. The contract verifies the bridge's EIP-712 signature; Verigate Ed25519 verification occurs off-chain in the bridge.
 
-## Evidence wording to preserve
+### Must remain disclosed
 
-- Positive path: a 0.1 POT transfer, transaction `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`, block 149241, receipt status 1 and one matching `TransferExecuted` event.
-- Negative paths: the deployed V2 contract returned `AmountExceedsCap(amount, cap)` for 0.100000000000000001 POT and `InvalidRecipient()` for an unlisted recipient in read-only `eth_call` probes.
-- The negative probes were not mined transactions and did not create signatures or incur transaction fees.
-- The live probes used one configured RPC. Do not describe them as independent RPC authentication.
-- Window-cap overflow remains local-test evidence only. Do not call it a live testnet rejection.
-- The reported sender debit of 7.82782148139542551 POT is not a verified net network fee: execution-fee and storage-deposit components remain unresolved.
+- All live EVM reads and balance reconciliation used one configured RPC. There is no second-provider authentication.
+- The historical V2 deployment receipt is no longer returned by the configured RPC, although saved earlier deployment evidence and later code/configuration readbacks exist. Do not claim a fresh deployment-receipt lookup.
+- The sender's gross balance debit of `7.82782148139542551 POT` matches `gasUsed × effectiveGasPriceWei` in the isolated block, but the runtime execution-fee and storage-deposit components have not been separated. Do not call the entire amount an independently verified irrecoverable fee.
+- No live native Substrate transfer, PortalDot Wallet/DaaS integration, PortalDot team endorsement, independent audit, production readiness or mainnet deployment is claimed.
+- The project reuses the pre-existing Verigate policy engine. The public submission should retain the explicit provenance and licensing disclosure in [the final-submission reference](hacker-house-check-in-copy.md). The latest account-view excerpt does not prove that this disclosure is present in the submitted long-form text.
 
-## Final submission quality
+## Final submission gates that remain
 
-Keep the current contract address and successful transaction explorer link visible. Do not replace the YouTube link until the corrected video is rendered and reviewed end-to-end. The video should say “resettable interval cap”, never “rolling limit”.
+1. Open the BUIDL form and check the actual selected track; prefer **Modular Cloud & Middleware** if you can still choose it.
+2. Inspect the full long-form description and correct the spending interval wording if it still says “rolling”; ensure provenance/licensing disclosure is included.
+3. Verify logged-out access to the BUIDL, repository, PDF, DApp and video.
+4. Watch/listen to the exact public video upload from beginning to end to confirm voice-over and burned-in captions agree.
+5. Save/verify the final submission by 6 November 2026, 09:00 in the current DoraHacks view (04:00 UTC at UTC+5).
+
+The revised video link is already reflected in the user's reported account view. Do not re-render or replace it unless the playback check finds a real defect.
