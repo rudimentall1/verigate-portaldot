@@ -1,5 +1,8 @@
 # DoraHacks BUIDL review — 24 October 2026
 
+> **Current status addendum:** the user subsequently updated the BUIDL page and published the new demo link https://www.youtube.com/watch?v=9WhBdwGgXLk. The current account-view excerpt shows the newer tags and project links. The user also reports that the separate Check-in step was cancelled. The check-in-deadline instructions below are historical notes from the earlier page view, not current action items. Remaining manual checks are the exact public video's end-to-end audio/caption review, the full long-form description/track, and logged-out reviewer access.
+
+
 ## Status from the current page view
 
 The user-provided account view shows a populated Verigate PortalDot BUIDL entry with the YouTube video URL, public GitHub repository, social links and a detailed overview/evidence section. This is materially stronger evidence than an empty or draft-only entry. It does not, by itself, prove logged-out judge visibility or the event-specific check-in status.
