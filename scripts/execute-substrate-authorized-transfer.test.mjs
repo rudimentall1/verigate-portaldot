@@ -15,6 +15,7 @@ import {
   resolveExpectedGenesisHash,
   validateSubstrateTransferBinding,
   interpretDryRunResult,
+  selectMortalEraConfig,
 } from "./execute-substrate-authorized-transfer.mjs";
 import { cryptoWaitReady, encodeAddress } from "@polkadot/util-crypto";
 import { createRequire } from "node:module";
@@ -84,6 +85,27 @@ function validResponse(now = 2_000_000_000) {
     },
   };
 }
+
+
+test("mortal-era birth checkpoint respects runtime block-hash retention", () => {
+  const selected = selectMortalEraConfig(175214, 16);
+  assert.equal(selected.period, 16);
+  assert.equal(selected.phase, 14n);
+  assert.equal(selected.birthBlock, 175200n);
+  assert.ok(175214n - selected.birthBlock < 16n);
+
+  const shortHistory = selectMortalEraConfig(175214, 5);
+  assert.equal(shortHistory.period, 4);
+  assert.equal(shortHistory.birthBlock, 175212n);
+  assert.ok(175214n - shortHistory.birthBlock < 5n);
+});
+
+test("mortal-era selection fails closed when block-hash retention is too small", () => {
+  assert.throws(
+    () => selectMortalEraConfig(175214, 3),
+    /below the minimum mortal era period/,
+  );
+});
 
 test("valid signed-intent structure binds exact native target, amount and testnet genesis", () => {
   const response = validResponse();
