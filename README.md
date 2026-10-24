@@ -4,16 +4,16 @@
 
 An AI agent can propose a transfer, but a proposal is not authority. Verigate makes the off-chain policy decision. The bridge verifies the signed decision and binds it to one exact action. The deployed `PortalDotAgentGuardV2` then checks the authorization, recipient allowlist and spending limits before moving native POT held by the guard.
 
-**Why this matters to PortalDot:** this is a reference middleware pattern for EVM-compatible applications that want to let agents initiate payments without giving them unrestricted transfer authority. The implementation is on PortalDot V3 EVM testnet. It is not an integration into PortalDot Wallet or DaaS, and it does not protect transfers that bypass this guard.
+**Scope:** this repository demonstrates Verigate authorization followed by a guarded native-POT transfer on PortalDot V3 EVM testnet. It does not establish that the PortalDot team requested this capability, and it is not an integration into PortalDot Wallet or DaaS. The guard controls only transfers routed through its own contract balance.
 
-## Deployed Verigate integration on PortalDot V3 testnet
+## Verigate on PortalDot V3 EVM testnet
 
 1. **Open the [live V2 guard dashboard](https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6).** It shows the deployed contract, its current policy and runtime code. The dashboard is read-only; connecting a wallet or sending a transaction is not required.
 2. **See how invalid payments are blocked.** Use `Inspect denial proof` and run the two read-only checks: an unlisted recipient and an amount one wei above the `0.1 POT` per-transfer cap. The recorded PortalDot testnet checks returned `InvalidRecipient()` and `AmountExceedsCap(amount, cap)`. These are simulated calls, not mined failed transactions.
 3. **Trace an authorized payment.** Click `Verify recorded transfer` to look up the recorded `0.1 POT` transfer: block `149241`, successful receipt and one matching `TransferExecuted` event. The [evidence record](https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json) contains the transaction details and verification limits. If the RPC no longer serves the historical receipt, use that saved record rather than treating it as a fresh lookup.
 4. **Implementation and test records:** [successful transfer record](docs/evidence/portaldot-v2-live-transfer-2026-10-22.json) · [published dashboard browser check](docs/evidence/published-dapp-browser-smoke-2026-10-24.json) · [V2 Solidity contract](contracts/PortalDotAgentGuardV2.sol) · [V2 contract tests](test/PortalDotAgentGuardV2.test.js) · [GitHub Actions test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40089146180).
 
-## Current implementation and evidence
+## Implementation and evidence
 
 | Claim | Evidence | Evidence boundary |
 |---|---|---|
