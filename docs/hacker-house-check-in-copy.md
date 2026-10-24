@@ -64,3 +64,20 @@ Modular Cloud Solutions and Middleware.
 ## Deadline recorded in the project checklist
 
 Check-in: 24 October 2026, 12:00 UTC. Final submission/code freeze: 6 November 2026, 04:00 UTC. Reconfirm both against the live DoraHacks event page; saved check-in state has not been verified.
+
+
+## Correction required on the current DoraHacks BUIDL page
+
+The latest page text supplied for review calls the V2 spending restriction a “rolling spending limit” and a “rolling limit”. That is not the contract's behavior. The deployed contract has a cap of 0.5 POT per resettable 3,600-second interval; when the interval expires, the counter resets. It is not a continuously sliding rolling-window sum.
+
+Replace both “rolling spending limit” and “rolling limit of 0.5 POT over a 3,600-second window” with:
+
+> A spending cap of 0.5 POT per resettable 3,600-second interval. The counter resets after the interval expires; this is not a continuously sliding rolling-window sum.
+
+Replace “a separate live testnet simulation of a rolling-window violation” with:
+
+> A separate live testnet simulation of a time-window cap violation has not been completed. Local contract tests cover window-cap overflow and nonce non-consumption on revert.
+
+Tag review: keep Crypto / Web3, Crypto-AI and Security. Consider removing Account Abstraction and Chain Abstraction because the current demo does not establish ERC-4337-style account abstraction or cross-chain execution. The project runs on PortalDot's EVM testnet; the native Substrate adapter has offline tests, but no live native Substrate transfer is claimed.
+
+Do not use “rolling” in the demo narration or final captions. Leave the existing successful V2 transfer and read-only rejection evidence in place.
