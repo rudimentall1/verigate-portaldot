@@ -57,7 +57,12 @@ for (const marker of [
   "TransferExecuted",
   "does not prove the transaction never existed",
   "does not prove a Verigate ALLOW decision",
-  "Evidence type: local Solidity tests",
+  "Evidence type: local Verigate integration + local Solidity tests",
+  "BLOCK → NO AUTH",
+  "execution_authorization",
+  "scripts/verigate_local_demo.py",
+  "CI workflow history",
+  "public-testnet denial transactions",
   "there is no recorded public-chain revert for these cases",
   'el("receiptLookup").requestSubmit()'
 ]) {

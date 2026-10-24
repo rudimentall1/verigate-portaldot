@@ -22,7 +22,7 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
 <main>
 <section class="hero"><div class="eyebrow">Agent authorization infrastructure</div><h1>A proposal is not authority.</h1><p class="lead">Verigate keeps AI-proposed payments inside explicit authority. The policy decision happens off-chain; the bridge binds authorization to one exact action; the PortalDot guard enforces recipient and spending limits before funds move. This public page is read-only: it verifies live chain state and recorded evidence, but never broadcasts a payment.</p><div class="actions"><button id="refresh">Refresh live state</button><button id="copyAddress">Copy guard address</button><a href="./explorer/" style="display:inline-flex;align-items:center;border:1px solid #38677c;border-radius:9px;padding:10px 13px;background:#102a37;color:var(--cyan);font-weight:700">Open PortalDot Explorer ↗</a></div></section>
 <section class="demo-path" aria-label="90-second security demonstration">
-<article class="demo-step deny"><h2>01 / Policy violation</h2><div class="value red">DENY</div><p>Unlisted recipient or amount above the configured cap must not receive execution authority.</p><div class="demo-disclaimer">Evidence type: local Solidity tests. No public-chain revert is claimed.</div><button id="showDenial" type="button">Inspect denial proof</button><div id="denialFeedback" class="demo-feedback" hidden role="status" aria-live="polite"></div></article>
+<article class="demo-step deny"><h2>01 / Verigate denial</h2><div class="value red">BLOCK → NO AUTH</div><p>Verigate returns BLOCK for a disallowed recipient. The bridge refuses to create the EIP-712 execution authorization; the on-chain guard separately rejects unlisted recipients and over-cap transfers.</p><div class="demo-disclaimer">Evidence type: local Verigate integration + local Solidity tests; there is no recorded public-chain revert for these cases.</div><button id="showDenial" type="button">Inspect denial proof</button><div id="denialFeedback" class="demo-feedback" hidden role="status" aria-live="polite"></div></article>
 <article class="demo-step allow"><h2>02 / Authorized payment</h2><div class="value green">ALLOW → EXECUTED</div><p>Recorded 0.1 POT transfer to the allowlisted recipient, with a matching receipt and TransferExecuted event.</p><div class="demo-disclaimer">Evidence type: saved testnet evidence; live lookup may be unavailable.</div><button id="verifyAllowed" type="button">Verify recorded transfer</button></article>
 </section>
 <div id="message" role="status" aria-live="polite">Reading public PortalDot V3 RPC…</div>
@@ -278,7 +278,22 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}main,
   el("showDenial").addEventListener("click", () => {
     const panel = el("denialFeedback");
     panel.hidden = false;
-    panel.textContent = "DENY evidence boundary: PortalDotAgentGuardV2 local contract tests cover a recipient outside the allowlist and transfers above the configured cap. These tests execute against a local test EVM. This dashboard does not submit an unauthorized transaction, and there is no recorded public-chain revert for these cases. Source: test/PortalDotAgentGuardV2.test.js";
+    panel.innerHTML = `
+      <p><strong>What this denial evidence proves</strong></p>
+      <div class="rule"></div>
+      <p><strong>1. Verigate → bridge (local end-to-end integration).</strong> The isolated harness asserts that the denied request returns <code>BLOCK</code>, includes no <code>execution_authorization</code>, and is refused by the bridge CLI. The paired <code>ALLOW</code> route is signed and executed against the real guard source on a temporary loopback Hardhat EVM.</p>
+      <div class="actions">
+        <a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/scripts/verigate_local_demo.py" target="_blank" rel="noopener noreferrer">Integration harness ↗</a>
+        <a href="https://github.com/rudimentall1/verigate-portaldot/actions/workflows/ci.yml" target="_blank" rel="noopener noreferrer">CI workflow history ↗</a>
+      </div>
+      <div class="rule"></div>
+      <p><strong>2. PortalDot guard (local Solidity tests).</strong> V2 tests reject an unlisted recipient, a per-transfer cap overflow and a spending-window overflow; they also cover replay, invalid signatures and reentrancy.</p>
+      <div class="actions">
+        <a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/test/PortalDotAgentGuardV2.test.js" target="_blank" rel="noopener noreferrer">V2 contract tests ↗</a>
+        <a href="https://github.com/rudimentall1/verigate-portaldot/blob/main/contracts/PortalDotAgentGuardV2.sol" target="_blank" rel="noopener noreferrer">V2 guard source ↗</a>
+      </div>
+      <div class="notice">Boundary: these are local integration/contract-test results, not mined public-testnet denial transactions. The public block-149241 evidence demonstrates the positive ALLOW transfer only. This dashboard does not submit transactions.</div>
+    `;
   });
   el("verifyAllowed").addEventListener("click", () => {
     el("receiptTxHash").value = el("historicalHash").textContent.trim();
