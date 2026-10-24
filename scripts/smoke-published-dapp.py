@@ -91,6 +91,33 @@ def run() -> None:
             if denial.get_by_role("link", name=link_name).count() != 1:
                 fail("Denial proof panel is missing exactly one evidence link: " + link_name)
 
+        # The public contract must reject both attacks through read-only eth_call.
+        page.get_by_role("button", name="Simulate unlisted recipient (read-only)").click()
+        page.wait_for_function(
+            """() => {
+                const value = document.querySelector('#liveProbeResult')?.textContent || '';
+                return value.startsWith('PASS — on-chain eth_call returned InvalidRecipient()')
+                    || value.startsWith('UNVERIFIED —');
+            }""",
+            timeout=30000,
+        )
+        live_unlisted_probe = text_of(page, "#liveProbeResult")
+        if not live_unlisted_probe.startswith("PASS — on-chain eth_call returned InvalidRecipient()"):
+            fail("Live unlisted-recipient eth_call did not confirm the expected custom error: " + live_unlisted_probe)
+
+        page.get_by_role("button", name="Simulate over-cap amount (read-only)").click()
+        page.wait_for_function(
+            """() => {
+                const value = document.querySelector('#liveProbeResult')?.textContent || '';
+                return value.startsWith('PASS — on-chain eth_call returned AmountExceedsCap(amount, cap)')
+                    || value.startsWith('UNVERIFIED —');
+            }""",
+            timeout=30000,
+        )
+        live_cap_probe = text_of(page, "#liveProbeResult")
+        if not live_cap_probe.startswith("PASS — on-chain eth_call returned AmountExceedsCap(amount, cap)"):
+            fail("Live over-cap eth_call did not confirm the expected custom error: " + live_cap_probe)
+
         # Exercise the same first-screen demonstration at a narrow mobile width.
         page.set_viewport_size({"width": 375, "height": 812})
         mobile_layout = page.evaluate(
@@ -157,6 +184,9 @@ def run() -> None:
             "policySeconds": text_of(page, "#policySeconds"),
             "policyRecipient": text_of(page, "#policyRecipient"),
             "receiptModuleStatus": module["status"],
+            "liveUnlistedProbe": live_unlisted_probe,
+            "liveOverCapProbe": live_cap_probe,
+            "liveDenialProbeBroadcasted": False,
         }
 
         if checks["rpcStatus"] != "Responding":

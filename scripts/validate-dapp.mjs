@@ -63,6 +63,11 @@ for (const marker of [
   "scripts/verigate_local_demo.py",
   "CI workflow history",
   "public-testnet denial transactions",
+  "Simulate unlisted recipient (read-only)",
+  "Simulate over-cap amount (read-only)",
+  "AmountExceedsCap",
+  "InvalidRecipient",
+  "eth_call",
   "there is no recorded public-chain revert for these cases",
   'el("receiptLookup").requestSubmit()'
 ]) {
