@@ -95,7 +95,7 @@ test("different action, recipient, amount or nonce is surfaced", () => {
 });
 
 test("normalizes a successful receipt with exactly one TransferExecuted event", () => {
-  const normalized = normalizeTransferEvidence(validProviderObjects());
+  const normalized = normalizeTransferEvidence({ ...validProviderObjects(), chainId: 420420777n });
   assert.equal(normalized.transactionHash, txHash);
   assert.equal(normalized.chainId, "420420777");
   assert.equal(normalized.transfer.actionId, actionId);
