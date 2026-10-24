@@ -20,6 +20,14 @@ This is a real verification/decision error: the target chain was correct, but th
 - The older PortalDot developer documentation identifies the Substrate network and native POT denomination, but it does not document the current V3 EVM sender requirement: https://portaldot-dev.readthedocs.io/en/latest/chain-info.html
 - So the available public material does not settle what the PortalDot team meant if it separately said “deploy from the PortalDot EVM address.” That wording may mean (a) deploy against PortalDot's EVM-compatible RPC/network, or (b) use the H160 mapped to the team's native Substrate account. These are different requirements.
 
+### Community support-message evidence reviewed
+
+The project-provided Discord excerpts were reviewed on 24 October 2026. They show the team distributing initial and additional testnet tPOT to the project's native SS58 address `5CwFhh...`. When the wallet UI initially showed a zero balance after allocation, the support reply was to change the selected chain in the wallet. The later request for a second allocation explicitly provided the native Substrate wallet as the destination for funds needed for the V2 deployment storage deposit.
+
+These messages support the interpretation that test funds were allocated to the native Substrate account and that the initial zero balance was a wallet/network-selection issue. They do **not** state that the contract deployment transaction had to be signed by `0xb82c...`, nor do they specify a mandatory EVM deployer address. The excerpts contain no instruction to use `0x4c07...` either.
+
+Accordingly, the support excerpts do not resolve any separate verbal instruction that may have been given elsewhere. They must not be used as proof that the native account was required as the contract deployer. The public submission requirements found so far only require deployment on the PortalDot testnet and submission of the contract address and transaction hash.
+
 ### Technical paths
 
 - The current project's V2 deploy script uses Hardhat/ethers through the PortalDot V3 EVM RPC, chain ID `420420777`, and `DEPLOYER_PRIVATE_KEY`. The recorded deployer is `0x4c07...`. This is a successful EVM-RPC deployment on PortalDot V3 testnet, but it does not establish that the sender corresponds to the team's native SS58 account.
