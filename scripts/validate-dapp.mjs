@@ -44,6 +44,9 @@ const missingIds = [...new Set(referencedIds)].filter((id) => !ids.has(id));
 assert.deepEqual(missingIds, [], "JavaScript refers to missing DOM IDs: " + missingIds.join(", "));
 
 for (const marker of [
+  'id="showDenial"',
+  'id="verifyAllowed"',
+  'id="denialFeedback"',
   'id="receiptLookup"',
   'id="receiptTxHash"',
   'id="receiptResult"',
@@ -53,7 +56,10 @@ for (const marker of [
   'import("./receipt-lookup.mjs")',
   "TransferExecuted",
   "does not prove the transaction never existed",
-  "does not prove a Verigate ALLOW decision"
+  "does not prove a Verigate ALLOW decision",
+  "Evidence type: local Solidity tests",
+  "there is no recorded public-chain revert for these cases",
+  'el("receiptLookup").requestSubmit()'
 ]) {
   assert.ok(html.includes(marker), "Missing dashboard requirement: " + marker);
 }
