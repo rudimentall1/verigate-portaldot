@@ -62,7 +62,7 @@ jobs:
             grep -Fq 'AmountExceedsCap' "$source"
             grep -Fq 'read-only eth_call' "$source"
             grep -Fq '0.1 POT' "$source"
-            grep -Fq '7.8278 POT' "$source"
+            grep -Fq '7.82782148139542551 POT' "$source"
             grep -Fq 'resettable 3600-second interval' "$source"
             if grep -Eiq 'block 130741|1 base unit|connect a wallet in read-only mode|non-dust amount remain pending' "$source"; then
               echo "Stale presentation claim detected in source."
@@ -94,7 +94,7 @@ jobs:
             grep -Fq 'AmountExceedsCap' "$source"
             grep -Fq 'read-only eth_call' "$source"
             grep -Fq '0.1 POT' "$source"
-            grep -Fq '7.8278 POT' "$source"
+            grep -Fq '7.82782148139542551 POT' "$source"
             grep -Fq 'resettable 3600-second interval' "$source"
             if grep -Eiq 'block 130741|1 base unit|connect a wallet in read-only mode|non-dust amount remain pending' "$source"; then
               echo "Stale presentation claim detected in source."
