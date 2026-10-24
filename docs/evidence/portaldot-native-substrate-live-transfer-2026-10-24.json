@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "evidenceType": "native-substrate-finalized-transfer",
+  "capturedDate": "2026-10-24",
+  "status": "SUCCESS",
+  "network": "PortalDot V3 Substrate testnet",
+  "rpcUrl": "wss://test-node-v3.portaldot.dev",
+  "runtime": {
+    "chainName": "PortaldotV3 Test",
+    "specName": "portaldot-v3",
+    "specVersion": 3002,
+    "transactionVersion": 2,
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "expectedGenesisHashMatches": true
+  },
+  "authorization": {
+    "decision": "ALLOW",
+    "intentId": "portaldot-native-substrate-fb32d17f6fed49af96b9c31c95f534be",
+    "authorizationId": "23a1dc0186044258c9015b861e8b713313ff1156b4932cff88bbf111d059d16c",
+    "actionSha256": "20c0bc14388b58611c9b6d7cd803e05b47277eda10b43e7b6061a9064312aa47",
+    "policySha256": "952d1793451fac6e3850bbdbf19ea9e7907e62d9d99b051c93268d8f9f2bd90b",
+    "amountBaseUnits": "10000000000000",
+    "amountPOT": "0.1",
+    "signer": "5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB",
+    "recipient": "5Etb82346VeavrvzVB3NK3Vr6YrYeK4thENVGM9HogYy64Cj"
+  },
+  "preBroadcastSimulation": {
+    "status": "SIMULATION_SUCCESS",
+    "rpcMethod": "system_dryRun",
+    "simulationAtBlockNumber": 175482,
+    "simulationAtBlockHash": "0x03af849784fb29919c2d0aa761ccc80039f355a21664098dd779891fec484263",
+    "eraContextBlock": 175481,
+    "eraPeriod": 64,
+    "eraBirthBlock": 175481,
+    "eraBirthHash": "0x317c80938d7171d51343727f2e7f33b6e840fd18e483e101716003440f3e63c7",
+    "signedExtrinsicHash": "0xebbec444faebcc3cc950d94ae5b49a91757db3ae78264bc51817fd80a095816b",
+    "note": "The simulation and broadcast used the same Verigate authorization and action, but the extrinsic was signed separately for each operation. Their extrinsic hashes differ."
+  },
+  "execution": {
+    "transactionHash": "0x098c3b320fd38a3062a5305b391fae81026aed267e5ed847186578a13600ef02",
+    "finalizedBlockHash": "0xe95f838bae67b8e3e4abed7215315c8059a06f19d9e26b1fa533ef4f4515ed83",
+    "finalized": true,
+    "transactionBroadcast": true,
+    "extrinsicSubmitted": true,
+    "eventPhase": 1,
+    "matchingTransferEventCount": 1,
+    "matchedTransferEvent": {
+      "section": "balances",
+      "method": "Transfer",
+      "data": [
+        "5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB",
+        "5Etb82346VeavrvzVB3NK3Vr6YrYeK4thENVGM9HogYy64Cj",
+        "10000000000000"
+      ]
+    },
+    "dispatchEvent": {
+      "section": "system",
+      "method": "ExtrinsicSuccess",
+      "data": [
+        "{\"weight\":{\"refTime\":764602000,\"proofSize\":15777},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+      ]
+    },
+    "feeEvent": {
+      "section": "transactionPayment",
+      "method": "TransactionFeePaid",
+      "payer": "5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB",
+      "actualFeeBaseUnits": "1490531479031",
+      "actualFeePOT": "0.01490531479031",
+      "tipBaseUnits": "0"
+    }
+  },
+  "feePreflight": {
+    "estimatedFeeBaseUnits": "1490531483264",
+    "estimatedFeePOT": "0.01490531483264",
+    "authorizedMaxFeeBaseUnits": "3000000000000",
+    "authorizedMaxFeePOT": "0.03",
+    "ceilingPassedBeforeBroadcast": true
+  },
+  "evidenceBoundary": {
+    "receiptSource": "Transaction result, finalized block hash and events reported by the configured PortalDot Substrate RPC",
+    "rpcProviderCount": 1,
+    "independentSecondProviderVerification": false,
+    "finalizationBlockNumber": null,
+    "note": "The terminal output did not include the finalized block number, so it is intentionally not asserted here. This evidence is based on output from one configured RPC; it is not independently authenticated by a second provider."
+  },
+  "provenance": {
+    "source": "Terminal output supplied in the project conversation",
+    "independentRpcVerification": false
+  }
+}
