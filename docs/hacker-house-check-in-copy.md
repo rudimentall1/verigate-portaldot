@@ -1,10 +1,18 @@
-# PortalDot Hacker House 2026 — check-in copy
+# PortalDot Hacker House 2026 — final submission reference
 
-Prepared: 24 October 2026. This file is a copy/paste aid, not proof that the DoraHacks form has been saved. The public build entry exists, but saved check-in fields and judge visibility have not been independently confirmed.
+Updated: 24 October 2026 after the BUIDL video/link update. This is a reference for the current submission, not proof of logged-out judge visibility or end-to-end video review. The user reports the separate Check-in step was cancelled; the remaining deadline is Final Submission on 6 November 2026 at 09:00 as shown in DoraHacks.
 
-## Project title
+## Project name
 
 Verigate PortalDot
+
+## Current public positioning line
+
+Cryptographic policy & signature authorization guard for autonomous AI-agent payments on Portaldot V3 Testnet
+
+## Current tags shown in the user's page view
+
+Crypto / Web3; Crypto-AI; Security; Substrate
 
 ## One-line description
 
@@ -18,10 +26,11 @@ The public testnet evidence includes a 0.1 POT transfer following a fresh Veriga
 
 ## Track
 
-Modular Cloud Solutions and Middleware.
+The page excerpt supplied for this update shows tags but not the selected hackathon track. Confirm that field in DoraHacks if it is displayed separately; a Substrate tag does not itself prove the track choice.
 
 ## Links
 
+- Demo video (published): https://www.youtube.com/watch?v=9WhBdwGgXLk
 - Repository: https://github.com/rudimentall1/verigate-portaldot
 - Public DApp: https://rudimentall1.github.io/verigate-portaldot/
 - V2 guard view: https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
@@ -52,32 +61,20 @@ Modular Cloud Solutions and Middleware.
 - No direct DaaS integration is claimed because a verified public DaaS call interface was not found.
 - No live native Substrate transfer, security audit, production readiness or mainnet deployment is claimed.
 
-## Submission checklist
+## Final submission checklist
 
-- [ ] Open https://dorahacks.io/build/50065 while logged in and confirm the entry is attached to PortalDot Hacker House 2026.
-- [ ] Paste/check the project description, selected track, repository URL and public DApp URL; save and reload the page to confirm persistence.
-- [ ] Confirm whether the existing check-in form has been submitted and saved, and whether the entry remains editable. Check-in deadline recorded in the project is 24 October 2026, 12:00 UTC; verify the official event UI and do not treat GitHub commits as submission.
-- [ ] Add the final demo video URL only after rendering and watching the corrected sub-three-minute video end to end. Do not use a placeholder or an unreviewed draft.
-- [ ] Keep this distinction in the submission: local negative tests, read-only public-RPC eth_call simulations and mined public-chain transactions are three different evidence classes.
-- [ ] Reopen the public entry in a logged-out/private browser window to confirm judge access.
+- [x] BUIDL page updated from the account view with the current video URL, GitHub repository and social links.
+- [ ] Open the BUIDL and video in a logged-out/private browser window and verify judge access.
+- [ ] Watch/listen to the exact public YouTube upload from start to finish; confirm both wording changes, stitched narration, and burned-in caption/SRT alignment. The SRT currently attached in working materials still contains the prior wording, which may be older than the public upload.
+- [ ] Confirm the long-form BUIDL description accurately says “0.5 POT per resettable 3,600-second interval”, not a continuously sliding rolling window.
+- [ ] Confirm the selected hackathon track separately from the displayed tags.
+- [ ] Save/verify the final submission before 6 November 2026, 09:00 as shown in DoraHacks (04:00 UTC under the UTC+5 display).
+- [x] Keep local negative tests, read-only public-RPC eth_call simulations and mined testnet transactions clearly distinguished.
 
-## Deadline recorded in the project checklist
+## Publication status note
 
-Check-in: 24 October 2026, 12:00 UTC. Final submission/code freeze: 6 November 2026, 04:00 UTC. Reconfirm both against the live DoraHacks event page; saved check-in state has not been verified.
+The BUIDL page now shows the published demo URL, current tags and repository/social links in the user's account view. The pasted excerpt did not include the complete long-form description or the selected track, and did not establish logged-out visibility. No separate Check-in task remains according to the user's current DoraHacks information.
 
+## Superseded correction notes
 
-## Correction required on the current DoraHacks BUIDL page
-
-The latest page text supplied for review calls the V2 spending restriction a “rolling spending limit” and a “rolling limit”. That is not the contract's behavior. The deployed contract has a cap of 0.5 POT per resettable 3,600-second interval; when the interval expires, the counter resets. It is not a continuously sliding rolling-window sum.
-
-Replace both “rolling spending limit” and “rolling limit of 0.5 POT over a 3,600-second window” with:
-
-> A spending cap of 0.5 POT per resettable 3,600-second interval. The counter resets after the interval expires; this is not a continuously sliding rolling-window sum.
-
-Replace “a separate live testnet simulation of a rolling-window violation” with:
-
-> A separate live testnet simulation of a time-window cap violation has not been completed. Local contract tests cover window-cap overflow and nonce non-consumption on revert.
-
-Tag review: keep Crypto / Web3, Crypto-AI and Security. Consider removing Account Abstraction and Chain Abstraction because the current demo does not establish ERC-4337-style account abstraction or cross-chain execution. The project runs on PortalDot's EVM testnet; the native Substrate adapter has offline tests, but no live native Substrate transfer is claimed.
-
-Do not use “rolling” in the demo narration or final captions. Leave the existing successful V2 transfer and read-only rejection evidence in place.
+Earlier in this file, recommendations were made to correct “rolling window” wording and remove unsupported Account Abstraction / Chain Abstraction tags. The current account-view excerpt now shows the tags Crypto / Web3, Crypto-AI, Security and Substrate, so the old tag warning is superseded. The excerpt provided for this update does not include the complete long-form description; verify its spending-cap sentence before final submission. The deployed contract uses a cap of 0.5 POT per resettable 3,600-second interval, not a continuously sliding rolling-window sum.
