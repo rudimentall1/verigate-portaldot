@@ -156,3 +156,43 @@ The explorer results associate `0x4c07...D2CB` with `5DnPnX...Q2sNEj`, while Sub
 - Record a new read-only `Revive.OriginalAccount` query with its finalized block fingerprint and independently ask PortalDot to explain the runtime/wallet mapping semantics before changing funding or deployment decisions. Never share seed phrases or private keys.
 
 Describe it to the team as a **confirmed discrepancy in address associations shown by SubWallet, Pindex and the PortalDot explorer**. The discrepancy is established; the precise runtime/wallet mechanism and shared-key implications must remain separately qualified.
+
+## Deployment decision error: native funding account vs selected EVM deployer (24 October 2026)
+
+### What happened
+
+- The team funding destination is the native Substrate account `5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB`.
+- The saved read-only `Revive.OriginalAccount` result associated H160 `0xb82c4b7923080251c6cbb3bab79de1e56f901ce1` with that SS58 account. The same recorded investigation returned `no_mapping_entry` for `0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB` at that time, while a PortalDot explorer result associated `0x4c07...` with a different native SS58 account.
+- Despite this unresolved discrepancy, the project moved test funds from `0xb82c...` to `0x4c07...` and deployed `PortalDotAgentGuardV2` from `0x4c07...`. The deployment and a later 0.1 POT guarded transfer were reported successful through the configured PortalDot V3 EVM RPC (chain ID `420420777`).
+
+### The mistake
+
+We confirmed the target network but did not resolve the sender-account question before moving funds and deploying. We treated the EVM address displayed by SubWallet (`0x4c07...`) as the appropriate PortalDot deployer without first reconciling it with the runtime mapping associated with the team's native funding account (`0xb82c...`) or confirming which kind of address the PortalDot team's deployment requirement referred to.
+
+This was a deployment-planning and verification error. The existing successful deployment/transfer evidence does **not** establish that the sender choice was the one intended by the team. Conversely, the address discrepancy alone does **not** establish that the deployed contract is invalid or that deploying from `0xb82c...` with the current Hardhat script would have worked.
+
+### What is and is not established
+
+Established by the saved evidence:
+
+- The configured deployment path targeted PortalDot V3 EVM testnet, not Ethereum mainnet.
+- The V2 deployment record identifies `0x4c07...` as deployer.
+- The saved mapping probe associated `0xb82c...` with the team's SS58 account and did not find a mapping entry for `0x4c07...` at the time of that probe.
+- A guarded V2 transfer subsequently succeeded via the configured EVM RPC.
+
+Not established:
+
+- That `0x4c07...` and `0xb82c...` are controlled by the same private key or provide equivalent signing authority.
+- That the normal `ethers`/Hardhat private-key deployment flow can submit a creation transaction from `0xb82c...`.
+- Whether PortalDot's instruction meant “deploy on the PortalDot EVM network” or “deploy with the EVM representation of the team's native SS58 account as transaction sender.”
+
+### Corrective action
+
+1. Do not move more test funds or redeploy merely to change the deployer.
+2. Query `Revive.OriginalAccount` for both H160s at the same captured finalized block, using the read-only verifier and a local redacted report.
+3. Verify with PortalDot what the deployment requirement means: target EVM network, required EVM sender, or native Substrate-origin deployment.
+4. Check which transaction-signing flow the intended sender can actually use. A private key producing a conventional EVM address is not interchangeable with a native Substrate account merely because a wallet UI groups them together.
+5. Keep the existing V2 contract and its evidence. Only consider a second deployment if PortalDot's explicit requirement and the verified account/signing path show that it is necessary. The V2 `admin` and `authoritySigner` are separate roles and must be reviewed separately from the deployer.
+
+Never publish or share a seed phrase or private key as part of these checks.
+
