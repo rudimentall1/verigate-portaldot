@@ -74,6 +74,20 @@ No extrinsic is signed or sent in this mode. `paymentInfo` is a fee estimate, no
 
 The remote URL is restricted to the recorded PortalDot V3 testnet WSS. Loopback WebSocket is allowed for isolated local testing when a local genesis hash is explicitly pinned. Other remote endpoints are refused.
 
+## Runtime simulation without broadcast
+
+The node's RPC list advertises `system_dryRun` and `system_dryRunAt`. This method is marked unsafe in PortalDot's RPC documentation and can still be disabled by the server, so the adapter treats an RPC error as a failed simulation and stops.
+
+To sign the exact authorized transfer locally and ask the node to simulate it at a finalized block, run:
+
+```sh
+npm run substrate:execute -- ./authorization-response-native.json --simulate
+```
+
+This mode requires the local `PORTALDOT_SUBSTRATE_SIGNER_URI` and verifies that it derives the configured signer address. The adapter signs the exact `Balances.transfer_keep_alive` extrinsic locally, queries `system_dryRun` at the checkpoint block, and reports transaction-validity errors separately from dispatch errors. It does not call `signAndSend`, submit to the transaction pool, or create a replay reservation. The signature and call are sent to the configured RPC endpoint for simulation, but no transfer is broadcast and no balance should change from this RPC call.
+
+A successful simulation is a point-in-time runtime result, not a guarantee of inclusion later or of the final fee. A rejected/disabled RPC is not treated as success. The plain preflight mode remains read-only and does not sign.
+
 ## Explicit testnet broadcast
 
 Broadcast requires the separate `--broadcast` argument and `PORTALDOT_SUBSTRATE_SIGNER_URI`. The signer address derived from that URI must match `PORTALDOT_SUBSTRATE_SIGNER_ADDRESS`.
