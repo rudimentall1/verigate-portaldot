@@ -16,7 +16,7 @@ const EVENT = new Interface([
   "event TransferExecuted(bytes32 indexed actionId,address indexed recipient,uint256 amount,uint256 nonce)"
 ]);
 
-export function normalizeTransferEvidence({ tx, receipt, block, guardAddress }) {
+export function normalizeTransferEvidence({ tx, receipt, block, guardAddress, chainId }) {
   if (!tx || !receipt || !block) throw new Error("Provider did not return transaction, receipt and block.");
   if (block.number !== receipt.blockNumber) throw new Error("Fetched block number does not match receipt block number.");
   if (!block.hash || !receipt.blockHash) throw new Error("Block hash is missing from provider evidence.");
@@ -49,7 +49,7 @@ export function normalizeTransferEvidence({ tx, receipt, block, guardAddress }) 
   }
   return {
     transactionHash: receipt.hash.toLowerCase(),
-    chainId: tx.chainId == null ? null : tx.chainId.toString(),
+    chainId: chainId == null ? (tx.chainId == null ? null : tx.chainId.toString()) : BigInt(chainId).toString(),
     status: receipt.status,
     blockNumber: receipt.blockNumber,
     blockHash: receipt.blockHash.toLowerCase(),
@@ -84,7 +84,7 @@ async function readEvidence(provider, txHash, guardAddress) {
   return {
     chainId: network.chainId.toString(),
     codeHash: keccak256(code),
-    evidence: normalizeTransferEvidence({ tx, receipt, block, guardAddress })
+    evidence: normalizeTransferEvidence({ tx, receipt, block, guardAddress, chainId: network.chainId })
   };
 }
 
