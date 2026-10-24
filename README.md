@@ -4,7 +4,7 @@
 
 An AI agent can propose a transfer, but a proposal is not authority. Verigate makes the off-chain policy decision. The bridge verifies the signed decision and binds it to one exact action. The deployed `PortalDotAgentGuardV2` then checks the authorization, recipient allowlist and spending limits before moving native POT held by the guard.
 
-**Scope:** this repository demonstrates Verigate authorization followed by a guarded native-POT transfer on PortalDot V3 EVM testnet. It does not establish that the PortalDot team requested this capability, and it is not an integration into PortalDot Wallet or DaaS. The guard controls only transfers routed through its own contract balance.
+**Scope:** the primary on-chain guard demonstration is Verigate authorization followed by a guarded native-POT transfer on PortalDot V3 EVM testnet. A separate native Substrate adapter has also passed `system_dryRun` for a locally signed `Balances.transfer_keep_alive` extrinsic; that result is simulation-only and was not broadcast. Neither path establishes that the PortalDot team requested this capability, and no PortalDot Wallet or DaaS integration is claimed. The EVM guard controls only transfers routed through its own contract balance.
 
 ## Verigate on PortalDot V3 EVM testnet
 
@@ -17,10 +17,11 @@ An AI agent can propose a transfer, but a proposal is not authority. Verigate ma
 
 | Claim | Evidence | Evidence boundary |
 |---|---|---|
-| An allowed action reached testnet execution | Recorded Verigate `ALLOW`, successful V2 receipt and one matching `TransferExecuted` event for `0.1 POT` | Testnet; reads were checked through one configured RPC |
+| An allowed action reached EVM testnet execution | Recorded Verigate `ALLOW`, successful V2 receipt and one matching `TransferExecuted` event for `0.1 POT` | Testnet; reads were checked through one configured RPC |
 | The deployed V2 code and policy matched the recorded configuration | Published Chromium check read chain ID `420420777`, runtime hash, authority signer, and the `0.1 POT` / `0.5 POT per resettable 3,600-second interval` policy | Snapshot is dated; one RPC; not independent authentication of the RPC operator |
 | V2 rejects an unlisted recipient and an over-cap amount | Live read-only `eth_call` probes returned `InvalidRecipient()` and `AmountExceedsCap` | Simulated calls, not mined public-chain revert transactions |
 | Interval overflow does not consume a nonce; interval accounting resets | Local Hardhat contract tests | Local test evidence, not a live public-chain overflow transaction |
+| Native Substrate transfer passed runtime simulation | [Native Substrate dry-run evidence](docs/evidence/portaldot-native-substrate-dry-run-2026-10-24.json); `system_dryRun` returned `SIMULATION_SUCCESS` at block `175408` | Locally signed; not broadcast or submitted; no inclusion, receipt, or actual transfer is claimed; one RPC endpoint |
 
 **Scope:** PortalDot V3 EVM testnet prototype, not a security audit, production deployment, or mainnet-ready system. Verigate's Ed25519 decision verification occurs off-chain in the bridge; the contract verifies the bridge's EIP-712 authorization. The guard only controls payments from its own contract balance. No second RPC provider, PortalDot Wallet/DaaS integration, team endorsement, or mainnet deployment is claimed.
 
@@ -153,7 +154,7 @@ Never commit `.env`, private keys, seed phrases, live issuer secrets or signed a
 
 ## Why this matters for PortalDot
 
-PortalDot V3 exposes an EVM-compatible execution path alongside its Substrate runtime. Verigate PortalDot uses the EVM path for the guard and reads the Substrate runtime separately for network diagnostics and explorer features. The specific contribution is a reference implementation of an off-chain Verigate authorization followed by a narrowly scoped, signed native-token transfer through a contract guard.
+PortalDot V3 exposes an EVM-compatible execution path alongside its Substrate runtime. Verigate PortalDot uses the EVM path for the guarded on-chain transfer and also has a separate native Substrate adapter. The current Substrate evidence shows a fresh Verigate `ALLOW`, local signing of `Balances.transfer_keep_alive`, and successful `system_dryRun` on testnet; it does not show that the native Substrate extrinsic was broadcast or included in a block. The EVM guard remains a narrowly scoped contract-balance transfer path.
 
 No integration into PortalDot Wallet or DaaS is currently claimed, and no PortalDot team endorsement or external user adoption has been confirmed. This repository does not claim a production-ready multichain agent framework, a WASM/EVM cross-execution bridge, universal transaction interception, an independent audit, or mainnet readiness. The current V2 spending counter resets after its configured interval; it is not a continuously sliding rolling-window algorithm.
 
@@ -163,6 +164,7 @@ No integration into PortalDot Wallet or DaaS is currently claimed, and no Portal
 - [Network settings and units](docs/portaldot-v3-network.md)
 - [Funding and account-mapping investigation, including the confirmed SubWallet/Pindex/explorer address-association discrepancy](docs/funding-and-account-mapping.md)
 - [Deployment evidence](docs/deployment-evidence-2026-10-20.md)
+- [Native Substrate runtime dry-run evidence (simulation only)](docs/evidence/portaldot-native-substrate-dry-run-2026-10-24.json)
 - [0.1 EVM POT transfer evidence](docs/authorized-transfer-evidence-2026-10-21-nondust.md)
 - [One-base-unit transfer evidence](docs/authorized-transfer-evidence-2026-10-21.md)
 - [Three-minute demo plan](docs/demo-script.md)
