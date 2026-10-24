@@ -16,12 +16,15 @@ const EVENT = new Interface([
   "event TransferExecuted(bytes32 indexed actionId,address indexed recipient,uint256 amount,uint256 nonce)"
 ]);
 
-export function normalizeTransferEvidence({ tx, receipt, block, guardAddress, chainId }) {
+export function normalizeTransferEvidence({ tx, receipt, block, guardAddress, chainId, requestedTxHash }) {
   if (!tx || !receipt || !block) throw new Error("Provider did not return transaction, receipt and block.");
   if (block.number !== receipt.blockNumber) throw new Error("Fetched block number does not match receipt block number.");
   if (!block.hash || !receipt.blockHash) throw new Error("Block hash is missing from provider evidence.");
   if (receipt.status !== 1) throw new Error(`Receipt status is ${receipt.status}, not success.`);
   if (receipt.hash.toLowerCase() !== tx.hash.toLowerCase()) throw new Error("Transaction/receipt hash mismatch.");
+  if (requestedTxHash != null && (tx.hash.toLowerCase() !== requestedTxHash.toLowerCase() || receipt.hash.toLowerCase() !== requestedTxHash.toLowerCase())) {
+    throw new Error("Provider returned evidence for a different transaction than the requested hash.");
+  }
   if (receipt.blockHash.toLowerCase() !== block.hash.toLowerCase()) throw new Error("Receipt block hash mismatch.");
   if (tx.to == null || getAddress(tx.to) !== getAddress(guardAddress)) {
     throw new Error("Transaction does not target the configured guard.");
@@ -84,7 +87,7 @@ async function readEvidence(provider, txHash, guardAddress) {
   return {
     chainId: network.chainId.toString(),
     codeHash: keccak256(code),
-    evidence: normalizeTransferEvidence({ tx, receipt, block, guardAddress, chainId: network.chainId })
+    evidence: normalizeTransferEvidence({ tx, receipt, block, guardAddress, chainId: network.chainId, requestedTxHash: txHash })
   };
 }
 
