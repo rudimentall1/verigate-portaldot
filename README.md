@@ -6,7 +6,7 @@ An AI agent can propose a transfer, but a proposal is not authority. Verigate ma
 
 **Why this matters to PortalDot:** this is a reference middleware pattern for EVM-compatible applications that want to let agents initiate payments without giving them unrestricted transfer authority. The implementation is on PortalDot V3 EVM testnet. It is not an integration into PortalDot Wallet or DaaS, and it does not protect transfers that bypass this guard.
 
-## Try the PortalDot V3 prototype
+## Deployed Verigate integration on PortalDot V3 testnet
 
 1. **Open the [live V2 guard dashboard](https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6).** It shows the deployed contract, its current policy and runtime code. The dashboard is read-only; connecting a wallet or sending a transaction is not required.
 2. **See how invalid payments are blocked.** Use `Inspect denial proof` and run the two read-only checks: an unlisted recipient and an amount one wei above the `0.1 POT` per-transfer cap. The recorded PortalDot testnet checks returned `InvalidRecipient()` and `AmountExceedsCap(amount, cap)`. These are simulated calls, not mined failed transactions.
