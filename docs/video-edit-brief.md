@@ -21,29 +21,23 @@ Updated: 24 October 2026. This file describes the current candidate render, not 
 - The sender debit of 7.82782148139542551 POT reconciles with `gasUsed × effectiveGasPriceWei`; the split between execution fee and any refundable storage deposit remains unresolved. Do not call the full debit an irrecoverable fee.
 - The video must not imply a PortalDot team endorsement, global wallet interception, a public-chain policy-revert transaction, a security audit or production readiness.
 
-## Two wording refinements recommended before submission
+## Final wording verification for the published link
 
-### 1. Clarify the V1 console recording
+The public BUIDL now links to https://www.youtube.com/watch?v=9WhBdwGgXLk. The current sidecar SRT available in the working materials still contains these earlier lines:
+- Cue 4–8: “Here is the live, read-only console” and “current PortalDot V3 chain ID…”
+- Cue 46: “Verigate and PortalDot demonstrate an authorization-gated transfer on testnet.”
 
-The visible label says “DASHBOARD RECORDING · V1 GUARD · 21 OCT 2026”, but the voice-over still says “Here is the live, read-only console” and then says it reads the “current” chain state and “latest block”. That can sound like current live V2 footage.
+This SRT may predate the public YouTube upload; no reliable current transcript or continuous playback of that exact public upload has been verified here. Confirm these two audio lines and their burned-in captions in the public video. If they have already been replaced, do not edit them again. If not, replace them with:
 
-Replace the narration with wording along these lines:
+1. V1 footage wording:
 
-> This is a recording of the read-only console captured with the V1 guard on October 21. At capture time, it read the PortalDot V3 chain ID, latest block, guard bytecode, native balance and on-chain authority signer from the public RPC.
+   > This is a recording of the V1 guard console from October 21. At capture time, it read PortalDot V3's chain ID, latest block, guard bytecode, native balance and authority signer from the public RPC. The signer matched the project's recorded value.
 
-Update the voice track, burned-in captions and SRT together. Do not present the V1 footage as a live V2 view.
+2. Final statement:
 
-### 2. Avoid implying a joint PortalDot demonstration
+   > This prototype demonstrates an authorization-gated transfer on PortalDot's EVM testnet.
 
-Replace:
-
-> Verigate and PortalDot demonstrate an authorization-gated transfer on testnet.
-
-With:
-
-> This prototype demonstrates an authorization-gated transfer on PortalDot’s EVM testnet.
-
-Update the voice track, burned-in subtitles and SRT consistently. This describes what the prototype demonstrates without implying PortalDot endorsement or co-authorship.
+Do not infer PortalDot endorsement or current live V2 footage from the V1 recording. If edits are needed, update the voice track, burned-in subtitles and sidecar SRT together, then re-export and verify synchronization.
 
 ## Final human check
 
