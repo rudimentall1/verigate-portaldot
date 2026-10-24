@@ -12,6 +12,31 @@ This is a real verification/decision error: the target chain was correct, but th
 **Do not redeploy or move more funds just to correct the address label.** Before deciding whether a new deployment is necessary, verify both `Revive.OriginalAccount` entries at the same finalized block and clarify whether PortalDot requires an EVM transaction on its EVM endpoint or a deployment originating from the native Substrate account. The existing script uses an EVM private key through Hardhat and cannot be assumed to sign for a different native account. Keep V2 as deployed unless the verified requirement makes a separate deployment necessary. See [the account-mapping incident record](funding-and-account-mapping.md#deployment-decision-error-native-funding-account-vs-selected-evm-deployer-24-october-2026).
 
 
+## Findings from deployment-requirement research (24 October 2026)
+
+### What public material establishes
+
+- The publicly indexed PortalDot Hacker House listing says projects must deploy on PortalDot testnet and submit contract address / transaction hash. It does not specify a required transaction-sender H160. This is a secondary event listing, not proof that no separate oral/Discord instruction was given: https://www.hackathonradar.com/database/hackathon/portaldot-hacker-house-2026
+- The older PortalDot developer documentation identifies the Substrate network and native POT denomination, but it does not document the current V3 EVM sender requirement: https://portaldot-dev.readthedocs.io/en/latest/chain-info.html
+- So the available public material does not settle what the PortalDot team meant if it separately said “deploy from the PortalDot EVM address.” That wording may mean (a) deploy against PortalDot's EVM-compatible RPC/network, or (b) use the H160 mapped to the team's native Substrate account. These are different requirements.
+
+### Technical paths
+
+- The current project's V2 deploy script uses Hardhat/ethers through the PortalDot V3 EVM RPC, chain ID `420420777`, and `DEPLOYER_PRIVATE_KEY`. The recorded deployer is `0x4c07...`. This is a successful EVM-RPC deployment on PortalDot V3 testnet, but it does not establish that the sender corresponds to the team's native SS58 account.
+- The repo's saved runtime snapshot records `Revive.AllowEVMBytecode=true` and an earlier `Revive.OriginalAccount` read matching `0xb82c...` to the team's SS58 account. The same historical probe returned no entry for `0x4c07...` at that time. These are endpoint-reported results from the recorded test date, not a fresh independent check.
+- Upstream `pallet-revive` has a native Substrate `instantiate_with_code` dispatchable that instantiates a contract from supplied bytecode, and a `ReviveApi.instantiate` runtime API for dry-running instantiation. References: https://paritytech.github.io/polkadot-sdk/master/pallet_revive/pallet/struct.Pallet.html and https://paritytech.github.io/polkadot-sdk/master/pallet_revive/trait.ReviveApi.html
+- That upstream capability makes a native-origin dry-run a reasonable next test if the requirement is to deploy using the account represented by `0xb82c...`. It is **not yet verified** that the current PortalDot runtime exposes the exact compatible runtime API / bytecode path in the needed form, or that its native call produces a contract deployment acceptable to the hackathon team.
+
+### Decision
+
+1. Do not redeploy or transfer more funds yet.
+2. Resolve the sender requirement against the original team wording / official Discord or mentor reply. Publicly available requirements alone do not say a particular sender H160 is required.
+3. In parallel, implement and test a local-only, read-only native `Revive.instantiate` dry-run using the current V2 creation bytecode, ABI-encoded constructor arguments, and native SS58 account. Inspect runtime metadata first and query the runtime dry-run API at a pinned finalized block. Do not submit the extrinsic in this step.
+4. Compare the dry-run's reported success, contract address, consumed weight and storage-deposit requirements with the deployed V2 contract. A local or runtime dry-run is feasibility evidence only; it is not a deployment.
+5. Only if the team confirms that the native-account sender is mandatory and the dry-run passes should a second deployment be considered. It would create a different contract instance and require explicit bridge/configuration migration; preserve the existing V2 and its evidence.
+
+The precise conclusion is: **deploying on PortalDot V3 EVM testnet is confirmed; a rule requiring the deployer to equal the H160 mapped to the team's native SS58 account is not established by the public documentation I found. The native-origin path exists upstream, but PortalDot-specific feasibility still needs a dry-run.**
+ 
 ## Safety model
 
 - V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`; do not overwrite or relabel it.
