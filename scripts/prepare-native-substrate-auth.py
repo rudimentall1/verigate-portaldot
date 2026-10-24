@@ -369,6 +369,14 @@ def main() -> int:
     if not source_policy_path.is_file():
         die("The active policy file could not be resolved; no changes made.")
 
+    # Verify keys and agent identity before writing a profile, capability, or service.
+    check_public_key_binding(server_env, server_cwd, client_env, client_root)
+    agent_key_path = resolve_key_path(agent_key_value, server_cwd, client_root)
+    if not agent_key_path.is_file():
+        die("The agent signing key referenced by the existing plan does not exist; no state changed.")
+    agent_key = load_ed25519_private_key(agent_key_path)
+    verify_agent_key(server_cwd, db_path, plan, agent_key)
+
     capability_id = "portaldot-native-substrate-" + hashlib.sha256(recipient.encode()).hexdigest()[:16]
     profile_suffix = hashlib.sha256(recipient.encode()).hexdigest()[:12]
     policy_path = ISSUER_ROOT / f"policy-native-substrate-{profile_suffix}.yaml"
@@ -468,13 +476,6 @@ def main() -> int:
         if not ready:
             die("Native verifier on 127.0.0.1:8003 did not become healthy; port 8001 remains untouched. " + last_error)
         native_url = NATIVE_BASE_URL
-
-    check_public_key_binding(server_env, server_cwd, client_env, client_root)
-    agent_key_path = resolve_key_path(agent_key_value, server_cwd, client_root)
-    if not agent_key_path.is_file():
-        die("The agent signing key referenced by the existing plan does not exist; no capability created.")
-    agent_key = load_ed25519_private_key(agent_key_path)
-    verify_agent_key(server_cwd, db_path, plan, agent_key)
 
     # Validate profile syntax before touching capability state.
     sys.path.insert(0, str(server_cwd))
@@ -583,7 +584,7 @@ def main() -> int:
         "maxFeeBaseUnits": fee_text,
         "maxFeePOT": str(Decimal(fee_text) / Decimal(10**14)),
         "authorizationResponseFile": str(response_path),
-        "subtrateExtrinsicSigned": False,
+        "substrateExtrinsicSigned": False,
         "transactionBroadcast": False,
     }
     print("=== NATIVE SUBSTRATE AUTHORIZATION PREPARATION ===")
