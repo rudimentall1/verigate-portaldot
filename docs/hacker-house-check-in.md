@@ -58,14 +58,17 @@ See [claims-to-verify.md](../claims-to-verify.md) for approved wording and prohi
 - The transfer was preceded by a fresh Verigate `ALLOW`, bridge signature, pre-broadcast re-simulation, refreshed gas quote and fee-budget check.
 - Latest verification: [Test](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40072816973), [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40072817020), and [PortalDot RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40072816999) passed on the presentation-source revision; PDF build/render [40072817001](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40072817001) passed. The Test run reported 178 passing Mocha tests; Explorer, DApp/receipt lookup, network-readiness, Substrate-adapter, receipt-quorum and RPC-monitor suites passed, as did isolated Verigate ALLOW/BLOCK integration. A compile step reported `No contracts to compile`, not an independent fresh Solidity compile. Published-browser proof is preserved in [the 24 October JSON report](evidence/published-dapp-browser-smoke-2026-10-24.json), from DApp commit `af41b2f`; that smoke run checked the V2 policy, two live `eth_call` denial branches and the known successful receipt. Testnet evidence uses one RPC, and no transaction was sent by the denial probes.
 
-## Remaining risks and honest-claim rules
+## Remaining before Final Submission
 
-1. Watch/listen to the exact public YouTube upload and verify its captions; the link is published and the file is under three minutes, but the final auditory check is not evidenced here.
-2. Open the DoraHacks BUIDL, YouTube, GitHub, PDF and DApp in a logged-out/private browser window.
-3. Review the final description for correct resettable-interval wording and submit/save the final BUIDL before 6 November 2026, 09:00 as shown in the user's DoraHacks view.
-2. The published DApp confirms two deployed-V2 rejection branches through read-only `eth_call`, after checking chain ID and runtime hash. These are not mined reverts, use one RPC, and do not prove that Verigate returned BLOCK for those exact probe inputs. Window-overflow and nonce non-consumption remain local contract tests.
-3. The recorded V2 transfer evidence includes recipient and sender balance changes re-queried through the configured RPC. Do not present that as independent verification; no second EVM provider was used.
-4. H160-to-SS58 account mapping remains unverified; do not infer it from address conversion or successful EVM execution.
-5. Do not claim independent RPC authentication, a second-provider cross-check, a security audit, or production readiness.
-6. Never commit `.env`, wallet exports, private keys, mnemonics, or sensitive signed authorizations.
-7. Preserve the separate V1 and V2 identities and evidence. Do not redeploy V2 solely because historical RPC receipt lookup is unavailable.
+1. Watch/listen to the exact public YouTube upload from start to finish and confirm the corrected wording, stitched narration and burned-in captions match the voice track.
+2. Open the DoraHacks BUIDL, YouTube, GitHub, PDF and public DApp in a logged-out/private browser window.
+3. Verify the long-form BUIDL description uses the resettable 3,600-second interval wording, includes accurate project-provenance/licensing disclosure, and has the intended track selected. Submit/save by 6 November 2026, 09:00 as shown in the user's DoraHacks view.
+
+## Technical limitations that must stay disclosed
+
+- The published DApp confirms two deployed-V2 rejection branches through read-only eth_call after checking chain ID and runtime hash. These are not mined reverts, use one RPC, and do not prove Verigate returned BLOCK for those exact probe inputs. Window-overflow and nonce non-consumption remain local contract tests.
+- The recorded V2 transfer evidence includes recipient and sender balance changes re-queried through the configured RPC. Do not present that as independent verification; no second EVM provider was used.
+- H160-to-SS58 account mapping remains unverified; do not infer it from address conversion or successful EVM execution.
+- Do not claim independent RPC authentication, a second-provider cross-check, a security audit, or production readiness.
+- Never commit .env files, wallet exports, private keys, mnemonics, or sensitive signed authorizations.
+- Preserve the separate V1 and V2 identities and evidence. Do not redeploy V2 solely because historical RPC receipt lookup is unavailable.
