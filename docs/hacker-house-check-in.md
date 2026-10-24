@@ -3,13 +3,15 @@
 Updated: 24 October 2026
 
 Event milestones recorded for this project:
-- Registration/check-in deadline: 24 October 2026, 12:00 UTC.
-- Final submission and code freeze: 6 November 2026, 04:00 UTC.
+- Pre-registration: 29 September 2026, 21:00 (past; informational).
+- Submission opened: 13 October 2026, 21:00.
+- Final Submission deadline shown in the user's DoraHacks view: 6 November 2026, 09:00 (equivalent to 04:00 UTC when displayed at UTC+5).
+- The separate Check-in step was cancelled per the user's current DoraHacks information; do not treat the old 24 October check-in deadline as an open task.
 - Live demo day: 8–9 November 2026.
 - Community vote: 9 November, 16:00 UTC to 10 November, 16:00 UTC.
 - Winner announcement: 11 November 2026.
 
-Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon/2362/detail) and announcements in the [official PortalDot Discord](https://discord.gg/portaldot). Copy/paste material is in [check-in copy](hacker-house-check-in-copy.md); the existence of this file does not mean the DoraHacks form has been submitted.
+The DoraHacks page is the controlling view for the final submission deadline. The current account view shows the BUIDL with the updated video and GitHub link; this checklist does not assert that logged-out visibility or full video playback has been independently confirmed. The copy/reference material is in [final submission reference](hacker-house-check-in-copy.md).
 
 ## Project and track
 
@@ -36,11 +38,11 @@ Reconfirm deadlines on the [DoraHacks event page](https://dorahacks.io/hackathon
 | Independent verification limits | Explicitly documented | The recorded checks use the configured PortalDot RPC; they do not independently authenticate the RPC operator or use a second provider. The original live verifier did not record the recipient delta or post-transaction nonce state. A later read-only check confirmed the recipient balance increase from `0` to `0.1 POT` and reconciled the sender debit against `gasUsed × effectiveGasPriceWei` in the isolated V2 block, using the configured RPC; no second EVM provider was used. |
 | V2 policy negative cases | Live read-only probes passed; window-overflow local only | The published Chromium smoke test checked chain ID `420420777` and the recorded V2 runtime hash, then observed `InvalidRecipient()` for an unlisted recipient and `AmountExceedsCap(amount, cap)` for `0.100000000000000001 POT` against the live `0.1 POT` cap. [Committed browser evidence](evidence/published-dapp-browser-smoke-2026-10-24.json), [workflow](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40071558856). These are one-RPC `eth_call` responses, not mined reverts; no transaction or fee was involved. Window-overflow remains locally tested only. |
 | Public DApp | Published and browser-verified | The 24 October Chromium smoke test checked live chain ID, runtime hash, authority signer, policy values, allowlisted recipient, both live read-only denial probes, and the known V2 receipt/event lookup. The machine-readable result is committed in [published-dapp-browser-smoke-2026-10-24.json](evidence/published-dapp-browser-smoke-2026-10-24.json); [workflow run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40071558856). This uses one configured RPC; the probes are not mined reverts or independent RPC authentication. |
-| Demo video under 3 minutes | Working draft rendered; final pass required | User-provided MP4 is 2:39 at 1920×1080, 30 fps, H.264/AAC. The [replacement V1/V2 outro card](media/portaldot-v1-v2-outro.svg) and [video edit brief](video-edit-brief.md) are now versioned. The MP4 still needs the new card/narration rendered, the architecture-scene subtitle overlap fixed, and a full audio/subtitle timing review. |
+| Demo video under 3 minutes | Published on the BUIDL; final content review still open | The user reports the YouTube demo is published at https://www.youtube.com/watch?v=9WhBdwGgXLk. The inspected working render is 2:54.7, 1920×1080, 30 fps, H.264/AAC. Metadata and sampled frames were checked, but the public upload has not been listened to continuously. The sidecar SRT currently available in working materials still has the earlier wording at cues 4–8 and 46; it may predate the YouTube upload. Verify the actual public cut's voice, burned-in captions and sidecar SRT end-to-end. |
 | Presentation | Regenerated and verified | The reproducible 7-slide [Presentation PDF](Verigate-PortalDot-Presentation.pdf) now includes live `InvalidRecipient()` and `AmountExceedsCap` evidence plus trust limitations. Workflow [40072817001](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40072817001) rebuilt and rendered all 7 pages. The separate 10-slide working deck referenced in older video notes is not present in this repo snapshot. |
 | Run instructions and architecture | Present | [Architecture](architecture.md), [operations runbook](testnet-operations-2026-10-20.md), [V2 runbook](v2-deployment-runbook.md). |
 | License / reused components | Final disclosure review pending | MIT project license; preserve dependency licenses and distinguish existing Verigate components from PortalDot-specific integration work. |
-| DoraHacks check-in visibility | BUIDL populated in current account view; deadline approaching | The user-provided DoraHacks page view shows Verigate PortalDot, a YouTube demo link, the public GitHub repository, social links and detailed testnet evidence. That confirms the page is populated in the account view, but not logged-out judge visibility or whether the event's separate check-in status is marked complete. The event mirror records the check-in deadline as 24 October 2026, 12:00 UTC; at the latest check of project workflows (07:58 UTC), it had not passed. Save any edits and confirm the check-in status in DoraHacks now. |
+| BUIDL public visibility | Updated in the user's account view; logged-out check remains | The user's current page excerpt confirms the positioning line, current tags (Crypto / Web3, Crypto-AI, Security, Substrate), YouTube URL and GitHub/social links. A logged-out/private-window view is not yet confirmed in this review. The separate Check-in step was cancelled; no action is listed for it. |
 
 See [claims-to-verify.md](../claims-to-verify.md) for approved wording and prohibited overclaims.
 
@@ -58,7 +60,9 @@ See [claims-to-verify.md](../claims-to-verify.md) for approved wording and prohi
 
 ## Remaining risks and honest-claim rules
 
-1. Produce the sub-3-minute demo; this is the clearest remaining submission gap.
+1. Watch/listen to the exact public YouTube upload and verify its captions; the link is published and the file is under three minutes, but the final auditory check is not evidenced here.
+2. Open the DoraHacks BUIDL, YouTube, GitHub, PDF and DApp in a logged-out/private browser window.
+3. Review the final description for correct resettable-interval wording and submit/save the final BUIDL before 6 November 2026, 09:00 as shown in the user's DoraHacks view.
 2. The published DApp confirms two deployed-V2 rejection branches through read-only `eth_call`, after checking chain ID and runtime hash. These are not mined reverts, use one RPC, and do not prove that Verigate returned BLOCK for those exact probe inputs. Window-overflow and nonce non-consumption remain local contract tests.
 3. The recorded V2 transfer evidence includes recipient and sender balance changes re-queried through the configured RPC. Do not present that as independent verification; no second EVM provider was used.
 4. H160-to-SS58 account mapping remains unverified; do not infer it from address conversion or successful EVM execution.
