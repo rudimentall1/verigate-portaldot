@@ -67,6 +67,41 @@ def run() -> None:
         page.locator("#receiptLookup").wait_for()
         page.locator("#receiptTxHash").wait_for()
 
+        # Exercise the judge-facing denial interaction, rather than checking
+        # only that its label exists in the static HTML.
+        page.get_by_role("button", name="Inspect denial proof").click()
+        denial = page.locator("#denialFeedback")
+        denial.wait_for(state="visible")
+        denial_text = denial.inner_text()
+        for required in [
+            "What this denial evidence proves",
+            "BLOCK",
+            "execution_authorization",
+            "not mined public-testnet denial transactions",
+            "The public block-149241 evidence demonstrates the positive ALLOW transfer only",
+        ]:
+            if required.lower() not in denial_text.lower():
+                fail("Denial proof panel is missing required boundary/evidence text: " + required)
+        for link_name in [
+            "Integration harness",
+            "CI workflow history",
+            "V2 contract tests",
+            "V2 guard source",
+        ]:
+            if denial.get_by_role("link", name=link_name).count() != 1:
+                fail("Denial proof panel is missing exactly one evidence link: " + link_name)
+
+        # Exercise the same first-screen demonstration at a narrow mobile width.
+        page.set_viewport_size({"width": 375, "height": 812})
+        mobile_layout = page.evaluate(
+            "() => ({viewport: window.innerWidth, document: document.documentElement.scrollWidth})"
+        )
+        if mobile_layout["document"] > mobile_layout["viewport"] + 1:
+            fail("Judge-facing DApp has horizontal overflow at 375px: " + json.dumps(mobile_layout))
+        if not page.get_by_role("button", name="Inspect denial proof").is_visible():
+            fail("Denial evidence control is not visible at 375px viewport.")
+        page.set_viewport_size({"width": 1440, "height": 1000})
+
         # The module is imported by the page; wait for it and confirm the
         # deployed asset, not just the source file, is being served.
         try:
