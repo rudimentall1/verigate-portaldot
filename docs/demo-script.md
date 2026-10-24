@@ -8,7 +8,8 @@ V2 deployment/configuration and a positive live transfer are now documented in `
 - The current V2 code and configuration are read live from chain ID `420420777` if the RPC serves them; the historical deployment receipt may no longer be returned by this RPC, so distinguish a saved deployment receipt from a fresh lookup.
 - Readback shows the recorded admin, authority signer, `0.1 POT` max-per-transfer, `0.5 POT` cap in a resettable 3600-second interval, and the allowlisted recipient.
 - The saved live transfer report shows the successful receipt and matching `TransferExecuted` event for `0.1 POT` to a recipient distinct from the relayer/sender.
-- Show the cap, time-window and allowlist negative cases from the local Solidity tests as **local tests**. Do not imply these negative cases were submitted as paid transactions on public PortalDot.
+- The published dashboard can now run two live read-only `eth_call` probes against the V2 contract after checking chain ID and the recorded runtime hash: an unlisted recipient returns `InvalidRecipient()`, and `maxPerTransfer + 1 wei` returns `AmountExceedsCap(amount, cap)`. These are simulation responses from one configured RPC, not mined public-chain revert transactions.
+- Keep window-limit, replay, invalid-signature and reentrancy coverage labelled as **local Solidity tests**. Do not imply a denied transaction was broadcast to public PortalDot.
 - The published GitHub Pages site has the read-only dashboard, and `?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6` reads the actual deployed V2 state.
 
 If a current RPC read is unavailable, show dated evidence as historical and say so explicitly. Never describe a saved receipt as a fresh lookup. V1's block-132475 transaction was successfully re-queried from the configured RPC when the 21 Oct evidence was captured; a later lookup shown in the current video no longer returned that historical receipt. V2's block-149241 receipt, exact event and sender/recipient balance deltas were subsequently re-queried through the same configured RPC.
@@ -27,46 +28,49 @@ Never show `.env`, keys, mnemonics, issuer secrets, raw signed authorization pay
 
 ## Shot list and voice-over
 
-### 0:00–0:20 — The control boundary
+Target: 2:50–2:58. Record the live probes only after the page has confirmed the current PortalDot V3 chain ID and V2 runtime hash. If any live probe says UNVERIFIED, show that state honestly and do not narrate it as a pass.
 
-On screen: dashboard title, then the small architecture overview in the repo.
+### 0:00–0:15 — Problem and boundary
 
-Say: “An AI agent can propose a payment, but a proposal is not spending authority. Verigate makes the off-chain decision, the bridge signs one exact action, and the PortalDot guard applies on-chain limits before funds can move.”
+On screen: dashboard title, then the architecture overview.
 
-### 0:20–0:50 — Live read-only chain state
+Say: “An AI agent can propose a payment, but a proposal is not spending authority. Verigate decides off-chain, the bridge verifies the signed decision and binds authorization to one exact action, and the PortalDot guard checks the payment before funds move.”
 
-On screen: click Refresh. Show chain ID, latest block, runtime code size, balance, authority signer, admin and V2 caps. The address in the URL must be the confirmed V2 address.
+### 0:15–0:40 — Live PortalDot V2 state
 
-Say: “This page is read-only. It queries the public PortalDot V3 EVM RPC and does not connect a wallet, request a signature, or broadcast a transaction. These policy values are read from the deployed contract, not hardcoded into the dashboard.”
+On screen: click Refresh. Show chain ID, runtime code hash, authority signer, maximum transfer, spending window, and allowlisted demo recipient.
 
-### 0:50–1:20 — Enforcement in Solidity
+Say: “These values come from the deployed contract over the PortalDot V3 RPC. The expected chain ID and recorded runtime hash must match. This dashboard is read-only: no wallet connection, signature request, or transaction broadcast.”
 
-On screen: show `executeTransfer`, allowlist check, max-per-transfer check, spending-window check, signature recovery, nonce write before external call, and the reentrancy guard. Then show the policy setters and their admin restriction.
+### 0:40–1:15 — Denial against the deployed contract, without sending a transaction
 
-Say: “The admin can change the recipient allowlist and spending caps, but cannot execute a payment without the bridge signer's EIP-712 authorization. The time-window counter resets when the interval elapses; it is not a strict sliding-window calculation. The signer can authorize a payment but cannot change policy. The contract does not verify Verigate Ed25519 itself; that check remains off-chain in the bridge.”
+On screen: click “Inspect denial proof”. Run “Simulate unlisted recipient (read-only)” and show `InvalidRecipient()`. Then run “Simulate over-cap amount (read-only)” and show the requested `0.100000000000000001 POT` against the live `0.1 POT` cap and `AmountExceedsCap(amount, cap)`.
 
-### 1:20–1:45 — ALLOW and BLOCK, local only
+Say: “These are live read-only `eth_call` probes against the confirmed V2 runtime. The first returns `InvalidRecipient()`; the second returns `AmountExceedsCap` with the exact live amount and cap. The contract checks recipient and amount before signature recovery, so no valid signing key is needed for these probes. No transaction was broadcast, no fee was paid, and this is not a mined revert transaction. It proves the deployed contract's enforcement branches respond; the Verigate-to-bridge ALLOW/BLOCK path is separately tested in local integration.”
 
-On screen: show the reproducible isolated integration output and CI run. Keep the Hardhat label visible.
+### 1:15–1:35 — End-to-end Verigate integration, local
 
-Say: “The local integration sends allowed and denied actions through Verigate's actual routes. BLOCK does not receive an execution authorization. The ALLOW path runs against the actual Solidity source on a temporary Hardhat EVM. This is local integration evidence, not a public PortalDot transaction.”
+On screen: show the isolated `scripts/verigate_local_demo.py` output and passing CI.
 
-### 1:45–2:25 — Confirmed public testnet transfer
+Say: “The local end-to-end harness exercises Verigate's actual API and bridge path. BLOCK has no execution authorization and the bridge refuses it. ALLOW is signed and executed against the real guard source on a temporary Hardhat EVM. This segment is local integration evidence, not a public PortalDot transaction.”
 
-On screen: use the dashboard receipt lookup field with the recorded V2 transaction hash 0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e. Show the live response only if the configured RPC returns it. The dashboard accepts any 32-byte transaction hash, checks transaction/receipt/block consistency, reports success versus revert, and decodes TransferExecuted events when present. Then show the saved V2 transfer report: block 149241, receipt status 1, amount 0.1 POT, sender debit 7.82782148139542551 POT, and the recipient credit. If the current RPC returns null, show that result honestly and use the dated evidence card separately; do not imply that a saved result was returned by the live lookup.
+### 1:35–2:10 — Successful public testnet payment
 
-Say: “This PortalDot V3 testnet transfer is recorded in block 149241. The saved evidence shows a successful receipt and matching TransferExecuted event after Verigate returned ALLOW. A read-only check through the configured RPC reconciled the sender debit from 416.196502092920504516 to 408.368680611525079006 POT and the recipient credit from zero to 0.1 POT. The sender debit matches gasUsed times effectiveGasPriceWei; the runtime fee and storage-deposit components were not separated. This is one-RPC evidence, not independent provider verification.”
+On screen: in the receipt lookup, submit the recorded V2 hash `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`. Show the live successful receipt, block 149241, and the matching `TransferExecuted` event only if the current RPC returns them. Keep the saved evidence visibly distinguished from the current lookup.
 
-### 2:18–2:39 — Close
+Say: “The recorded V2 ALLOW flow moved 0.1 POT through the guard in block 149241. The current browser verification found receipt status 1 and one `TransferExecuted` event matching the action ID, recipient, and amount. The live lookup is a response from one configured RPC, not independent authentication of that provider.”
 
-On screen: replace the existing Status/Next card and the remainder of the closing segment with [the V1/V2 evidence card](media/portaldot-v1-v2-outro.svg). Cover the obsolete burned-in subtitles in the old end card. Keep the repository URL visible through the final frame. The current MP4 has not yet been rendered with this replacement.
+### 2:10–2:35 — Cost and trust boundaries
 
-Suggested card content:
-- V1: 0.1 POT recorded in block 132475; a later lookup through the same configured RPC no longer returned the historical receipt.
-- V2: 0.1 POT recorded in block 149241; receipt status 1, one matching TransferExecuted event, and both balance changes re-queried through the configured RPC.
-- Limits: one configured EVM RPC only; no second-provider verification; no EVM genesis hash pin for this transfer; unaudited testnet prototype, not mainnet.
+On screen: show the saved cost reconciliation with sender and recipient balance changes together.
 
-Say: “V1: 0.1 POT recorded in block 132475; its receipt is no longer returned by this RPC. V2: 0.1 POT in block 149241, with receipt, event and both balance changes re-queried through the same RPC. No second provider. Testnet only; unaudited, not mainnet.”
+Say: “For that isolated transaction, the sender's EVM balance decreased by 7.82782148139542551 POT while the recipient received 0.1 POT. The sender debit matches `gasUsed × effectiveGasPriceWei` through the configured RPC, but the runtime execution-fee versus storage-deposit split is unresolved. This is meaningful testnet evidence, not an economic-cost claim for production.”
+
+### 2:35–2:55 — Close
+
+On screen: show the repository, deployed V2 contract address, demo URL, and replacement V1/V2 evidence card.
+
+Say: “Verigate demonstrates off-chain policy authorization, exact-action signing, live on-chain recipient and amount checks, and a recorded PortalDot testnet payment. It is an unaudited testnet prototype. It does not protect payments that bypass this guard, and we have not independently authenticated the RPC provider.”
 
 ## Final checks before publishing
 
@@ -74,7 +78,8 @@ Say: “V1: 0.1 POT recorded in block 132475; its receipt is no longer returned 
 - [ ] Dashboard URL points at the deployed V2 address, and all shown values are read from RPC.
 - [ ] Live RPC, local Hardhat ALLOW/BLOCK, and public testnet transfer are clearly distinguished.
 - [ ] Transfer recipient is not the sender/relayer; amount and reconciled sender debit are visible together, and the single-RPC basis and missing fee/storage-deposit breakdown are disclosed.
-- [ ] Local cap/window/allowlist tests are labelled local; no implication of public-chain negative tests.
+- [ ] Live `eth_call` probes are labelled read-only simulation; do not present them as mined reverts or evidence that Verigate's API returned BLOCK for those exact calls.
+- [ ] Local cap/window/allowlist/replay/signature/reentrancy tests are labelled local.
 - [ ] No raw authorization JSON, secret files, private keys or mnemonics appear.
 - [ ] No H160-to-SS58 mapping claim is made unless a real runtime storage entry was verified.
 - [ ] No explorer claim is made unless the matching transaction hash was personally confirmed there.
@@ -83,4 +88,4 @@ Say: “V1: 0.1 POT recorded in block 132475; its receipt is no longer returned 
 
 ## Known limits
 
-V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`; the live 0.1 POT transfer is documented, but the public-chain negative cap/window cases are not recorded as mined revert transactions. The sender debit of 7.82782148139542551 POT was reconciled against the sender's before/after balance using the configured RPC. No independent second-RPC check or runtime execution-fee/storage-deposit breakdown is available. The recipient balance delta was reconciled through the same RPC. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support. The current working MP4 still has the stale repeat-transfer outro and an architecture-caption overlap near 01:02. The replacement V1/V2 outro card is versioned at `docs/media/portaldot-v1-v2-outro.svg`; follow `docs/video-edit-brief.md` and do not mark the video complete until the edited render and full audio/subtitle playback have been reviewed.
+V1 remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b` and does not enforce an on-chain recipient allowlist or spending caps. V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`. The published dashboard now runs read-only `eth_call` probes against the live V2 runtime: an unlisted recipient returns `InvalidRecipient()`, and a request one wei over the live per-transfer cap returns `AmountExceedsCap(amount, cap)`. These results were verified by the 24 October published Chromium smoke test, but are not mined revert transactions, incur no transaction fee, and use one configured RPC. The recorded positive transfer remains 0.1 POT in block 149241, receipt status 1, one matching event and reconciled sender/recipient balance changes. The sender debit of 7.82782148139542551 POT was reconciled against the sender's before/after balance using the configured RPC; the runtime execution-fee/storage-deposit split remains unresolved. No independent second-RPC check is available. H160-to-SS58 mapping remains unverified; do not claim cross-chain mapping support. The current working MP4 still has the stale repeat-transfer outro and an architecture-caption overlap near 01:02. The replacement V1/V2 outro card is versioned at `docs/media/portaldot-v1-v2-outro.svg`; follow `docs/video-edit-brief.md` and do not mark the video complete until the edited render and full audio/subtitle playback have been reviewed.

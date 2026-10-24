@@ -28,6 +28,12 @@ Sources:
 
 **Required caveat:** all of those reads used the same configured RPC. No second EVM provider authenticated the result, and no EVM genesis hash pin was configured for these transfers. The sender's gross debit reconciles, but the precise split between runtime execution fee and any refundable storage deposit has not been determined.
 
+### Supported wording for the live read-only denial probes
+
+> On 24 October 2026, the published DApp's browser smoke test called the deployed V2 guard using read-only `eth_call` against the configured PortalDot V3 RPC. The contract returned `InvalidRecipient()` for an unlisted recipient and `AmountExceedsCap(amount, cap)` for a request one wei above the current per-transfer cap. The test first checked chain ID and the expected runtime code hash. No signature or transaction was broadcast, and no fee was paid. This is a live endpoint-reported simulation, not a mined revert transaction or independent RPC authentication.
+
+Source: [Published Chromium smoke workflow](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40071558856), commit [`af41b2f`](https://github.com/rudimentall1/verigate-portaldot/commit/af41b2f0b646922bb79638012d835ac3f8651abe).
+
 ### V2 policy and trust boundaries
 
 - The recorded deployment/configuration readback shows an initial recipient allowlist, `0.1 POT` maximum per transfer and a `0.5 POT` cap per resettable `3600-second` interval.
@@ -39,7 +45,8 @@ Sources:
 ### Local tests versus public-chain evidence
 
 - The ALLOW/BLOCK end-to-end integration and Hardhat contract tests run against an isolated loopback/local EVM. Label them **LOCAL TEST**.
-- V2 cap/allowlist rejection is supported by local contract tests. Do not present it as a mined public-testnet revert; no such negative-case transaction is recorded.
+- The 24 October published Chromium smoke test used read-only `eth_call` against the live V2 contract after checking chain ID `420420777` and matching its recorded runtime hash. The unlisted-recipient probe returned `InvalidRecipient()`; a `0.100000000000000001 POT` amount against the live `0.1 POT` cap returned `AmountExceedsCap(amount, cap)` with matching arguments. Label these **LIVE READ-ONLY CONTRACT SIMULATION**. The probes sent no transaction, produced no mined receipt, and do not prove Verigate's API returned BLOCK for those exact calls. RPC operator authentication is not independent because only one configured endpoint was used.
+- Do not present the probes as mined public-testnet reverts; no such negative-case transaction is recorded. The positive V1/V2 payment evidence is separate and transaction-backed.
 - The V1 and V2 positive transfers are public-testnet evidence, but keep their contract versions and blocks separate: V1 `132475`, V2 `149241`.
 
 ### Read-only arbitrary transaction lookup in the DApp
