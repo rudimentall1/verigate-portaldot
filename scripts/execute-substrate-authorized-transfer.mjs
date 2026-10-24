@@ -453,6 +453,29 @@ export async function createTransferPreflight(api, transfer, signerAddress) {
 }
 
 
+export function selectMortalEraConfig(currentBlock, blockHashCount, maximumPeriod = 64) {
+  const current = BigInt(currentBlock);
+  const retention = BigInt(blockHashCount);
+  const maxPeriod = BigInt(maximumPeriod);
+  if (current < 0n) fail("Current block number must be non-negative.");
+  if (retention < 4n) {
+    fail("System.BlockHashCount is below the minimum mortal era period; refusing to sign a dry-run extrinsic.");
+  }
+  if (maxPeriod < 4n) fail("Maximum mortal era period must be at least 4.");
+
+  // Mortal-era periods are powers of two. Keep the birth block within the
+  // runtime's retained System.BlockHash map, and avoid a 64-block era on
+  // runtimes that retain fewer historical block hashes.
+  let period = 4n;
+  while (period * 2n <= maxPeriod && period * 2n <= retention) period *= 2n;
+  const phase = current % period;
+  return {
+    period: Number(period),
+    phase,
+    birthBlock: current - phase,
+  };
+}
+
 export function interpretDryRunResult(api, result) {
   if (result?.isErr) {
     return {
@@ -492,17 +515,31 @@ async function simulateTransfer(api, signer, transfer, preflight) {
     api.query.system.account.at(blockHash, signer.address),
     api.rpc.state.getRuntimeVersion(blockHash),
   ]);
+  const blockHashCountCodec = api.consts.system?.blockHashCount;
+  if (!blockHashCountCodec) {
+    fail("Runtime does not expose System.BlockHashCount; refusing to sign a dry-run extrinsic.");
+  }
+  const eraConfig = selectMortalEraConfig(
+    header.number.toString(),
+    blockHashCountCodec.toString(),
+  );
+  const eraBirthHash = await api.rpc.chain.getBlockHash(eraConfig.birthBlock.toString());
+  if (eraBirthHash.toHex() === "0x" + "0".repeat(64)) {
+    fail("Runtime did not return a retained hash for the selected mortal-era birth block.");
+  }
 
   const extrinsic = api.tx.balances.transferKeepAlive(transfer.recipient, transfer.amount);
   const era = api.registry.createType("ExtrinsicEra", {
     current: header.number,
-    period: 64,
+    period: eraConfig.period,
   });
 
+  // CheckMortality needs the hash of the era birth block as the signed
+  // checkpoint, not merely the latest finalized head hash.
   extrinsic.sign(signer, {
     nonce: account.nonce,
     era,
-    blockHash,
+    blockHash: eraBirthHash,
     genesisHash: api.genesisHash,
     runtimeVersion,
     tip: 0,
@@ -525,6 +562,9 @@ async function simulateTransfer(api, signer, transfer, preflight) {
     simulationRpc: "system_dryRun",
     simulationAtBlockHash: blockHash.toHex(),
     simulationAtBlockNumber: header.number.toString(),
+    simulationEraPeriod: eraConfig.period,
+    simulationEraBirthBlock: eraConfig.birthBlock.toString(),
+    simulationEraBirthHash: eraBirthHash.toHex(),
     signedExtrinsicHash: extrinsic.hash.toHex(),
     signedLocally: true,
     transactionBroadcast: false,
