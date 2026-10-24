@@ -1,10 +1,28 @@
 # Verigate PortalDot
 
-Verigate PortalDot is a testnet prototype for policy-gated native-token payments by autonomous agents. Verigate authorizes an action off-chain, the bridge validates the signed authorization and issues a short-lived EIP-712 payload, and the deployed `PortalDotAgentGuardV2` enforces recipient and spending constraints before transferring native POT from the guard's own balance.
+**A policy-to-execution gate for AI-agent payments on PortalDot V3.**
 
-**Current execution demo:** V2 is deployed at `0x87C494a5e4B0A8E055F283767579667E10E046C6`. A recorded Verigate `ALLOW` → bridge signing → V2 execution completed a `0.1 POT` transfer in block `149241` and emitted one matching `TransferExecuted` event. The receipt-derived cost figure is `7.82782148139542551 POT`, calculated as `gasUsed × effectiveGasPriceWei`. A read-only reconciliation subsequently checked the sender's EVM balance at block 149240 and after block 149241. Because that block contained exactly one EVM transaction, the sender's balance decrease of `7.82782148139542551 POT` exactly matches `gasUsed × effectiveGasPriceWei`. This was verified through one configured RPC; the runtime cost was not split into execution-fee and storage-deposit components. See [V2 live transfer evidence](docs/evidence/portaldot-v2-live-transfer-2026-10-22.json) and [sender-debit reconciliation evidence](docs/evidence/portaldot-v2-cost-reconciliation-2026-10-23.json).
+An AI agent can propose a transfer, but a proposal is not authority. Verigate makes the off-chain policy decision. The bridge verifies the signed decision and binds it to one exact action. The deployed `PortalDotAgentGuardV2` then checks the authorization, recipient allowlist and spending limits before moving native POT held by the guard.
 
-V1 remains deployed as the predecessor. The two addresses and their evidence are kept separate below. This is testnet evidence, not an audit, production launch, security guarantee, or mainnet-ready system.
+**Why this matters to PortalDot:** this is a reference middleware pattern for EVM-compatible applications that want to let agents initiate payments without giving them unrestricted transfer authority. The implementation is on PortalDot V3 EVM testnet. It is not an integration into PortalDot Wallet or DaaS, and it does not protect transfers that bypass this guard.
+
+## Judge path: verify the core claim in about 2 minutes
+
+1. **Open the [live V2 guard dashboard](https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6).** It reads the current PortalDot RPC, deployed runtime hash, signer, and policy limits. It is read-only: no wallet connection, signature, or transaction broadcast is needed.
+2. **Inspect the denials.** On the dashboard, use `Inspect denial proof`, then test the two read-only probes under the V2 contract: an unlisted recipient and an amount one wei above the `0.1 POT` per-transfer cap. The live RPC returned `InvalidRecipient()` and `AmountExceedsCap(amount, cap)` respectively in the recorded browser check. These are `eth_call` simulations, not mined revert transactions.
+3. **Check the successful transfer.** Click `Verify recorded transfer` in the dashboard. The recorded transaction is [`0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`](https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json): block `149241`, receipt status `1`, one matching `TransferExecuted` event, amount `0.1 POT`. If the RPC no longer serves that historical receipt, the linked evidence file preserves the recorded verification and states that limitation.
+4. **Inspect the evidence, not just the UI:** [successful transfer record](docs/evidence/portaldot-v2-live-transfer-2026-10-22.json) · [published dashboard browser check](docs/evidence/published-dapp-browser-smoke-2026-10-24.json) · [V2 Solidity contract](contracts/PortalDotAgentGuardV2.sol) · [V2 contract tests](test/PortalDotAgentGuardV2.test.js) · [GitHub Actions test run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40089146180).
+
+## What is demonstrated
+
+| Claim | Evidence | Evidence boundary |
+|---|---|---|
+| An allowed action reached testnet execution | Recorded Verigate `ALLOW`, successful V2 receipt and one matching `TransferExecuted` event for `0.1 POT` | Testnet; reads were checked through one configured RPC |
+| The deployed V2 code and policy matched the recorded configuration | Published Chromium check read chain ID `420420777`, runtime hash, authority signer, and the `0.1 POT` / `0.5 POT per resettable 3,600-second interval` policy | Snapshot is dated; one RPC; not independent authentication of the RPC operator |
+| V2 rejects an unlisted recipient and an over-cap amount | Live read-only `eth_call` probes returned `InvalidRecipient()` and `AmountExceedsCap` | Simulated calls, not mined public-chain revert transactions |
+| Interval overflow does not consume a nonce; interval accounting resets | Local Hardhat contract tests | Local test evidence, not a live public-chain overflow transaction |
+
+**Scope:** PortalDot V3 EVM testnet prototype, not a security audit, production deployment, or mainnet-ready system. Verigate's Ed25519 decision verification occurs off-chain in the bridge; the contract verifies the bridge's EIP-712 authorization. The guard only controls payments from its own contract balance. No second RPC provider, PortalDot Wallet/DaaS integration, team endorsement, or mainnet deployment is claimed.
 
 ## How it works
 
