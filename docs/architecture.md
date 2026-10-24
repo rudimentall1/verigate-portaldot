@@ -1,6 +1,6 @@
 # Architecture and trust boundaries
 
-Updated: 20 October 2026
+Updated: 24 October 2026
 
 ## Current flow
 
@@ -63,11 +63,20 @@ Two distinct versions are deployed on PortalDot V3 EVM testnet. The current exec
 A fresh Verigate `ALLOW` was followed by bridge signing and a real `0.1 POT` V2 transfer recorded in block `149241`. The saved follow-up verifier reported receipt status `1` and exactly one matching `TransferExecuted` event. The receipt-derived cost figure was `7.82782148139542551 POT` (`gasUsed × effectiveGasPriceWei`). A later read-only check reconciled the sender's total EVM-balance decrease from `416.196502092920504516` to `408.368680611525079006 POT` in block 149241, which contained only the target transaction. The decrease matched `gasUsed × effectiveGasPriceWei` exactly. This was a single-RPC check; it does not split execution-fee and storage-deposit components. Evidence: [V2 live transfer](evidence/portaldot-v2-live-transfer-2026-10-22.json).
 
 The receipt, transaction block and sender balance reads were queried through the configured PortalDot RPC, not a second EVM provider. The sender's balance delta was reconciled; the recipient balance delta was later measured through the same RPC, increasing from `0` to `0.1 POT` across the isolated block. The historical V2 deployment receipt later became unavailable through this RPC, while separate code/configuration readbacks were reported successful. The earlier V1 contract remains deployed at `0x3f2f484484fbE6e224d058fDfDB6B5A14F09655b`. V1 does not enforce V2's recipient allowlist or spend cap. These are testnet observations, not independent network authentication, a security audit, or production-readiness evidence.
+## Live read-only enforcement probes (24 October 2026)
+
+The published DApp browser smoke test checked EVM chain ID `420420777`, the recorded V2 runtime Keccak hash, signer and policy values, then called the deployed V2 contract with `eth_call`:
+
+- An unlisted recipient returned `InvalidRecipient()`.
+- A request for `0.100000000000000001 POT` against the live `0.1 POT` per-transfer cap returned `AmountExceedsCap(amount, cap)` with matching amount/cap arguments.
+- Both results came from one configured RPC and were obtained without signing or broadcasting a transaction. They are not mined public-chain reverts and do not establish that Verigate returned BLOCK for those exact probe inputs.
+- The same browser run queried the known V2 transfer hash and matched receipt status `1`, block `149241`, and one `TransferExecuted` event with expected action ID, recipient and amount.
+
+The complete report is committed at [published-dapp-browser-smoke-2026-10-24.json](evidence/published-dapp-browser-smoke-2026-10-24.json); browser workflow [40071558856](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40071558856) passed.
+
 ## Validation evidence
 
-- 156 tests passed in the local deployment workspace on 20 October 2026.
-- Network preflight confirmed the expected EVM chain ID and configured Substrate genesis pin; the RPC monitor reported healthy at the last recorded check.
-- The isolated Verigate integration returned ALLOW and BLOCK from a temporary API, verified Ed25519 signatures, refused BLOCK, passed dry-run without state changes, then executed the exact ALLOW transfer against the real guard source on a loopback Hardhat EVM.
-- The published `main` commit `f5aee87126a87c3ca02a72ba7e7896c40d09ee55` has successful GitHub Actions runs for tests, the isolated Verigate integration, dependency audit, PortalDot RPC health, PortalDot CI, and Substrate runtime metadata. The local workspace also reports 156 tests passing. See the linked workflow runs in `docs/hacker-house-check-in.md`.
-
-The isolated EVM is configured with chain ID 420420777 for EIP-712 domain testing. This configuration does not turn the local EVM into PortalDot testnet. No transaction from the local end-to-end test was sent to a public PortalDot RPC.
+- On the 24 October main revision before the generated PDF commit, [Test](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40072816973), [PortalDot CI](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40072817020) and [PortalDot RPC health](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40072816999) passed. CI reported 178 passing Mocha tests; Explorer, DApp/receipt lookup, network-readiness, Substrate-adapter, receipt-quorum and RPC-monitor suites passed, as did the isolated Verigate ALLOW/BLOCK integration.
+- The compile step reported `No contracts to compile`; that line alone is not evidence of an independent fresh Solidity compilation.
+- The reproducible seven-slide deck was rebuilt, rendered to seven PNG pages and passed PDF validation in presentation workflow [40072817001](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40072817001).
+- The isolated Verigate integration returns ALLOW and BLOCK from a temporary API, verifies Ed25519 signatures, refuses BLOCK, then executes the exact ALLOW transfer against the real guard source on a loopback Hardhat EVM. It is local end-to-end evidence, not a public PortalDot transaction.

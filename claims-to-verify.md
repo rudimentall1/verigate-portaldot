@@ -1,6 +1,6 @@
 # Verigate PortalDot — claims to verify before submission
 
-Updated: 23 October 2026. Use this file as the wording boundary for the demo, slide deck, captions and DoraHacks submission.
+Updated: 24 October 2026. Use this file as the wording boundary for the demo, slide deck, captions and DoraHacks submission.
 
 ## Supported claims
 
@@ -32,7 +32,7 @@ Sources:
 
 > On 24 October 2026, the published DApp's browser smoke test called the deployed V2 guard using read-only `eth_call` against the configured PortalDot V3 RPC. The contract returned `InvalidRecipient()` for an unlisted recipient and `AmountExceedsCap(amount, cap)` for a request one wei above the current per-transfer cap. The test first checked chain ID and the expected runtime code hash. No signature or transaction was broadcast, and no fee was paid. This is a live endpoint-reported simulation, not a mined revert transaction or independent RPC authentication.
 
-Source: [Published Chromium smoke workflow](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40071558856), commit [`af41b2f`](https://github.com/rudimentall1/verigate-portaldot/commit/af41b2f0b646922bb79638012d835ac3f8651abe).
+Sources: [Committed browser evidence JSON](docs/evidence/published-dapp-browser-smoke-2026-10-24.json), [published Chromium smoke workflow](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40071558856), tested DApp code commit [`af41b2f`](https://github.com/rudimentall1/verigate-portaldot/commit/af41b2f0b646922bb79638012d835ac3f8651abe).
 
 ### V2 policy and trust boundaries
 
