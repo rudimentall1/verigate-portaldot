@@ -8,7 +8,7 @@
  */
 import "dotenv/config";
 import {
-  Contract, Interface, JsonRpcProvider, getAddress, keccak256
+  Interface, JsonRpcProvider, getAddress, keccak256
 } from "ethers";
 
 const TX_HASH_RE = /^0x[a-fA-F0-9]{64}$/;
@@ -18,6 +18,8 @@ const EVENT = new Interface([
 
 export function normalizeTransferEvidence({ tx, receipt, block, guardAddress }) {
   if (!tx || !receipt || !block) throw new Error("Provider did not return transaction, receipt and block.");
+  if (block.number !== receipt.blockNumber) throw new Error("Fetched block number does not match receipt block number.");
+  if (!block.hash || !receipt.blockHash) throw new Error("Block hash is missing from provider evidence.");
   if (receipt.status !== 1) throw new Error(`Receipt status is ${receipt.status}, not success.`);
   if (receipt.hash.toLowerCase() !== tx.hash.toLowerCase()) throw new Error("Transaction/receipt hash mismatch.");
   if (receipt.blockHash.toLowerCase() !== block.hash.toLowerCase()) throw new Error("Receipt block hash mismatch.");
@@ -59,7 +61,7 @@ export function normalizeTransferEvidence({ tx, receipt, block, guardAddress }) 
 
 export function compareProviderEvidence(primary, secondary) {
   const fields = [
-    "transactionHash", "status", "blockNumber", "blockHash",
+    "transactionHash", "chainId", "status", "blockNumber", "blockHash",
     "transactionTo", "guardAddress"
   ];
   const mismatches = fields.filter((field) => primary[field] !== secondary[field]);
