@@ -1,6 +1,6 @@
 # Verigate PortalDot
 
-**A policy-to-execution gate for AI-agent payments on PortalDot V3.**
+**A policy-to-execution gate for AI-agent payments on PortalDot V3 EVM testnet.**
 
 An AI agent can propose a transfer, but a proposal is not authority. Verigate makes the off-chain policy decision. The bridge verifies the signed decision and binds it to one exact action. The deployed `PortalDotAgentGuardV2` then checks the authorization, recipient allowlist and spending limits before moving native POT held by the guard.
 
