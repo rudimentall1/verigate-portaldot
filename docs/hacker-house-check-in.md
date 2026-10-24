@@ -16,7 +16,7 @@ The DoraHacks page is the controlling view for the final submission deadline. Th
 ## Project and track
 
 - Project: Verigate PortalDot.
-- Recommended track: **Modular Cloud Solutions and Middleware**. The product is authorization-to-execution middleware, not a multi-chain asset bridge or node-monitoring product.
+- Recommended track: **Modular Cloud & Middleware** (canonical label from the published event listing: https://www.hackathonradar.com/database/hackathon/portaldot-hacker-house-2026). The product is authorization-to-execution middleware, not a multi-chain asset bridge or node-monitoring product. The actual track selected in the BUIDL form was not visible in the supplied account-view excerpt and remains to be checked.
 - Public repository: https://github.com/rudimentall1/verigate-portaldot
 - Current branch: https://github.com/rudimentall1/verigate-portaldot/tree/main
 - Public DApp: https://rudimentall1.github.io/verigate-portaldot/
