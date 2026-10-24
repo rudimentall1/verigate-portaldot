@@ -71,10 +71,28 @@ Do not claim:
 
 ## Demo-video review
 
-The uploaded working render is `159.43 seconds` (2:39), `1920×1080`, 30 fps, H.264 video and AAC audio. It fits the three-minute cap.
+The candidate render supplied for review on 24 October 2026 is 174.733 seconds (2:54.7), 1920×1080 at 30 fps, H.264 High/yuv420p with AAC-LC stereo at 48 kHz. It is 5.267 seconds below the three-minute limit. The supplied MP4 was checked with ffprobe; an FFmpeg audio scan measured a peak of -4.2 dBFS and integrated loudness of -17.3 LUFS. A black-frame scan found no black segment lasting 0.5 seconds or longer.
 
-Before submission, revise the video source and render again:
-1. The working MP4 still contains a stale end card around 2:18. The replacement card is versioned at [`docs/media/portaldot-v1-v2-outro.svg`](docs/media/portaldot-v1-v2-outro.svg); use the timed instructions in [`docs/video-edit-brief.md`](docs/video-edit-brief.md), replace the final narration, and re-render through the last frame. The replacement has not yet been integrated into the MP4.
-2. Around 1:02 the existing subtitle overlaps the small `executeTransfer` annotation/arrow in the architecture frame. Rebuild/reposition this cue from the editing source and re-render; changing a separate SRT alone will not erase the existing text pixels in the MP4.
-3. The public V1 sender/recipient address `0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB` is part of the recorded on-chain evidence. Keep it visible unless you explicitly want to conceal address-to-activity correlation; blurring makes verification harder.
-4. The MP4 was inspected for technical metadata and sampled key frames, not listened to start-to-finish. Subtitle timing still needs a full playback check. The matching `.srt` was not attached to this repository snapshot, so its exact cues have not been checked here.
+The current cut's evidence framing is materially improved:
+- The dashboard footage is labelled as a recording of the V1 guard dated 21 October 2026; it is not a live V2 dashboard demonstration.
+- The V1 receipt is presented as historical saved evidence because the configured RPC later stopped returning it.
+- V2 is presented as a text evidence card for block 149241, not as live V2 dashboard footage. It reports the successful receipt, one matching `TransferExecuted` event and balance reconciliation through the same configured RPC.
+- The ending says no second RPC provider was used and does not ask the viewer to repeat the transfer.
+
+The supplied SRT contains 49 cues. Its last cue ends at 172.716 seconds, approximately 2.017 seconds before the MP4 ends. The current subtitles, burned-in captions and sampled key frames were inspected, but the MP4 has not been watched and listened to continuously. The new stitched narration in segment 5 and its transitions still require a human end-to-end playback check before calling this submission-ready.
+
+### Two wording refinements recommended before submission
+
+1. **Clarify the dated V1 console footage.** The on-screen label identifies a “DASHBOARD RECORDING · V1 GUARD · 21 OCT 2026”, but the narration still says “Here is the live, read-only console” and then refers to the “current” chain state and “latest block”. That can be mistaken for current live V2 footage. Prefer wording such as:
+
+   > This is a recording of the read-only console captured with the V1 guard on October 21. At capture time, it read the PortalDot V3 chain ID, latest block, guard bytecode, native balance and on-chain authority signer from the public RPC.
+
+   Update the spoken audio, burned-in captions and sidecar SRT together. Do not imply the screen is a live V2 view.
+
+2. **Avoid implying a joint demonstration or endorsement by PortalDot.** Replace “Verigate and PortalDot demonstrate an authorization-gated transfer on testnet” with:
+
+   > This prototype demonstrates an authorization-gated transfer on PortalDot’s EVM testnet.
+
+   Update the narration, burned-in subtitles and SRT consistently.
+
+Keep the V1 and V2 contract versions separate. Do not make the V2 evidence card resemble a live dashboard capture, and do not remove the one-RPC / no-independent-authentication caveat.
