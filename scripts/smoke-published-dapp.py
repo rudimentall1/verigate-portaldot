@@ -100,6 +100,10 @@ def run() -> None:
             fail("Judge-facing DApp has horizontal overflow at 375px: " + json.dumps(mobile_layout))
         if not page.get_by_role("button", name="Inspect denial proof").is_visible():
             fail("Denial evidence control is not visible at 375px viewport.")
+        denial_box = page.locator(".demo-step.deny").bounding_box()
+        allowed_box = page.locator(".demo-step.allow").bounding_box()
+        if denial_box is None or allowed_box is None or allowed_box["y"] < denial_box["y"] + denial_box["height"] - 1:
+            fail("Denial and allow demo cards should stack vertically at 375px.")
         page.set_viewport_size({"width": 1440, "height": 1000})
 
         # The module is imported by the page; wait for it and confirm the
