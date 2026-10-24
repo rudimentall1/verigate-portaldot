@@ -130,3 +130,10 @@ test("missing receipt is not converted to a negative result", () => {
     guardAddress: "0x0000000000000000000000000000000000000001"
   }), /did not return transaction, receipt and block/);
 });
+
+test("rejects internally consistent evidence for a different requested transaction hash", () => {
+  assert.throws(
+    () => normalizeTransferEvidence({ ...validProviderObjects(), requestedTxHash: "0x" + "f".repeat(64) }),
+    /different transaction than the requested hash/
+  );
+});
