@@ -32,25 +32,34 @@ This action type/network may need to be explicitly enabled in the operator's Ver
 
 ## Configure
 
-Use the existing `.env` file locally; do not commit it or paste a mnemonic/private URI into a report.
+Use the existing `.env` file locally; do not commit it or paste a mnemonic/private URI into a report. The CLI loads this file automatically.
 
 Required values:
 
 - `PORTALDOT_SUBSTRATE_RPC_URL=wss://test-node-v3.portaldot.dev`
 - `PORTALDOT_SUBSTRATE_GENESIS_HASH=0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd`
 - `PORTALDOT_SUBSTRATE_SIGNER_ADDRESS=<funded SS58 address>`
+- `PORTALDOT_SUBSTRATE_RECIPIENT_SS58=<recipient SS58 address, prefix 42>`
 - `VERIGATE_PUBLIC_KEY_FILE=<trusted issuer public-key PEM path>`
 - `VERIGATE_PUBLIC_KEY_SHA256=<independently verified issuer-key fingerprint>`
 - `VERIGATE_BASE_URL=<trusted Verigate API URL>`
 
-For a public Verigate API, use HTTPS and the configured API key if required. The adapter reuses the repository's pinned issuer verification logic.
+For a public Verigate API, use HTTPS and the configured API key if required. The adapter reuses the repository's pinned issuer verification logic. Keep the native-runtime signer separate from EVM deployer, relayer and EIP-712 authority keys. Prefer a dedicated low-balance test account.
 
-The signing URI is needed only for a transfer that the operator explicitly decides to broadcast:
+The local native authorization preparation helper creates a separate policy/capability profile and asks Verigate for a fresh authorization. It does not edit the active EVM policy, sign a Substrate extrinsic, run the RPC simulation, or broadcast a transaction:
+
+```sh
+npm run prepare:substrate:auth
+```
+
+The helper requires an existing agent identity plan at `/opt/verigate-portaldot-issuer/live-e2e/plan-1ae14879503d.json` and a recipient SS58 address set in the local `.env`. It starts a separate verifier on loopback `127.0.0.1:8003`, preserves the verifier on port 8001, creates a narrow native capability in the existing issuer database, and writes a mode-0600 authorization response under `/opt/verigate-portaldot-issuer/live-e2e/`. This has local policy/database side effects but no chain side effects. It refuses to proceed if governed-policy mode is enabled or the registered identity/key binding does not match. Review the printed target, amount and decision.
+
+The secret signing URI is required only for `--simulate` or `--broadcast`:
 
 - `PORTALDOT_SUBSTRATE_SIGNER_URI=<local secret URI; never commit>`
 - `PORTALDOT_SUBSTRATE_REPLAY_DIR=.verigate-substrate-replay`
 
-The SS58 signer address must correspond to the local signing URI. Keep this native-runtime signer separate from EVM deployer, relayer and EIP-712 authority keys. Prefer a dedicated low-balance test account.
+`--simulate` signs locally and sends the signed call to `system_dryRun`, not the transaction pool. `--broadcast` is the only on-chain write mode.
 
 ## Read-only preflight
 
