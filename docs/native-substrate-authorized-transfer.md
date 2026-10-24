@@ -48,6 +48,8 @@ For a public Verigate API, use HTTPS and the configured API key if required. The
 
 The local native authorization preparation helper creates a separate policy/capability profile and asks Verigate for a fresh authorization. It does not edit the active EVM policy, sign a Substrate extrinsic, run the RPC simulation, or broadcast a transaction:
 
+The default requested action is `0.01 POT` (`1000000000000` base units), while the separate policy/capability ceiling is `0.1 POT` (`10000000000000` base units). This keeps the initial request within the default dynamic-authority `PROBATION` multiplier of 10%; the action amount is not automatically set equal to its ceiling. Configure them independently with `PORTALDOT_SUBSTRATE_AUTH_AMOUNT_BASE_UNITS` and `PORTALDOT_SUBSTRATE_CAPABILITY_MAX_BASE_UNITS`.
+
 ```sh
 npm run prepare:substrate:auth
 ```
