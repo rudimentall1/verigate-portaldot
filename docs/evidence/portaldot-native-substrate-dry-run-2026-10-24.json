@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "evidenceType": "native-substrate-runtime-dry-run",
+  "capturedDate": "2026-10-24",
+  "status": "SIMULATION_SUCCESS",
+  "network": "PortalDot V3 Substrate testnet",
+  "rpcUrl": "wss://test-node-v3.portaldot.dev",
+  "runtime": {
+    "chainName": "PortaldotV3 Test",
+    "specName": "portaldot-v3",
+    "specVersion": 3002,
+    "transactionVersion": 2,
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "expectedGenesisHashMatches": true
+  },
+  "authorization": {
+    "decision": "ALLOW",
+    "intentId": "portaldot-native-substrate-65ba5d86ff624c62a126e3ee76817c40",
+    "authorizationId": "a2a781908af2aeaeaa7cabd1c854b2af6423c1deade872a83526f6f3158bea99",
+    "actionSha256": "4cb61a7575ebd058cabefdd6b5777c3b6b5a3af303764720ea355f02e2876fb1",
+    "amountBaseUnits": "10000000000000",
+    "amountPOT": "0.1",
+    "recipient": "5Etb82346VeavrvzVB3NK3Vr6YrYeK4thENVGM9HogYy64Cj"
+  },
+  "simulation": {
+    "rpcMethod": "system_dryRun",
+    "simulationAtBlockNumber": 175408,
+    "simulationAtBlockHash": "0x99acffce5e32fa234645d9455c86633231cc9a2456b6e78fcf396a017506078e",
+    "eraContextBlock": 175407,
+    "eraPeriod": 64,
+    "eraBirthBlock": 175407,
+    "eraBirthHash": "0xe868d990f75b4484c81506f5b043d9fc278a7786ba9a16cf9702c0dc44f4e946",
+    "signedExtrinsicHash": "0x968dbeea1048141023da1c3218ad7c050c35ded428c17664efd516971fbfb96d",
+    "signedLocally": true,
+    "runtimeDryRunPerformed": true,
+    "status": "SIMULATION_SUCCESS",
+    "failureLayer": null,
+    "reason": null
+  },
+  "feePreflight": {
+    "estimatedFeeBaseUnits": "1490531561573",
+    "estimatedFeePOT": "0.01490531561573",
+    "authorizedMaxFeeBaseUnits": "3000000000000",
+    "authorizedMaxFeePOT": "0.03",
+    "feeCeilingPassed": true
+  },
+  "executionBoundary": {
+    "transactionBroadcast": false,
+    "extrinsicSubmitted": false,
+    "onChainExecutionProven": false,
+    "finalizedReceiptOrTransferEventAvailable": false,
+    "note": "This record captures a successful system_dryRun of a locally signed extrinsic at the specified finalized state. It does not prove inclusion, finalization, an actual transfer, or the final charged fee. The result came from one configured RPC endpoint and is not independently attested by a second provider."
+  },
+  "provenance": {
+    "source": "Terminal output supplied in the project conversation",
+    "independentRpcVerification": false
+  }
+}
