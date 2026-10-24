@@ -24,6 +24,10 @@ AI agents can propose token transfers, but a warning or fee estimate does not en
 
 The public testnet evidence includes a 0.1 POT transfer following a fresh Verigate ALLOW. The transaction succeeded in block 149241 and emitted one matching TransferExecuted event. This is a testnet prototype, not a global wallet firewall, DaaS integration, security audit or production deployment.
 
+## Project provenance and licensing disclosure
+
+This project builds on the pre-existing Verigate policy engine. The PortalDot-specific integration in this repository includes the bridge authorization path, the V2 EVM guard, the read-only DApp/receipt lookup and the testnet verification tooling. The project does not claim that all Verigate components originated during this hackathon. The repository is MIT-licensed; third-party dependency licenses remain applicable.
+
 ## Track
 
 The page excerpt supplied for this update shows tags but not the selected hackathon track. Confirm that field in DoraHacks if it is displayed separately; a Substrate tag does not itself prove the track choice.
@@ -68,6 +72,7 @@ The page excerpt supplied for this update shows tags but not the selected hackat
 - [ ] Watch/listen to the exact public YouTube upload from start to finish; confirm both wording changes, stitched narration, and burned-in caption/SRT alignment. The SRT currently attached in working materials still contains the prior wording, which may be older than the public upload.
 - [ ] Confirm the long-form BUIDL description accurately says “0.5 POT per resettable 3,600-second interval”, not a continuously sliding rolling window.
 - [ ] Confirm the selected hackathon track separately from the displayed tags.
+- [ ] Ensure the public BUIDL long-form description includes the project provenance/licensing disclosure above; preserve third-party dependency licenses.
 - [ ] Save/verify the final submission before 6 November 2026, 09:00 as shown in DoraHacks (04:00 UTC under the UTC+5 display).
 - [x] Keep local negative tests, read-only public-RPC eth_call simulations and mined testnet transactions clearly distinguished.
 
