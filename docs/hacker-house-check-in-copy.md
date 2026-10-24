@@ -30,6 +30,9 @@ Modular Cloud Solutions and Middleware.
 - Successful transaction hash: `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`
 - Block: `149241`
 - Recorded transaction evidence: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json
+- Live denial-probe evidence (read-only `eth_call`, not mined reverts): https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/published-dapp-browser-smoke-2026-10-24.json
+- Presentation PDF (7 slides): https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/Verigate-PortalDot-Presentation.pdf
+- Architecture and trust boundaries: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/architecture.md
 
 ## Current progress
 
