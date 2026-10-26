@@ -62,7 +62,7 @@ jobs:
           PY
           node --check /tmp/portal-dot-explorer-inline.js
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
       - name: Validate and package static DApp
         shell: bash
         run: |
