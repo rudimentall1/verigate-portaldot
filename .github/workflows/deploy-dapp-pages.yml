@@ -83,7 +83,7 @@ jobs:
           cp web3-dapp/explorer/index.html _site/explorer/index.html
           touch _site/.nojekyll
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
