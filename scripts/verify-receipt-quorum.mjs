@@ -16,6 +16,15 @@ const EVENT = new Interface([
   "event TransferExecuted(bytes32 indexed actionId,address indexed recipient,uint256 amount,uint256 nonce)"
 ]);
 
+export function normalizeExpectedGenesisHash(value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (!normalized) return null;
+  if (!/^0x[a-f0-9]{64}$/.test(normalized)) {
+    throw new Error("PORTALDOT_EVM_GENESIS_HASH must be a 32-byte hexadecimal block hash when configured.");
+  }
+  return normalized;
+}
+
 export function normalizeTransferEvidence({ tx, receipt, block, guardAddress, chainId, genesisHash = null, requestedTxHash }) {
   if (!tx || !receipt || !block) throw new Error("Provider did not return transaction, receipt and block.");
   if (block.number !== receipt.blockNumber) throw new Error("Fetched block number does not match receipt block number.");
@@ -115,10 +124,7 @@ async function main() {
   const primaryUrl = process.env.PORTALDOT_RPC_URL;
   const secondaryUrl = process.env.PORTALDOT_RPC_URL_SECONDARY;
   const expectedChainId = BigInt(process.env.PORTALDOT_CHAIN_ID || "420420777");
-  const expectedGenesisHash = String(process.env.PORTALDOT_EVM_GENESIS_HASH || "").trim().toLowerCase();
-  if (expectedGenesisHash && !/^0x[a-f0-9]{64}$/.test(expectedGenesisHash)) {
-    throw new Error("PORTALDOT_EVM_GENESIS_HASH must be a 32-byte hexadecimal block hash when configured.");
-  }
+  const expectedGenesisHash = normalizeExpectedGenesisHash(process.env.PORTALDOT_EVM_GENESIS_HASH);
   if (!guardAddress || !expectedCodeHash || !primaryUrl || !secondaryUrl) {
     throw new Error("Require configured guard address/code hash and both PORTALDOT_RPC_URL and PORTALDOT_RPC_URL_SECONDARY.");
   }
