@@ -113,3 +113,24 @@ This patch specification is based on the inspected upstream files:
 - `src/sdk/tx.ts` at the current upstream `main` revision inspected on 2026-10-27.
 
 No upstream files have been changed by this document. The implementation remains blocked on a confirmed Verigate-compatible agent signing callback and write access/maintainer acceptance in the upstream repository.
+
+
+## Restricted local agent-signing adapter added
+
+The branch now includes `integrations/portalpilot/verigate-agent-signer.py`. It is a stdin/stdout CLI, not an HTTP endpoint. It calls Verigate's own `sign_action_intent()`, checks the identity is active in the configured Verigate DB, verifies that the configured private key matches that identity's registered public key, and only signs the fixed native PortalDot transfer action type. It pins the known testnet genesis and enforces configured maximum amount and fee-ceiling values. The signature is the only value written to stdout; diagnostic failures go to stderr.
+
+This adapter is useful only when the PortalPilot backend can securely invoke the script on the same trusted host (or through an equally protected process boundary) where the registered agent key and Verigate identity database are available. It must not be deployed in a browser bundle, exposed as an unauthenticated web endpoint, or run with a key copied to a public/serverless frontend. It does not call Verigate authorization, does not produce an ALLOW, and does not submit a transaction.
+
+Required server-side environment variables:
+- `VERIGATE_SOURCE_ROOT`
+- `VERIGATE_DB`
+- `VERIGATE_AGENT_ID`
+- `VERIGATE_IDENTITY_ID`
+- `VERIGATE_AGENT_PRIVATE_KEY_FILE`
+- `PORTALDOT_SUBSTRATE_GENESIS_HASH`
+- `PORTALDOT_SUBSTRATE_SIGNER_MAX_AMOUNT_BASE_UNITS`
+- `PORTALDOT_SUBSTRATE_SIGNER_MAX_FEE_BASE_UNITS`
+
+PortalPilot should invoke this through a server-only child process using JSON on stdin, then send the exact same ActionIntent fields plus the returned `agent_signature` to `POST /v1/actions/authorize`. The API key remains server-side. Verify the returned receipt and execution authorization using the existing `verigate-live-verifier.mjs` before planning or execution. Never accept a signature or signed authorization response supplied by the browser.
+
+Important limitation: this is a source-level adapter, not a deployed signer. Its imports and tests still need to be validated in the target Verigate runtime. The PortalPilot routes and plan storage remain unwired, so the end-to-end integration is not complete.
