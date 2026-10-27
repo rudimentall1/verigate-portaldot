@@ -40,6 +40,9 @@ export async function runAuthorizedPortalPilotTransfer({
       actionCallBeforeSign.toLowerCase() !== expectedBeforeSign.toLowerCase()) {
     fail("Unsigned PortalPilot call differs from the verified Verigate authorization; refusing to sign.");
   }
+  if (authorization.binding.expiresAt <= nowSeconds()) {
+    fail("Verigate authorization expired before PortalPilot could sign the transfer.");
+  }
 
   // Only the exact action whose unsigned SCALE bytes match authorization may be signed.
   const plan = await planAction(action, PORTALDOT_TESTNET_RPC);
