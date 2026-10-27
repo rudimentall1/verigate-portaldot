@@ -78,6 +78,20 @@ test("call-byte mismatch prevents executePlan", async () => {
   assert.equal(calls.includes("execute"), false);
 });
 
+test("call changes between checks are refused at the final boundary", async () => {
+  let encodes = 0;
+  const { calls, deps } = setup({
+    computeExpectedCallHex: async () => {
+      calls.push("encode");
+      encodes += 1;
+      return encodes === 1 ? callHex : "0x040101";
+    },
+  });
+  await assert.rejects(() => runAuthorizedPortalPilotTransfer(deps), /SCALE call differs/);
+  assert.equal(encodes, 2);
+  assert.equal(calls.includes("execute"), false);
+});
+
 test("plan action substitution prevents executePlan", async () => {
   const { calls, deps } = setup({
     planAction: async (_action, network) => ({
