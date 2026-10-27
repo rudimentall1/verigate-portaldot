@@ -81,8 +81,8 @@ return res.json({ kind: "plan", intent, plan });
    - retrieve the server-side `{ plan, authorization }` by `planId`, otherwise refuse;
    - recompute the expected SCALE call from the immutable verified authorization using the pinned testnet API;
    - re-run `assertPortalPilotPlanAuthorized` immediately before submission, including expiry and fee ceiling checks;
-   - only then call `executePlan(planId)`;
-   - consume the server-side authorization record on success or refusal so it cannot be replayed.
+   - consume the server-side authorization record before execution so it cannot be replayed;
+   - call a new SDK operation such as `executeAuthorizedPlan(planId, expectedCallHex)` that fetches the cached transaction once, verifies that exact object's call bytes, and submits that same object without another cache lookup or asynchronous gap. Do not use a separate `getPlanCallHex()` followed by the existing `executePlan()` as the final security boundary.
 
 5. The expected-call helper must verify the API's genesis hash equals the pinned genesis before encoding. Do not silently accept the existing `mainnet` or `local` network aliases. Reject if the fee estimate is unavailable, non-canonical, or above the signed fee ceiling.
 
