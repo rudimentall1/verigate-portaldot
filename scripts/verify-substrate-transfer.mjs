@@ -79,7 +79,7 @@ export function validateNativeTransferEvidence(evidence) {
   if (execution.transactionBroadcast !== true || execution.extrinsicSubmitted !== true || execution.finalized !== true) {
     fail("Evidence does not assert a broadcast and finalized native extrinsic.");
   }
-  if (execution.matchedTransferEventCount !== 1) {
+  if (execution.matchingTransferEventCount !== 1) {
     fail("Evidence must record exactly one matching Balances.Transfer event.");
   }
   return {
