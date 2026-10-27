@@ -15,15 +15,16 @@ PortalPilot's current network selector exposes \`mainnet\` and \`local\`. Veriga
 - The signed binding must match one \`Balances.transfer_keep_alive\` action, exact SS58 recipient, exact base-unit amount, pinned genesis, and unexpired ALLOW.
 - \`assertPortalPilotPlanAuthorized(...)\` checks testnet endpoint, action, expiry and exact SCALE call bytes. Call it after plan creation and immediately before execution.
 
-The adapter **does not create a Verigate intent or decision**. The host still needs to call the correct decision endpoint with the native action metadata, then return both signed artifacts. That request format must be confirmed against the deployed Verigate API before implementing a live connector.
+The request adapter now targets the documented `POST /v1/actions/authorize` endpoint and constructs the native action metadata. It deliberately requires a host-provided `signActionIntent(actionIntent, identityId)` callback that produces the exact agent signature expected by the registered Verigate identity. It does not read private keys or implement Verigate's agent-signing canonicalization itself. Until that callback is wired to a verified signer from PortalPilot's backend, the request adapter is a tested contract, not a live authorization connector.
 
 ## Required PortalPilot wiring
 
-1. Build one native transfer action and its exact Verigate intent, including \`action_type=portaldot.substrate_transfer\`, \`network=portaldot-v3-substrate\`, \`asset=POT\`, recipient SS58, base-unit amount, pinned genesis hash, and signed fee ceiling.
+1. Wire `requestPortalPilotAuthorization()` to the server-side registered agent signer. Confirm the callback's canonicalization and identity/capability IDs against the deployed Verigate instance. The helper posts to `/v1/actions/authorize` and fails closed unless it receives ALLOW plus an execution authorization.
+2. Build one native transfer action and its exact Verigate intent, including \`action_type=portaldot.substrate_transfer\`, \`network=portaldot-v3-substrate\`, \`asset=POT\`, recipient SS58, base-unit amount, pinned genesis hash, and signed fee ceiling.
 2. Request Verigate's decision before calling \`planAction()\`. If the decision is not ALLOW or either signature fails local/remote verification, do not sign a plan.
-3. Pass the verified authorization in server-side state. Never trust a client-supplied binding or call bytes.
-4. Compute expected call bytes from the same connected API using \`api.tx.balances.transferKeepAlive(recipient, amount).method.toHex()\`. Compare them with the plan after creation and again immediately before execution.
-5. If any check fails, return a refusal and do not call \`executePlan()\`. Keep batch transfers and remarks disabled until separately authorized and tested.
+4. Pass the verified authorization in server-side state. Never trust a client-supplied binding or call bytes.
+5. Compute expected call bytes from the same connected API using \`api.tx.balances.transferKeepAlive(recipient, amount).method.toHex()\`. Compare them with the plan after creation and again immediately before execution.
+6. If any check fails, return a refusal and do not call \`executePlan()\`. Keep batch transfers and remarks disabled until separately authorized and tested.
 
 ## Tests
 
