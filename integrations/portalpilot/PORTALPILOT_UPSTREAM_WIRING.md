@@ -57,15 +57,20 @@ const authorization = await authorizePortalPilotAction(intent.action, {
   requestAuthorization: (action) =>
     requestPortalPilotAuthorization(action, { signActionIntent }),
 });
-const plan = await planAction(intent.action, PORTALDOT_TESTNET_RPC);
 const expectedCallHex = await expectedNativeTransferCallHex(
   authorization.recipient,
   authorization.amountBaseUnits,
   PORTALDOT_TESTNET_RPC
 );
-assertPortalPilotPlanAuthorized({
-  plan, authorization, expectedCallHex,
-});
+const actionCallHex = await encodeUnsignedTransferCallHex(
+  intent.action, PORTALDOT_TESTNET_RPC
+);
+if (actionCallHex !== expectedCallHex) {
+  throw new Error("Unsigned call differs from Verigate authorization");
+}
+// Only now may PortalPilot create/sign the plan.
+const plan = await planAction(intent.action, PORTALDOT_TESTNET_RPC);
+assertPortalPilotPlanAuthorized({ plan, authorization, expectedCallHex });
 verigatePlans.set(plan.id, { plan, authorization });
 return res.json({ kind: "plan", intent, plan });
 ```
