@@ -45,6 +45,14 @@ The contract does not verify Verigate's Ed25519 authorization. It trusts the off
 
 The demo supports a single native-token transfer. It is not a general wallet, token vault, arbitrary-call executor, audited product or production key-management system.
 
+## Native Substrate adapter boundary
+
+The native Substrate adapter is separate from the EVM guard. It verifies Verigate's signed decision and exact-action binding off-chain, checks the expected PortalDot V3 Substrate genesis/runtime, reads balance and estimated fee, and requires successful `system_dryRun` when simulation is requested. A native transfer is submitted only through the adapter's explicit `--broadcast` path.
+
+Authorization expiry is checked when the response is parsed, after asynchronous verification/RPC preflight, and again immediately before the adapter invokes `signAndSend`. If the final check discovers expiry after the replay marker was reserved, the marker is retained as `refused_before_broadcast` so the same authorization cannot be silently retried. Simulation also rechecks expiry immediately before creating the locally signed extrinsic.
+
+**Critical limit:** the Substrate runtime does not verify Verigate's Ed25519 artifacts or enforce their expiry. The policy decision is enforced by this trusted adapter at the signing/submission boundary. A caller who can use the native account to submit a direct extrinsic outside this adapter can bypass the Verigate policy. The final runtime fee may differ from `paymentInfo.partialFee`; the signed ceiling is a preflight guard, not an on-chain fee cap. The local replay ledger is single-host state and is not distributed replay protection. Do not describe the native path as an on-chain Verigate guard or as universally protecting a wallet.
+
 ## Required negative tests
 
 - different recipient, amount, nonce, action ID, contract domain or chain ID;
