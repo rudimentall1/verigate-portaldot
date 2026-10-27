@@ -1,23 +1,76 @@
 diff --git a/src/sdk/tx.ts b/src/sdk/tx.ts
 --- a/src/sdk/tx.ts
 +++ b/src/sdk/tx.ts
-@@ -194,34 +194,57 @@
+@@ -194,34 +194,62 @@
 -export async function executePlan(id: string): Promise<Receipt> {
 -  const cached = planCache.get(id);
 -  if (!cached) throw new Error("Plan expired or not found. Please re-issue the command.");
 -  const api = await getApi(cached.network === "default" ? undefined : cached.network);
+-  return new Promise<Receipt>((resolve, reject) => {
+-    cached.tx
+-      .send((result: any) => {
+-        const { status, dispatchError, events, txHash } = result;
+-        if (status.isInBlock || status.isFinalized) {
+-          const bh = status.isInBlock ? status.asInBlock : status.asFinalized;
+-          planCache.delete(id);
+-          if (dispatchError) {
+-            resolve({
+-              ok: false,
+-              error: formatDispatchError(api, dispatchError),
+-              blockHash: bh.toHex(),
+-              txHash: txHash.toHex(),
+-              events: [],
+-              finalizedAt: Date.now(),
+-            });
+-          } else {
+-            resolve({
+-              ok: true,
+-              blockHash: bh.toHex(),
+-              txHash: txHash.toHex(),
+-              events: (events || []).map((e: any) => `${e.event.section}.${e.event.method}`),
+-              finalizedAt: Date.now(),
+-            });
+-          }
+-        }
+-      })
+-      .catch(reject);
+-  });
+-}
 +function submitCachedPlan(
 +  id: string,
 +  cached: { tx: SubmittableExtrinsic<"promise">; network: string },
 +  api: ApiPromise
 +): Promise<Receipt> {
-   return new Promise<Receipt>((resolve, reject) => {
-     cached.tx
-       .send((result: any) => {
-@@
-       .catch(reject);
-   });
- }
++  return new Promise<Receipt>((resolve, reject) => {
++    cached.tx
++      .send((result: any) => {
++        const { status, dispatchError, events, txHash } = result;
++        if (status.isInBlock || status.isFinalized) {
++          const bh = status.isInBlock ? status.asInBlock : status.asFinalized;
++          planCache.delete(id);
++          if (dispatchError) {
++            resolve({
++              ok: false,
++              error: formatDispatchError(api, dispatchError),
++              blockHash: bh.toHex(),
++              txHash: txHash.toHex(),
++              events: [],
++              finalizedAt: Date.now(),
++            });
++          } else {
++            resolve({
++              ok: true,
++              blockHash: bh.toHex(),
++              txHash: txHash.toHex(),
++              events: (events || []).map((e: any) => `${e.event.section}.${e.event.method}`),
++              finalizedAt: Date.now(),
++            });
++          }
++        }
++      })
++      .catch(reject);
++  });
++}
 +
 +// Verigate route handlers must use this method instead of executePlan().
 +// Resolve the API before checking the cached transaction, then compare and
