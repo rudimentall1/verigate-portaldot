@@ -1,0 +1,47 @@
+diff --git a/src/sdk/tx.ts b/src/sdk/tx.ts
+--- a/src/sdk/tx.ts
++++ b/src/sdk/tx.ts
+@@
+-export async function executePlan(id: string): Promise<Receipt> {
+-  const cached = planCache.get(id);
+-  if (!cached) throw new Error("Plan expired or not found. Please re-issue the command.");
+-  const api = await getApi(cached.network === "default" ? undefined : cached.network);
++function submitCachedPlan(
++  id: string,
++  cached: { tx: SubmittableExtrinsic<"promise">; network: string },
++  api: ApiPromise
++): Promise<Receipt> {
+   return new Promise<Receipt>((resolve, reject) => {
+     cached.tx
+       .send((result: any) => {
+@@
+       .catch(reject);
+   });
+ }
++
++// Verigate route handlers must use this method instead of executePlan().
++// Resolve the API before checking the cached transaction, then compare and
++// submit the same captured tx object without another planCache lookup or await.
++export async function executeAuthorizedPlan(
++  id: string,
++  expectedCallHex: string
++): Promise<Receipt> {
++  if (typeof expectedCallHex !== "string" || !/^0x[0-9a-f]+$/i.test(expectedCallHex)) {
++    throw new Error("A canonical expected SCALE call hex is required.");
++  }
++  const cached = planCache.get(id);
++  if (!cached) throw new Error("Plan expired or not found. Please re-issue the command.");
++  const api = await getApi(cached.network === "default" ? undefined : cached.network);
++  const actualCallHex = cached.tx.method.toHex();
++  if (actualCallHex.toLowerCase() !== expectedCallHex.toLowerCase()) {
++    throw new Error("Cached signed extrinsic call differs from Verigate authorization.");
++  }
++  return submitCachedPlan(id, cached, api);
++}
++
++export async function executePlan(id: string): Promise<Receipt> {
++  const cached = planCache.get(id);
++  if (!cached) throw new Error("Plan expired or not found. Please re-issue the command.");
++  const api = await getApi(cached.network === "default" ? undefined : cached.network);
++  return submitCachedPlan(id, cached, api);
++}
