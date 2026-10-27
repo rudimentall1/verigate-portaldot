@@ -68,6 +68,19 @@ The EVM adapter demonstrates this with a short-lived EIP-712 authorization enfor
 
 The project does not claim that the individual primitives are novel, that the design is unique, or that PortalDot has adopted the integration. Its contribution is a reusable reference implementation showing how policy authorization can be connected to two distinct execution surfaces with explicit trust boundaries.
 
+### Differentiation from adjacent PortalDot tooling
+
+[PortalPilot](https://github.com/ismailridwans/portalpilot) publicly describes a Substrate-native copilot and explorer with chain reads, fee estimation, `system.dryRun`, and explicit user confirmation before writes. Those capabilities are useful and we do not claim them as our innovation. The distinction is the authority boundary:
+
+| Adjacent component | Primary responsibility | Verigate PortalDot contribution |
+|---|---|---|
+| Explorer / RPC monitor | Observe balances, blocks, transactions and receipts | Decide whether a specific proposed action is authorized before execution; retain provenance for the resulting evidence |
+| PortalPilot-style interactive tooling | Help a user compose, price, simulate and confirm chain actions | Verify a signed Verigate policy decision and bind it to the exact native transfer and signed maximum-fee estimate before the adapter can sign/submit |
+| Policy engine alone | Evaluate an action against off-chain rules | Connect the signed decision to a target execution boundary and fail closed on action mismatch, wrong network identity or expired authorization |
+| EVM spending guard | Enforce constraints for transfers routed through a contract | Provide a separate native Substrate adapter; this does not extend the EVM guard's protection to arbitrary native wallet transactions |
+
+The claim is complementary, not competitive superiority: an interactive wallet/copilot can be the user-facing layer, while Verigate controls whether the proposed action receives execution authority. For Substrate, that enforcement is at the trusted adapter's signing/submission boundary because the runtime does not verify Verigate signatures. For EVM, the deployed guard separately enforces the scoped EIP-712 authorization and contract policy on-chain.
+
 ### Commercial and ecosystem contribution
 
 The target user is a team building an autonomous service or AI agent that must make native POT payments without receiving unrestricted spending authority. The reusable contribution to PortalDot developers is source code, testnet deployment evidence, a native Substrate execution adapter, fail-closed preflight checks, and a documented route for integrating policy-controlled payments into an application.
