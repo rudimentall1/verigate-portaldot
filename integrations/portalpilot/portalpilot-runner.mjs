@@ -17,6 +17,7 @@ export async function runAuthorizedPortalPilotTransfer({
   verifyAuthorization,
   planAction,
   computeExpectedCallHex,
+  computeActionCallHex,
   executePlan,
   nowSeconds = () => Math.floor(Date.now() / 1000),
 }) {
