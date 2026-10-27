@@ -125,6 +125,10 @@ The verifier reads the saved block hash, the extrinsic in that block, current fi
 
 A pruned historical block or unavailable `system.events` state returns `UNAVAILABLE`, not evidence that the transfer failed or never existed. This verifier corroborates chain observations; it does not cryptographically re-verify Verigate's off-chain signed artifacts, perform an audit, or authenticate the RPC operator.
 
+Live re-query performed on 27 October 2026: [GitHub Actions run 40467595612](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40467595612) returned `VERIFIED_BY_ONE_RPC_ENDPOINT`. The configured Substrate RPC returned the recorded transaction in canonical block `175489`, the same finalized block hash, runtime `portaldot-v3 / specVersion 3002`, exactly one matching transfer event, successful dispatch, and the recorded fee event. The complete point-in-time response is committed at [`docs/evidence/portaldot-native-substrate-reverification-2026-10-27.json`](evidence/portaldot-native-substrate-reverification-2026-10-27.json).
+
+This verifies consistency against one live RPC response. It does not independently authenticate the RPC operator, prove that another endpoint agrees, or re-verify the Verigate Ed25519 signatures because those original signed artifacts are not present in the saved transfer record.
+
 ## Safety boundaries and status
 
 - The adapter accepts one native call: `Balances.transfer_keep_alive`. It does not dispatch arbitrary runtime calls, DaaS liquidation calls, governance actions, or EVM contract calls.
