@@ -8,8 +8,8 @@ function fail(message) { throw new Error(message); }
 
 /**
  * Orchestrate the critical order: authorize -> sign plan -> compare exact call
- * -> recheck expiry/call -> execute. All host operations are injected so tests
- * can prove executePlan is never called on refusal without touching a chain.
+ * -> recheck -> execute. Expected SCALE bytes must be derived from the verified
+ * authorization, not from the plan being checked.
  */
 export async function runAuthorizedPortalPilotTransfer({
   action,
@@ -34,13 +34,13 @@ export async function runAuthorizedPortalPilotTransfer({
 
   // PortalPilot planAction signs the extrinsic, so it must never run before ALLOW.
   const plan = await planAction(action, PORTALDOT_TESTNET_RPC);
-  const expectedAfterPlan = await computeExpectedCallHex(plan);
+  const expectedAfterPlan = await computeExpectedCallHex(authorization);
   assertPortalPilotPlanAuthorized({
     plan, authorization, expectedCallHex: expectedAfterPlan, now: nowSeconds(),
   });
 
-  // Recompute at the final submission boundary to avoid trusting stale call bytes.
-  const expectedBeforeExecute = await computeExpectedCallHex(plan);
+  // Re-encode from the immutable verified authorization at the final submission boundary.
+  const expectedBeforeExecute = await computeExpectedCallHex(authorization);
   assertPortalPilotPlanAuthorized({
     plan, authorization, expectedCallHex: expectedBeforeExecute, now: nowSeconds(),
   });
