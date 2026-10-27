@@ -116,7 +116,7 @@ The replay ledger is local to one filesystem and is not a distributed nonce serv
 The repository includes a saved record at `docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json`. Re-query it without signing or broadcasting:
 
 ```sh
-npm run verify:substrate-transfer -- docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json
+node scripts/verify-substrate-transfer.mjs docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json
 ```
 
 By default the verifier uses `PORTALDOT_SUBSTRATE_RPC_URL` (or the endpoint recorded in the evidence file). To compare the same evidence through a second endpoint, configure `PORTALDOT_SUBSTRATE_RPC_URL_SECONDARY` with a different WSS origin. The secondary endpoint must be independently operated for that comparison to add meaningful trust; a different hostname alone does not prove operator independence.
