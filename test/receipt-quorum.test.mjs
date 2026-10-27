@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Interface } from "ethers";
 import {
   compareProviderEvidence,
+  normalizeExpectedGenesisHash,
   normalizeTransferEvidence
 } from "../scripts/verify-receipt-quorum.mjs";
 
@@ -10,6 +11,7 @@ const guard = "0x87C494a5e4B0A8E055F283767579667E10E046C6";
 const recipient = "0xa0fC1a7248955A159d54D84E48681d9cEbB86Be4";
 const txHash = "0x" + "a".repeat(64);
 const blockHash = "0x" + "b".repeat(64);
+const genesisHash = "0x" + "9".repeat(64);
 const actionId = "0x" + "c".repeat(64);
 const eventInterface = new Interface([
   "event TransferExecuted(bytes32 indexed actionId,address indexed recipient,uint256 amount,uint256 nonce)"
@@ -18,6 +20,7 @@ const eventInterface = new Interface([
 const evidence = () => ({
   transactionHash: txHash,
   chainId: "420420777",
+  genesisHash,
   status: 1,
   blockNumber: 149241,
   blockHash,
@@ -57,6 +60,15 @@ function validProviderObjects(overrides = {}) {
   };
 }
 
+test("optional expected genesis pin is normalized and validated", () => {
+  assert.equal(normalizeExpectedGenesisHash(""), null);
+  assert.equal(normalizeExpectedGenesisHash("  0x" + "A".repeat(64) + "  "), "0x" + "a".repeat(64));
+  assert.throws(
+    () => normalizeExpectedGenesisHash("not-a-genesis-hash"),
+    /32-byte hexadecimal block hash/
+  );
+});
+
 test("matching providers confirm the same receipt and guard event", () => {
   assert.deepEqual(compareProviderEvidence(evidence(), evidence()), { match: true, mismatches: [] });
 });
@@ -66,6 +78,16 @@ test("chain ID mismatch is surfaced", () => {
   const second = evidence();
   second.chainId = "1";
   assert.deepEqual(compareProviderEvidence(first, second), { match: false, mismatches: ["chainId"] });
+});
+
+test("genesis hash mismatch is surfaced even when chain ID matches", () => {
+  const first = evidence();
+  const second = evidence();
+  second.genesisHash = "0x" + "8".repeat(64);
+  assert.deepEqual(compareProviderEvidence(first, second), {
+    match: false,
+    mismatches: ["genesisHash"]
+  });
 });
 
 test("conflicting block hash is surfaced, not silently accepted", () => {
@@ -95,9 +117,10 @@ test("different action, recipient, amount or nonce is surfaced", () => {
 });
 
 test("normalizes a successful receipt with exactly one TransferExecuted event", () => {
-  const normalized = normalizeTransferEvidence({ ...validProviderObjects(), chainId: 420420777n });
+  const normalized = normalizeTransferEvidence({ ...validProviderObjects(), chainId: 420420777n, genesisHash });
   assert.equal(normalized.transactionHash, txHash);
   assert.equal(normalized.chainId, "420420777");
+  assert.equal(normalized.genesisHash, genesisHash);
   assert.equal(normalized.transfer.actionId, actionId);
   assert.equal(normalized.transfer.recipient, recipient);
   assert.equal(normalized.transfer.amountBaseUnits, "100000000000000000");
