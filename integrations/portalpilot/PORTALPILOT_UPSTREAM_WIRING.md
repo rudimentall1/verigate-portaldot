@@ -128,9 +128,15 @@ Required server-side environment variables:
 - `VERIGATE_IDENTITY_ID`
 - `VERIGATE_AGENT_PRIVATE_KEY_FILE`
 - `PORTALDOT_SUBSTRATE_GENESIS_HASH`
+- `PORTALDOT_SUBSTRATE_SIGNER_RECIPIENT_SS58` (exact allowlisted recipient; other targets are refused)
 - `PORTALDOT_SUBSTRATE_SIGNER_MAX_AMOUNT_BASE_UNITS`
 - `PORTALDOT_SUBSTRATE_SIGNER_MAX_FEE_BASE_UNITS`
 
 PortalPilot should invoke this through a server-only child process using JSON on stdin, then send the exact same ActionIntent fields plus the returned `agent_signature` to `POST /v1/actions/authorize`. The API key remains server-side. Verify the returned receipt and execution authorization using the existing `verigate-live-verifier.mjs` before planning or execution. Never accept a signature or signed authorization response supplied by the browser.
 
 Important limitation: this is a source-level adapter, not a deployed signer. Its imports and tests still need to be validated in the target Verigate runtime. The PortalPilot routes and plan storage remain unwired, so the end-to-end integration is not complete.
+
+
+### Signer hardening note
+
+The signer now requires `PORTALDOT_SUBSTRATE_SIGNER_RECIPIENT_SS58` and refuses any target that differs byte-for-byte from this configured allowlist entry. This prevents the signer CLI itself from being used as a generic signing oracle for arbitrary recipients. The Verigate authorization/capability check remains mandatory after signing; this recipient restriction is an additional layer, not a replacement for policy enforcement.
