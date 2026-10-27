@@ -114,6 +114,32 @@ test("changed cached signed extrinsic is refused and authorization is consumed",
   assert.equal(calls.includes("execute"), false);
 });
 
+test("atomic submission callback refuses a cache change after the preflight read", async () => {
+  let cachedCallHex = callHex;
+  let submitted = false;
+  const { guard, calls, store } = setup({
+    getPlanCallHex: async () => { calls.push("read-cached-call"); return cachedCallHex; },
+    executeAuthorizedPlan: async (id, expectedCallHex) => {
+      // Simulate a cache mutation between preflight and submission. The production
+      // callback must inspect and submit the same cached tx object atomically.
+      cachedCallHex = "0x040101";
+      if (cachedCallHex.toLowerCase() !== expectedCallHex.toLowerCase()) {
+        throw new Error("Atomic submission rejected changed cached transaction");
+      }
+      submitted = true;
+      return { ok: true, id };
+    },
+  });
+  await guard.askWrite(action, PORTALDOT_TESTNET_RPC);
+  await assert.rejects(
+    () => guard.executeAuthorized("plan-1"),
+    /Atomic submission rejected changed cached transaction/,
+  );
+  assert.equal(submitted, false);
+  assert.equal(store.values.has("plan-1"), false);
+  assert.equal(calls.filter((call) => call === "execute").length, 0);
+});
+
 test("expired authorization is consumed and never executed", async () => {
   let clock = 2_000_000_000;
   const { guard, calls, store } = setup({ nowSeconds: () => clock });
