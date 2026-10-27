@@ -6,6 +6,14 @@ import {
 
 function fail(message) { throw new Error(message); }
 
+function deepFreeze(value, seen = new WeakSet()) {
+  if (value === null || (typeof value !== "object" && typeof value !== "function")) return value;
+  if (seen.has(value)) return value;
+  seen.add(value);
+  for (const key of Reflect.ownKeys(value)) deepFreeze(value[key], seen);
+  return Object.freeze(value);
+}
+
 /**
  * Server-route adapter for PortalPilot /api/ask and /api/execute.
  *
@@ -70,14 +78,12 @@ export function createPortalPilotVerigateRouteGuard({
     });
     if (typeof plan.id !== "string" || !plan.id) fail("PortalPilot returned a plan without a stable ID.");
 
-    const planSnapshot = structuredClone(plan);
-    if (planSnapshot.action && typeof planSnapshot.action === "object") Object.freeze(planSnapshot.action);
-    if (Array.isArray(planSnapshot.warnings)) Object.freeze(planSnapshot.warnings);
-    Object.freeze(planSnapshot);
+    const planSnapshot = deepFreeze(structuredClone(plan));
+    const authorizationSnapshot = deepFreeze(structuredClone(authorization));
     const record = Object.freeze({
       planId: plan.id,
       plan: planSnapshot,
-      authorization,
+      authorization: authorizationSnapshot,
       storedAt: nowSeconds(),
     });
     const stored = await store.putIfAbsent(plan.id, record, ttlMs);
