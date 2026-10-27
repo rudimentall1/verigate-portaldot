@@ -162,3 +162,12 @@ The signer now requires `PORTALDOT_SUBSTRATE_SIGNER_RECIPIENT_SS58` and refuses 
 The adapter alone does not solve PortalPilot's process-local signed-transaction cache. `getPlanCallHex` and `executePlan` must access the same cached transaction; therefore use one persistent backend process, or separately change PortalPilot to persist signed extrinsics and their authorization binding in a shared store with atomic one-time consumption. Do not deploy this design on independent serverless instances while the transaction remains in a local Map.
 
 The adapter's tests are included in `npm run test:portalpilot-gate`. They are unit tests with fake callbacks and storage, not proof of a live PortalPilot or PortalDot execution. Upstream `src/server.ts` and `src/sdk/tx.ts` still require a maintainer-accepted patch to wire the actual routes and SDK helpers.
+
+
+## Concrete guarded-submit SDK patch prepared
+
+A unified diff is now included at `integrations/portalpilot/patches/portalpilot-guarded-submit.patch`. It targets the inspected upstream `src/sdk/tx.ts` and introduces `executeAuthorizedPlan(id, expectedCallHex)`. The function resolves the API first, reads the cached plan once, compares the cached transaction object's `method.toHex()` with the authorization-derived expected call, and submits that same captured object. The existing `executePlan()` remains available for backward compatibility, so this patch alone does **not** make all writes gated.
+
+To complete the upstream integration, the server's `/api/execute` route must call `executeAuthorizedPlan` only after consuming a server-side Verigate authorization record, and `/api/ask` must run authorization plus unsigned-call comparison before `planAction()`. Until those route changes are accepted and deployed, this is a prepared patch, not active enforcement. Upstream write access was unavailable from this integration, so no upstream branch or PR was created.
+
+The route guard now deep-freezes nested plan and authorization snapshots before storing them. This prevents a host callback from mutating nested plan fields after authorization checks. Fixture tests exercise the immutability property, but they do not replace upstream build/tests or a live PortalDot testnet test.
