@@ -27,9 +27,15 @@ function setup(overrides = {}) {
       return { id: "plan-1", network, action, callHex, feePlanck: "100", warnings: [] };
     },
     computeExpectedCallHex: async (authorization) => {
-      calls.push("encode");
+      calls.push("encode-authorized");
       assert.equal(authorization.recipient, recipient);
       assert.equal(authorization.amountBaseUnits, "10000000000000");
+      return callHex;
+    },
+    computeActionCallHex: async (gotAction, network) => {
+      calls.push("encode-action");
+      assert.deepEqual(gotAction, action);
+      assert.equal(network, PORTALDOT_TESTNET_RPC);
       return callHex;
     },
     executePlan: async (id) => { calls.push("execute"); return { ok: true, id }; },
@@ -42,7 +48,10 @@ function setup(overrides = {}) {
 test("authorized path checks before plan and twice before execution", async () => {
   const { calls, deps } = setup();
   const result = await runAuthorizedPortalPilotTransfer(deps);
-  assert.deepEqual(calls, ["authorize", "verify", "plan", "encode", "encode", "execute"]);
+  assert.deepEqual(calls, [
+    "authorize", "verify", "encode-authorized", "encode-action", "plan",
+    "encode-authorized", "encode-authorized", "execute",
+  ]);
   assert.deepEqual(result, { ok: true, id: "plan-1" });
 });
 
@@ -54,12 +63,24 @@ test("BLOCK/verification refusal never signs a plan or executes", async () => {
   assert.deepEqual(calls, ["authorize"]);
 });
 
+test("unsigned call mismatch refuses before planAction can sign", async () => {
+  const { calls, deps } = setup({
+    computeActionCallHex: async () => { calls.push("encode-action"); return "0x040101"; },
+  });
+  await assert.rejects(
+    () => runAuthorizedPortalPilotTransfer(deps),
+    /Unsigned PortalPilot call differs.*refusing to sign/,
+  );
+  assert.equal(calls.includes("plan"), false);
+  assert.equal(calls.includes("execute"), false);
+});
+
 test("expired authorization after planning prevents execution", async () => {
   let clock = 2_000_000_000;
   const { calls, deps } = setup({
     nowSeconds: () => clock,
     computeExpectedCallHex: async () => {
-      calls.push("encode");
+      calls.push("encode-authorized");
       clock = 2_000_000_101;
       return callHex;
     },
@@ -70,7 +91,7 @@ test("expired authorization after planning prevents execution", async () => {
 
 test("call-byte mismatch prevents executePlan", async () => {
   const { calls, deps } = setup({
-    computeExpectedCallHex: async () => { calls.push("encode"); return "0x040101"; },
+    computeExpectedCallHex: async () => { calls.push("encode-authorized"); return "0x040101"; },
   });
   await assert.rejects(() => runAuthorizedPortalPilotTransfer(deps), /SCALE call differs/);
   assert.equal(calls.includes("execute"), false);
@@ -80,7 +101,7 @@ test("call changes between checks are refused at the final boundary", async () =
   let encodes = 0;
   const { calls, deps } = setup({
     computeExpectedCallHex: async () => {
-      calls.push("encode");
+      calls.push("encode-authorized");
       encodes += 1;
       return encodes === 1 ? callHex : "0x040101";
     },
