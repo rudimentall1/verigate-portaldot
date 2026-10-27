@@ -7,9 +7,9 @@ import {
 function fail(message) { throw new Error(message); }
 
 /**
- * Orchestrate the critical order: authorize -> sign plan -> compare exact call
- * -> recheck -> execute. Expected SCALE bytes must be derived from the verified
- * authorization, not from the plan being checked.
+ * Orchestrate the critical order: authorize -> encode unsigned action and compare
+ * it to authorization -> sign plan -> compare signed plan -> recheck -> execute.
+ * Expected SCALE bytes must be derived from the verified authorization, not the plan.
  */
 export async function runAuthorizedPortalPilotTransfer({
   action,
@@ -21,7 +21,8 @@ export async function runAuthorizedPortalPilotTransfer({
   nowSeconds = () => Math.floor(Date.now() / 1000),
 }) {
   for (const [name, fn] of Object.entries({
-    requestAuthorization, verifyAuthorization, planAction, computeExpectedCallHex, executePlan,
+    requestAuthorization, verifyAuthorization, planAction, computeExpectedCallHex,
+    computeActionCallHex, executePlan,
   })) {
     if (typeof fn !== "function") fail(name + " callback is required.");
   }
@@ -32,7 +33,15 @@ export async function runAuthorizedPortalPilotTransfer({
     now: nowSeconds(),
   });
 
-  // PortalPilot planAction signs the extrinsic, so it must never run before ALLOW.
+  // Verify the exact unsigned call bytes before planAction(), which signs the extrinsic.
+  const expectedBeforeSign = await computeExpectedCallHex(authorization);
+  const actionCallBeforeSign = await computeActionCallHex(action, PORTALDOT_TESTNET_RPC);
+  if (typeof actionCallBeforeSign !== "string" ||
+      actionCallBeforeSign.toLowerCase() !== expectedBeforeSign.toLowerCase()) {
+    fail("Unsigned PortalPilot call differs from the verified Verigate authorization; refusing to sign.");
+  }
+
+  // Only the exact action whose unsigned SCALE bytes match authorization may be signed.
   const plan = await planAction(action, PORTALDOT_TESTNET_RPC);
   const expectedAfterPlan = await computeExpectedCallHex(authorization);
   assertPortalPilotPlanAuthorized({
