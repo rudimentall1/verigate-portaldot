@@ -75,7 +75,7 @@ test("unsigned call mismatch refuses before planAction can sign", async () => {
   assert.equal(calls.includes("execute"), false);
 });
 
-test("expired authorization after planning prevents execution", async () => {
+test("authorization expiring during unsigned encoding refuses before signing", async () => {
   let clock = 2_000_000_000;
   const { calls, deps } = setup({
     nowSeconds: () => clock,
@@ -85,7 +85,8 @@ test("expired authorization after planning prevents execution", async () => {
       return callHex;
     },
   });
-  await assert.rejects(() => runAuthorizedPortalPilotTransfer(deps), /expired before PortalPilot execution/);
+  await assert.rejects(() => runAuthorizedPortalPilotTransfer(deps), /expired before PortalPilot could sign/);
+  assert.equal(calls.includes("plan"), false);
   assert.equal(calls.includes("execute"), false);
 });
 
