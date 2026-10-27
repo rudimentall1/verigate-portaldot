@@ -54,6 +54,7 @@ function setup(overrides = {}) {
         weight: "1", dryRun: { ran: true, ok: true, detail: "fixture" }, createdAt: 1,
       };
     },
+    getPlanCallHex: async () => { calls.push("read-cached-call"); return callHex; },
     executePlan: async (id) => { calls.push("execute"); return { ok: true, id }; },
     nowSeconds,
     ...overrides,
@@ -89,10 +90,23 @@ test("route execute atomically consumes authorization before execution", async (
   const result = await guard.executeAuthorized("plan-1");
   assert.deepEqual(result, { ok: true, id: "plan-1" });
   assert.equal(store.values.has("plan-1"), false);
-  assert.deepEqual(calls.slice(-2), ["encode-authorized", "execute"]);
+  assert.deepEqual(calls.slice(-3), ["encode-authorized", "read-cached-call", "execute"]);
   await assert.rejects(() => guard.executeAuthorized("plan-1"), /No unconsumed Verigate authorization/);
   assert.equal(calls.includes("execute"), true);
   assert.equal(calls.filter((call) => call === "execute").length, 1);
+});
+
+test("changed cached signed extrinsic is refused and authorization is consumed", async () => {
+  const { guard, calls, store } = setup({
+    getPlanCallHex: async () => { calls.push("read-cached-call"); return "0x040101"; },
+  });
+  await guard.askWrite(action, PORTALDOT_TESTNET_RPC);
+  await assert.rejects(
+    () => guard.executeAuthorized("plan-1"),
+    /Cached signed extrinsic call differs/,
+  );
+  assert.equal(store.values.has("plan-1"), false);
+  assert.equal(calls.includes("execute"), false);
 });
 
 test("expired authorization is consumed and never executed", async () => {
@@ -112,6 +126,7 @@ test("refuses to construct without atomic server-side storage", () => {
     computeExpectedCallHex: async () => callHex,
     computeActionCallHex: async () => callHex,
     planAction: async () => ({}),
+    getPlanCallHex: async () => callHex,
     executePlan: async () => ({}),
   }), /atomic server-side plan store/);
 });
