@@ -60,6 +60,20 @@ The contract does not verify Verigate's Ed25519 authorization itself; the bridge
 
 PortalDot V3 offers an EVM-compatible deployment target for a narrow, reusable spending guard while retaining Substrate runtime information needed for operational preflight. This allows developers to reuse Solidity/EIP-712 patterns without treating a connected agent or the RPC endpoint as an authority by itself. The current contribution is an execution-control middleware component, deployment/operations tooling, and reproducible local ALLOW/BLOCK evidence.
 
+### Innovation and technical differentiation
+
+The differentiator is not an allowlist or a signature scheme in isolation. It is an authorization-to-execution boundary: Verigate makes the policy decision; the adapter validates that the signed decision authorizes the exact intended action; and the target execution surface performs its own checks before funds move.
+
+The EVM adapter demonstrates this with a short-lived EIP-712 authorization enforced by `PortalDotAgentGuardV2`. The PortalDot-specific direction is the separate native Substrate adapter for `Balances.transfer_keep_alive`: it binds the intent to the target testnet genesis, SS58 recipient, base-unit amount and maximum estimated fee; checks the runtime and balances; supports runtime `system_dryRun`; and submits only with explicit `--broadcast`. These are separate paths, not a claim that the EVM guard protects native Substrate or arbitrary wallet transactions.
+
+The project does not claim that the individual primitives are novel, that the design is unique, or that PortalDot has adopted the integration. Its contribution is a reusable reference implementation showing how policy authorization can be connected to two distinct execution surfaces with explicit trust boundaries.
+
+### Commercial and ecosystem contribution
+
+The target user is a team building an autonomous service or AI agent that must make native POT payments without receiving unrestricted spending authority. The reusable contribution to PortalDot developers is source code, testnet deployment evidence, a native Substrate execution adapter, fail-closed preflight checks, and a documented route for integrating policy-controlled payments into an application.
+
+A possible commercial model is hosted policy evaluation and authorization receipts for application developers, with a self-hosted or enterprise option for teams needing control over policy data and infrastructure. This is a business hypothesis only: the project has no verified revenue, paying customers, production deployment, PortalDot Wallet/DaaS integration, or team endorsement to claim. The next validation step is developer feedback or a third-party integration, not an unsupported adoption statement.
+
 ## Current limitations (disclose, do not hide)
 
 1. V1 and V2 are deployed on PortalDot V3 testnet. The V2 live transfer receipt and `TransferExecuted` event were re-queried through the configured RPC, but no second RPC provider or EVM-genesis pin was used. A later read-only check measured the recipient's EVM balance increasing from `0` to `0.1 POT` in the isolated transaction block, using the configured RPC.

@@ -267,6 +267,14 @@ async function verifyVerigateArtifacts(response) {
   await verifyWithVerigate(baseUrl, response.execution_authorization, apiKey);
 }
 
+export function assertAuthorizationFresh(transfer, now = Math.floor(Date.now() / 1000)) {
+  const expiresAt = transfer?.expiresAt;
+  if (!Number.isSafeInteger(expiresAt) || !Number.isSafeInteger(now) || expiresAt <= now) {
+    fail("Verigate execution authorization expired during preflight; refusing to sign or broadcast.");
+  }
+  return true;
+}
+
 function reserveAuthorization(replayDirectory, authorization) {
   fs.mkdirSync(replayDirectory, { recursive: true, mode: 0o700 });
   const filePath = path.join(replayDirectory, authorization.authorizationId + ".json");
@@ -306,6 +314,17 @@ function markAuthorizationCompleted(filePath, report) {
   fs.writeFileSync(filePath, JSON.stringify(output, null, 2) + "\n", { mode: 0o600 });
 }
 
+function markAuthorizationRefused(filePath, reason) {
+  const reserved = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const output = {
+    ...reserved,
+    state: "refused_before_broadcast",
+    refusalReason: String(reason),
+    refusedAt: new Date().toISOString(),
+  };
+  fs.writeFileSync(filePath, JSON.stringify(output, null, 2) + "\n", { mode: 0o600 });
+}
+
 function eventToJson(record) {
   return {
     section: record.event.section,
@@ -324,6 +343,7 @@ function decodeDispatchError(api, error) {
 }
 
 async function submitTransfer(api, signer, transfer, replayDirectory) {
+  assertAuthorizationFresh(transfer);
   const replayFile = reserveAuthorization(replayDirectory, transfer);
   const extrinsic = api.tx.balances.transferKeepAlive(transfer.recipient, transfer.amount);
   let unsubscribe;
@@ -338,6 +358,15 @@ async function submitTransfer(api, signer, transfer, replayDirectory) {
       if (error) reject(error);
       else resolve(result);
     };
+    try {
+      // The authorization may expire while RPC and preflight work is in flight.
+      // Recheck at the last possible point before signing/submission.
+      assertAuthorizationFresh(transfer);
+    } catch (error) {
+      markAuthorizationRefused(replayFile, error.message);
+      finish(error);
+      return;
+    }
     extrinsic.signAndSend(signer, (result) => {
       const failed = result.events.find(({ event }) =>
         event.section === "system" && event.method === "ExtrinsicFailed");
@@ -548,6 +577,9 @@ async function simulateTransfer(api, signer, transfer, preflight) {
 
   // CheckMortality needs the hash of the era birth block as the signed
   // checkpoint, not merely the latest finalized head hash.
+  // Recheck after asynchronous RPC preparation so an expired Verigate ALLOW
+  // cannot be used to create an execution-ready signed extrinsic.
+  assertAuthorizationFresh(transfer);
   extrinsic.sign(signer, {
     nonce: account.nonce,
     era,
@@ -613,6 +645,9 @@ export async function runSubstrateTransfer(response, options = {}) {
     const signerAddress = String(options.signerAddress ?? process.env.PORTALDOT_SUBSTRATE_SIGNER_ADDRESS ?? "").trim();
     if (!signerAddress) fail("PORTALDOT_SUBSTRATE_SIGNER_ADDRESS is required for a read-only fee/balance preflight.");
     const preflight = await createTransferPreflight(api, transfer, signerAddress);
+    // Validation happens before remote work; this second check closes the window
+    // where verification/RPC/preflight latency can outlive Verigate's short TTL.
+    assertAuthorizationFresh(transfer);
 
     if (options.broadcast && options.simulate) {
       fail("Choose either --simulate or --broadcast, not both.");
