@@ -1,6 +1,6 @@
 # Architecture and trust boundaries
 
-Updated: 24 October 2026
+Updated: 27 October 2026
 
 ## Current flow
 
@@ -54,7 +54,7 @@ The contract does not verify Verigate's Ed25519 signatures. The bridge verifies 
 
 A separate adapter, documented in [native Substrate authorized transfer](native-substrate-authorized-transfer.md), verifies Verigate's signed `ALLOW` artifacts and exact action binding, checks the pinned Substrate genesis and runtime, estimates fee/balance conditions, and can explicitly submit only `Balances.transfer_keep_alive` to an SS58 recipient on the confirmed testnet. It defaults to read-only preflight; a transfer requires the explicit `--broadcast` flag and a dedicated Substrate signer.
 
-This extends the reference integration beyond EVM-only payments. It is not direct DaaS integration: the DaaS call ABI was not found in the reviewed public material. No native transfer has yet been broadcast as part of this change; tests are offline fixture tests, and the adapter's Ed25519 checks happen in the adapter, not inside the Substrate runtime. Its local replay ledger is single-host state and must not be treated as distributed replay protection.
+This extends the reference integration beyond EVM-only payments. It is not direct DaaS integration: the DaaS call ABI was not found in the reviewed public material. A native Substrate transfer was broadcast and recorded as finalized on 24 October 2026: the evidence contains a Verigate `ALLOW`, successful pre-broadcast `system_dryRun`, `system.ExtrinsicSuccess`, one matching `balances.Transfer` event for `0.1 POT`, and a `TransactionFeePaid` event. See [the saved native transfer evidence](evidence/portaldot-native-substrate-live-transfer-2026-10-24.json). This evidence was re-queried through one configured RPC and has not been independently verified through a second provider. The adapter's Ed25519 checks happen in the adapter, not inside the Substrate runtime. Its local replay ledger is single-host state and must not be treated as distributed replay protection.
 
 ## Testnet deployment status
 
