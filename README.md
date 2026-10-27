@@ -158,6 +158,20 @@ PortalDot V3 exposes an EVM-compatible execution path alongside its Substrate ru
 
 No integration into PortalDot Wallet or DaaS is currently claimed, and no PortalDot team endorsement or external user adoption has been confirmed. This repository does not claim a production-ready multichain agent framework, a WASM/EVM cross-execution bridge, universal transaction interception, an independent audit, or mainnet readiness. The current V2 spending counter resets after its configured interval; it is not a continuously sliding rolling-window algorithm.
 
+## Product value, differentiation, and ecosystem contribution
+
+Verigate PortalDot is an authorization-to-execution middleware reference, not another explorer and not only a Solidity spending guard. Its technical contribution is the binding of a policy decision to one exact action, followed by enforcement at the execution boundary.
+
+- **EVM path:** Verigate evaluates the payment off-chain; the bridge verifies its signed artifacts and creates an EIP-712 authorization; `PortalDotAgentGuardV2` enforces the signed recipient, amount, nonce, deadline, allowlist and spending caps before moving funds from the guard's own balance.
+- **Native Substrate path:** the adapter validates the signed `ALLOW` against the exact native POT action, testnet genesis, recipient, amount and signed maximum-fee estimate; it checks the runtime, runs `system_dryRun` when explicitly requested, and only broadcasts under an explicit `--broadcast` flag. This path is separate from the EVM guard and does not intercept arbitrary wallet activity.
+- **Security boundary:** the native adapter's replay ledger is local single-host state; the fee estimate is not a guarantee of the final charged fee; the reported live transfer evidence uses one configured RPC. These limits are documented rather than presented as independent or trustless guarantees.
+
+The intended users are developers of autonomous services and AI agents that need to perform PortalDot payments under explicit spending authority. The ecosystem contribution is a public, reusable integration example and testable execution boundary that application teams can adapt, rather than a claim of PortalDot Wallet or DaaS integration.
+
+**Commercial hypothesis, not current traction:** offer hosted policy evaluation and authorization receipts for developers, with a self-hosted or enterprise deployment option for teams that require control of policy data and infrastructure. There are no verified paying customers, revenue, production deployments or PortalDot team endorsement claimed.
+
+The differentiator is the composition of intent-bound policy authorization, adapter-side cryptographic and runtime checks, and explicit execution evidence across the EVM and native Substrate paths. Recipient allowlists, spending caps, EIP-712 signatures and transaction simulation are not individually novel; the project does not claim they are. See [the mentor-feedback acceptance criteria](docs/mentor-feedback-acceptance.md) for the evidence gates being used to guide remaining work.
+
 ## Evidence and presentation
 
 - [Architecture and trust boundaries](docs/architecture.md)
