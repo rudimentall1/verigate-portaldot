@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "evidenceType": "native-substrate-finalized-transfer",
+  "capturedDate": "2026-10-24",
+  "provenance": {
+    "source": "Terminal output supplied in the project conversation",
+    "rpcEndpoint": "wss://test-node-v3.portaldot.dev",
+    "rpcProviderCount": 1,
+    "independentRpcVerification": false
+  },
+  "network": {
+    "networkName": "PortalDot V3 Substrate testnet",
+    "chainName": "PortaldotV3 Test",
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "genesisPinMatchedInPrecedingSimulation": true
+  },
+  "authorization": {
+    "decision": "ALLOW",
+    "intentId": "portaldot-native-substrate-fb32d17f6fed49af96b9c31c95f534be",
+    "authorizationId": "23a1dc0186044258c9015b861e8b713313ff1156b4932cff88bbf111d059d16c",
+    "actionSha256": "20c0bc14388b58611c9b6d7cd803e05b47277eda10b43e7b6061a9064312aa47",
+    "policySha256": "952d1793451fac6e3850bbdbf19ea9e7907e62d9d99b051c93268d8f9f2bd90b",
+    "actionType": "portaldot.substrate_transfer"
+  },
+  "transfer": {
+    "signer": "5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB",
+    "recipient": "5Etb82346VeavrvzVB3NK3Vr6YrYeK4thENVGM9HogYy64Cj",
+    "amountBaseUnits": "10000000000000",
+    "amountPOT": "0.1",
+    "status": "SUCCESS",
+    "transactionHash": "0x098c3b320fd38a3062a5305b391fae81026aed267e5ed847186578a13600ef02",
+    "finalizedBlockHash": "0xe95f838bae67b8e3e4abed7215315c8059a06f19d9e26b1fa533ef4f4515ed83",
+    "finalizedBlockNumber": null,
+    "finalizedBlockNumberNote": "The execution report returned the finalized block hash but did not include the block number. The height is intentionally not inferred.",
+    "transactionBroadcast": true,
+    "extrinsicSubmitted": true
+  },
+  "matchedTransferEvent": {
+    "section": "balances",
+    "method": "Transfer",
+    "data": [
+      "5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB",
+      "5Etb82346VeavrvzVB3NK3Vr6YrYeK4thENVGM9HogYy64Cj",
+      "10000000000000"
+    ],
+    "phase": 1
+  },
+  "otherObservedEvents": [
+    {
+      "section": "balances",
+      "method": "Withdraw",
+      "data": [
+        "5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB",
+        "1490531479031"
+      ],
+      "phase": 1
+    },
+    {
+      "section": "system",
+      "method": "NewAccount",
+      "data": [
+        "5Etb82346VeavrvzVB3NK3Vr6YrYeK4thENVGM9HogYy64Cj"
+      ],
+      "phase": 1
+    },
+    {
+      "section": "balances",
+      "method": "Endowed",
+      "data": [
+        "5Etb82346VeavrvzVB3NK3Vr6YrYeK4thENVGM9HogYy64Cj",
+        "10000000000000"
+      ],
+      "phase": 1
+    },
+    {
+      "section": "balances",
+      "method": "Deposit",
+      "data": [
+        "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+        "1490531479031"
+      ],
+      "phase": 1
+    },
+    {
+      "section": "transactionPayment",
+      "method": "TransactionFeePaid",
+      "data": [
+        "5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB",
+        "1490531479031",
+        "0"
+      ],
+      "phase": 1
+    },
+    {
+      "section": "system",
+      "method": "ExtrinsicSuccess",
+      "data": [
+        "{\"weight\":{\"refTime\":764602000,\"proofSize\":15777},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+      ],
+      "phase": 1
+    }
+  ],
+  "fee": {
+    "estimatedBaseUnitsFromPrecedingSimulation": "1490531483264",
+    "estimatedPOTFromPrecedingSimulation": "0.01490531483264",
+    "chargedBaseUnitsFromTransactionFeePaidEvent": "1490531479031",
+    "chargedPOT": "0.01490531479031",
+    "tipBaseUnits": "0"
+  },
+  "precedingSimulation": {
+    "status": "SIMULATION_SUCCESS",
+    "rpcMethod": "system_dryRun",
+    "atBlockNumber": 175482,
+    "atBlockHash": "0x03af849784fb29919c2d0aa761ccc80039f355a21664098dd779891fec484263",
+    "signedExtrinsicHashFromSimulation": "0xebbec444faebcc3cc950d94ae5b49a91757db3ae78264bc51817fd80a095816b",
+    "note": "This is the pre-broadcast simulation state; its block information must not be mistaken for the finalized inclusion block of the broadcast transaction."
+  },
+  "evidenceBoundary": {
+    "provenByProvidedOutput": [
+      "Fresh Verigate ALLOW for the specified action",
+      "Successful system_dryRun before broadcast",
+      "Broadcast path returned SUCCESS after observing finalized status",
+      "Exactly one matching balances.Transfer event was found in that extrinsic's events",
+      "system.ExtrinsicSuccess was observed",
+      "transactionPayment.TransactionFeePaid reported 1490531479031 base units and zero tip"
+    ],
+    "limitations": [
+      "The runner observed one configured RPC endpoint only.",
+      "No second-provider or independent external verification is recorded.",
+      "The transaction report did not include the finalized block number.",
+      "This is testnet evidence, not mainnet or production evidence."
+    ]
+  }
+}
