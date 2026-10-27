@@ -12,7 +12,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
-import { normalizeSs58Address, TESTNET_GENESIS_HASH } from "./execute-substrate-authorized-transfer.mjs";
+import { normalizeSs58Address } from "./execute-substrate-authorized-transfer.mjs";
 
 const DEFAULT_EVIDENCE = "docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json";
 const HASH_RE = /^0x[a-f0-9]{64}$/i;
