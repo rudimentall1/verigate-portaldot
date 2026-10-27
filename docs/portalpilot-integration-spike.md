@@ -1,30 +1,29 @@
 # PortalPilot integration spike: native transfer gate
 
-Status: **adapter contract and unit tests prepared; not yet integrated into PortalPilot or verified against live Verigate credentials**.
+Status: **fail-closed integration boundary and tests prepared; not integrated into PortalPilot or verified against live Verigate credentials**.
 
-## Why the integration is not a direct drop-in
+## Code findings
 
-PortalPilot's current \`src/sdk/portaldot.ts\` exposes \`mainnet\` and \`local\` network choices. Verigate's native executor intentionally restricts remote writes to \`wss://test-node-v3.portaldot.dev\` and the pinned V3 testnet genesis. A safe integration must explicitly select that raw testnet endpoint; it must not silently reuse PortalPilot's mainnet endpoint.
+PortalPilot's \`src/sdk/tx.ts\` signs the extrinsic inside \`planAction()\`, then caches the signed transaction. \`executePlan()\` later submits that cached transaction. Verigate ALLOW must be requested and verified **before** \`planAction()\`, and the planned call must be checked again before \`executePlan()\`.
 
-PortalPilot's \`planAction()\` signs the extrinsic before returning the plan. Therefore the Verigate ALLOW must be requested and verified **before** calling \`planAction()\`. Checking only \`/api/ask\` after plan creation is too late. The plan's SCALE call must then be compared with the call authorized by Verigate before \`/api/execute\` invokes \`executePlan()\`.
+PortalPilot's current network selector exposes \`mainnet\` and \`local\`. Verigate's native executor is restricted to \`wss://test-node-v3.portaldot.dev\` and the pinned V3 testnet genesis. The integration must explicitly select the raw testnet endpoint; it must not silently reuse the mainnet endpoint.
 
 ## Adapter contract
 
-\`integrations/portalpilot/verigate-gate.mjs\` supplies two fail-closed boundaries:
+- \`authorizePortalPilotAction(action, ...)\` requires a host-provided request callback, then uses the real default verifier.
+- The verifier uses the existing native Substrate binding validator, checks both Ed25519 artifacts locally against \`VERIGATE_PUBLIC_KEY_FILE\`, and calls the configured Verigate \`/v1/verify\` endpoint for both artifacts.
+- The signed binding must match one \`Balances.transfer_keep_alive\` action, exact SS58 recipient, exact base-unit amount, pinned genesis, and unexpired ALLOW.
+- \`assertPortalPilotPlanAuthorized(...)\` checks testnet endpoint, action, expiry and exact SCALE call bytes. Call it after plan creation and immediately before execution.
 
-1. \`authorizePortalPilotAction(action, ...)\`: obtains a Verigate response and requires a caller-supplied verifier that validates the signed artifacts and returns the binding produced by the native adapter's validation logic. It rejects anything except one native transfer, mismatched recipient/amount/genesis, or expired authorization before the host creates a signed plan.
-2. \`assertPortalPilotPlanAuthorized(...)\`: checks the plan remains on the pinned testnet, the recipient and exact base-unit amount still match, the authorization has not expired, and \`plan.callHex\` equals \`api.tx.balances.transferKeepAlive(recipient, amount).method.toHex()\` generated from the actual connected API. Call it after plan creation and immediately before execution.
+The adapter **does not create a Verigate intent or decision**. The host still needs to call the correct decision endpoint with the native action metadata, then return both signed artifacts. That request format must be confirmed against the deployed Verigate API before implementing a live connector.
 
-The module does **not** perform signature verification itself. The integration must wire \`verifyAuthorization\` to the real local Ed25519 checks and Verigate \`/v1/verify\`; a mock verifier is used only in unit tests. Do not treat this test harness as evidence of a live Verigate API integration.
+## Required PortalPilot wiring
 
-## Minimal PortalPilot wiring
-
-- In \`/api/ask\`, for a single \`transfer\`, request/verify Verigate authorization before \`planAction()\` is called.
-- Pass the verified authorization object alongside the returned plan in server-side state. Do not trust a client-supplied authorization or call bytes.
-- Compute expected call bytes using the same connected API, recipient, and exact \`BigInt\` base units. Compare to the plan's call bytes.
-- In \`/api/execute\`, re-check authorization expiry, action binding, network and exact call bytes immediately before \`executePlan()\`. On any error, return a refusal and do not call \`executePlan()\`.
-- Keep batch transfers and remarks disabled until they have explicit, independently tested action schemas and policy bindings.
-- Add a test proving that BLOCK, invalid signature, expiry, recipient substitution, amount substitution, and call-byte substitution all stop before \`executePlan()\`.
+1. Build one native transfer action and its exact Verigate intent, including \`action_type=portaldot.substrate_transfer\`, \`network=portaldot-v3-substrate\`, \`asset=POT\`, recipient SS58, base-unit amount, pinned genesis hash, and signed fee ceiling.
+2. Request Verigate's decision before calling \`planAction()\`. If the decision is not ALLOW or either signature fails local/remote verification, do not sign a plan.
+3. Pass the verified authorization in server-side state. Never trust a client-supplied binding or call bytes.
+4. Compute expected call bytes from the same connected API using \`api.tx.balances.transferKeepAlive(recipient, amount).method.toHex()\`. Compare them with the plan after creation and again immediately before execution.
+5. If any check fails, return a refusal and do not call \`executePlan()\`. Keep batch transfers and remarks disabled until separately authorized and tested.
 
 ## Tests
 
@@ -34,4 +33,4 @@ Run in this repository:
 node --test integrations/portalpilot/verigate-gate.test.mjs
 \`\`\`
 
-These tests validate the adapter contract with fixtures and injected verifier callbacks. They do not contact PortalPilot, Verigate, or PortalDot, and do not prove a live integration.
+Tests use injected verification functions and fixtures. They check fail-closed wiring but do not contact the real Verigate service, PortalPilot, or PortalDot, and do not prove a live integration.
