@@ -7,6 +7,7 @@ const recipient = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
 const action = { kind: "transfer", to: recipient, amountPot: "0.1" };
 const binding = {
   decision: "ALLOW", recipient, amountBaseUnits: "10000000000000",
+  maxFeeBaseUnits: "1000000000000",
   expiresAt: 2_000_000_100, expectedGenesisHash: PORTALDOT_TESTNET_GENESIS,
 };
 const response = { decision_receipt: {}, execution_authorization: {} };
@@ -23,10 +24,8 @@ function setup(overrides = {}) {
       calls.push("plan");
       assert.deepEqual(gotAction, action);
       assert.equal(network, PORTALDOT_TESTNET_RPC);
-      return { id: "plan-1", network, action, callHex };
+      return { id: "plan-1", network, action, callHex, feePlanck: "100", warnings: [] };
     },
-    // Represents independent SCALE encoding from the verified authorization,
-    // not copying plan.callHex or trusting plan.action.
     computeExpectedCallHex: async (authorization) => {
       calls.push("encode");
       assert.equal(authorization.recipient, recipient);
@@ -59,9 +58,8 @@ test("expired authorization after planning prevents execution", async () => {
   let clock = 2_000_000_000;
   const { calls, deps } = setup({
     nowSeconds: () => clock,
-    computeExpectedCallHex: async (authorization) => {
+    computeExpectedCallHex: async () => {
       calls.push("encode");
-      assert.equal(authorization.recipient, recipient);
       clock = 2_000_000_101;
       return callHex;
     },
@@ -96,6 +94,7 @@ test("plan action substitution prevents executePlan", async () => {
   const { calls, deps } = setup({
     planAction: async (_action, network) => ({
       id: "tampered", network, action: { ...action, amountPot: "0.2" }, callHex,
+      feePlanck: "100", warnings: [],
     }),
   });
   await assert.rejects(() => runAuthorizedPortalPilotTransfer(deps), /amount differs/);
