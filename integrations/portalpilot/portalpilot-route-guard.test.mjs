@@ -59,6 +59,10 @@ function setup(overrides = {}) {
       calls.push("execute");
       assert.equal(expectedCallHex, callHex);
       assert.equal(planSnapshot.id, id);
+      assert.equal(Object.isFrozen(planSnapshot), true);
+      assert.equal(Object.isFrozen(planSnapshot.dryRun), true);
+      assert.equal(Object.isFrozen(planSnapshot.dryRun.detail), true);
+      assert.throws(() => { planSnapshot.dryRun.ok = false; }, TypeError);
       return { ok: true, id };
     },
     nowSeconds,
