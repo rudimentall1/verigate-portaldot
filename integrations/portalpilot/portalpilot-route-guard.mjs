@@ -22,13 +22,14 @@ export function createPortalPilotVerigateRouteGuard({
   computeExpectedCallHex,
   computeActionCallHex,
   planAction,
+  getPlanCallHex,
   executePlan,
   nowSeconds = () => Math.floor(Date.now() / 1000),
   ttlMs = 120_000,
 } = {}) {
   for (const [name, fn] of Object.entries({
     requestAuthorization, verifyAuthorization, computeExpectedCallHex,
-    computeActionCallHex, planAction, executePlan,
+    computeActionCallHex, planAction, getPlanCallHex, executePlan,
   })) {
     if (typeof fn !== "function") fail(name + " callback is required.");
   }
@@ -91,6 +92,11 @@ export function createPortalPilotVerigateRouteGuard({
       fail("Verigate authorization expired before execution; plan authorization consumed.");
     }
     const expectedCallHex = await computeExpectedCallHex(record.authorization);
+    const actualCachedCallHex = await getPlanCallHex(planId);
+    if (typeof actualCachedCallHex !== "string" ||
+        actualCachedCallHex.toLowerCase() !== expectedCallHex.toLowerCase()) {
+      fail("Cached signed extrinsic call differs from Verigate authorization; refusing execution.");
+    }
     assertPortalPilotPlanAuthorized({
       plan: record.plan,
       authorization: record.authorization,
