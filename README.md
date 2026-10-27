@@ -10,12 +10,10 @@ Verigate lets an AI-agent application check a proposed payment against explicit 
 
 - **EVM:** the deployed guard rejects unauthorized transfers routed through its own contract balance, including an unlisted recipient or an amount above the configured cap.
 - **Native Substrate:** a separate adapter checks policy before submitting a native transfer. This does not block transactions sent directly outside the adapter.
-- **Current status:** both paths have testnet execution evidence, but neither is integrated into PortalDot Wallet or DaaS. External adoption and commercial demand remain unvalidated.
-
+- **Current status:** both paths have testnet execution evidence, but neither is integrated into PortalDot Wallet or DaaS. External adoption and commercial demand remain unvalidated. [Integration details and a validation path for other developers](docs/portal-dot-developer-value.md).
 
 **Scope:** the primary on-chain guard demonstration is Verigate authorization followed by a guarded native-POT transfer on PortalDot V3 EVM testnet. A separate native Substrate adapter has also completed a Verigate-authorized `Balances.transfer_keep_alive` on PortalDot V3 Substrate testnet: `system_dryRun` succeeded first, then the broadcast was reported finalized with one matching `balances.Transfer` event. That native-path evidence was observed through one configured RPC and has not been cross-checked through a second provider. Neither path establishes that the PortalDot team requested this capability, and no PortalDot Wallet or DaaS integration is claimed. The EVM guard controls only transfers routed through its own contract balance.
 
-**For PortalDot builders:** [what this integration provides, how to adapt it, and how to validate its value](docs/portal-dot-developer-value.md). This is a reference integration; external adoption and commercial demand have not yet been validated.
 
 ## Verigate on PortalDot V3 EVM testnet
 
