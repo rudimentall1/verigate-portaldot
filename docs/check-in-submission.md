@@ -75,7 +75,7 @@ The project does not claim that the individual primitives are novel, that the de
 | Adjacent component | Primary responsibility | Verigate PortalDot contribution |
 |---|---|---|
 | Explorer / RPC monitor | Observe balances, blocks, transactions and receipts | Decide whether a specific proposed action is authorized before execution; retain provenance for the resulting evidence |
-| PortalPilot-style interactive tooling | Help a user compose, price, simulate and confirm chain actions | Verify a signed Verigate policy decision and bind it to the exact native transfer and signed maximum-fee estimate before the adapter can sign/submit |
+| PortalPilot-style interactive tooling | Help a user compose, price, simulate and confirm chain actions | Verify a signed Verigate policy decision and bind it to the exact native transfer and signed maximum-fee ceiling before the adapter can sign/submit |
 | Policy engine alone | Evaluate an action against off-chain rules | Connect the signed decision to a target execution boundary and fail closed on action mismatch, wrong network identity or expired authorization |
 | EVM spending guard | Enforce constraints for transfers routed through a contract | Provide a separate native Substrate adapter; this does not extend the EVM guard's protection to arbitrary native wallet transactions |
 
