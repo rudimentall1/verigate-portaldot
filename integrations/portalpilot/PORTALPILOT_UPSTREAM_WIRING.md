@@ -6,9 +6,13 @@ Status: patch plan against the inspected upstream `ismailridwans/portalpilot` `m
 
 At the inspected upstream revision, `POST /api/ask` calls `planAction(intent.action, network)` for every write. `planAction()` signs and caches the extrinsic before returning. `POST /api/execute` calls `executePlan(planId)` without any authorization check. The gate must therefore run before `planAction()` and again in `/api/execute`.
 
-## Required host signer
+## Agent signer: implementation found, deployment boundary remains
 
-Do not implement this by blindly calling the Substrate transaction signer. Verigate's `agent_signature` must use the canonicalization and registered identity expected by the deployed Verigate instance. PortalPilot needs a trusted server-side function with this contract:
+The Verigate source does contain the canonical signer: `core.identity.sign_action_intent(action, identity_id, private_key)`. It signs an Ed25519 signature over the UTF-8 bytes of compact, key-sorted JSON for `{ "identity_id": identity_id, "action": action.as_dict() }`, then base64-encodes the signature. `ActionIntent.as_dict()` is defined in `core/models.py`. The existing `scripts/prepare-native-substrate-auth.py` uses this exact function with the registered live-proof agent key and identity.
+
+This resolves the canonicalization question, but does **not** make the private key available to PortalPilot. PortalPilot's `PORTALDOT_SIGNER_SEED` is an sr25519 Substrate transaction signer, not the Verigate Ed25519 agent identity key. Do not substitute one for the other, copy the private key into a hosted frontend, or expose a general-purpose public signing endpoint.
+
+PortalPilot needs a trusted server-side function with this contract:
 
 ```ts
 type SignActionIntent = (
@@ -95,6 +99,12 @@ Do not use `planAction()` to calculate expected bytes: that function signs the e
 - Verify that client-supplied plan fields and authorization data are ignored.
 - Run the upstream TypeScript build and tests.
 - Only after the real server routes and signer are connected, test against the configured Verigate service and PortalDot V3 testnet. A fixture test is not live integration evidence.
+
+## Deployment constraint discovered
+
+The upstream `src/sdk/portaldot.ts` explicitly supports raw `ws(s)://` endpoints, so the pinned testnet endpoint can be supplied without adding a public network alias. However, `src/sdk/tx.ts` stores signed transactions in a process-local `planCache`, and `src/server.ts` is designed to run as a serverless function when `VERCEL` is set. A process-local Verigate plan map would not be safe/reliable across independent serverless invocations. The integration must either run on one persistent backend process or move both the cached signed extrinsic and one-time authorization binding into a shared server-side store with TTL and atomic consume semantics.
+
+The existing Verigate Python signer uses the registered agent key referenced by the live proof plan. If PortalPilot and Verigate are not colocated, do not assume the key path is available. The safe next implementation is a narrow, authenticated internal signer adapter deployed beside Verigate, or an explicit server-to-server identity-signing service with strict action validation; no such endpoint currently exists in the inspected API.
 
 ## Current boundary
 
