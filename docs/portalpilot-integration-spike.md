@@ -15,7 +15,7 @@ PortalPilot's current network selector exposes \`mainnet\` and \`local\`. Veriga
 - The signed binding must match one \`Balances.transfer_keep_alive\` action, exact SS58 recipient, exact base-unit amount, pinned genesis, and unexpired ALLOW.
 - \`assertPortalPilotPlanAuthorized(...)\` checks testnet endpoint, action, expiry and exact SCALE call bytes. Call it after plan creation and immediately before execution.
 
-The request adapter now targets the documented `POST /v1/actions/authorize` endpoint and constructs the native action metadata. It deliberately requires a host-provided `signActionIntent(actionIntent, identityId)` callback that produces the exact agent signature expected by the registered Verigate identity. It does not read private keys or implement Verigate's agent-signing canonicalization itself. Until that callback is wired to a verified signer from PortalPilot's backend, the request adapter is a tested contract, not a live authorization connector.
+The request adapter now targets the documented `POST /v1/actions/authorize` endpoint and constructs the native action metadata. Its signed fee ceiling is passed separately as adapter configuration (`maxFeeBaseUnits` or `PORTALDOT_SUBSTRATE_MAX_FEE_BASE_UNITS`), not added to PortalPilot's public `WriteAction` shape. It deliberately requires a host-provided `signActionIntent(actionIntent, identityId)` callback that produces the exact agent signature expected by the registered Verigate identity. It does not read private keys or implement Verigate's agent-signing canonicalization itself. Until that callback is wired to a verified signer from PortalPilot's backend, the request adapter is a tested contract, not a live authorization connector.
 
 ## Required PortalPilot wiring
 
