@@ -4,6 +4,15 @@
 
 An AI agent can propose a transfer, but a proposal is not authority. Verigate makes the off-chain policy decision. The bridge verifies the signed decision and binds it to one exact action. The deployed `PortalDotAgentGuardV2` then checks the authorization, recipient allowlist and spending limits before moving native POT held by the guard.
 
+## What PortalDot adds for PortalDot developers
+
+Verigate lets an AI-agent application check a proposed payment against explicit authorization rules before execution. It is a reusable middleware example for developers building agent-driven payment flows.
+
+- **EVM:** the deployed guard rejects unauthorized transfers routed through its own contract balance, including an unlisted recipient or an amount above the configured cap.
+- **Native Substrate:** a separate adapter checks policy before submitting a native transfer. This does not block transactions sent directly outside the adapter.
+- **Current status:** both paths have testnet execution evidence, but neither is integrated into PortalDot Wallet or DaaS. External adoption and commercial demand remain unvalidated.
+
+
 **Scope:** the primary on-chain guard demonstration is Verigate authorization followed by a guarded native-POT transfer on PortalDot V3 EVM testnet. A separate native Substrate adapter has also completed a Verigate-authorized `Balances.transfer_keep_alive` on PortalDot V3 Substrate testnet: `system_dryRun` succeeded first, then the broadcast was reported finalized with one matching `balances.Transfer` event. That native-path evidence was observed through one configured RPC and has not been cross-checked through a second provider. Neither path establishes that the PortalDot team requested this capability, and no PortalDot Wallet or DaaS integration is claimed. The EVM guard controls only transfers routed through its own contract balance.
 
 **For PortalDot builders:** [what this integration provides, how to adapt it, and how to validate its value](docs/portal-dot-developer-value.md). This is a reference integration; external adoption and commercial demand have not yet been validated.
@@ -170,19 +179,13 @@ Live re-query of the saved transfer passed on 27 October 2026 in [GitHub Actions
 
 No integration into PortalDot Wallet or DaaS is currently claimed, and no PortalDot team endorsement or external user adoption has been confirmed. This repository does not claim a production-ready multichain agent framework, a WASM/EVM cross-execution bridge, universal transaction interception, an independent audit, or mainnet readiness. The current V2 spending counter resets after its configured interval; it is not a continuously sliding rolling-window algorithm.
 
-## Product value, differentiation, and ecosystem contribution
+## Differentiation and commercial hypothesis
 
-Verigate PortalDot is an authorization-to-execution middleware reference, not another explorer and not only a Solidity spending guard. Its technical contribution is the binding of a policy decision to one exact action, followed by enforcement at the execution boundary.
+The technical contribution is the composition of intent-bound policy authorization with checks at the execution boundary across an EVM guard and a separate native Substrate adapter. Recipient allowlists, spending caps, EIP-712 signatures and transaction simulation are established techniques; this project does not claim they are individually novel.
 
-- **EVM path:** Verigate evaluates the payment off-chain; the bridge verifies its signed artifacts and creates an EIP-712 authorization; `PortalDotAgentGuardV2` enforces the signed recipient, amount, nonce, deadline, allowlist and spending caps before moving funds from the guard's own balance.
-- **Native Substrate path:** the adapter validates the signed `ALLOW` against the exact native POT action, testnet genesis, recipient, amount and signed maximum-fee ceiling; it checks the runtime, runs `system_dryRun` when explicitly requested, and only broadcasts under an explicit `--broadcast` flag. This path is separate from the EVM guard and does not intercept arbitrary wallet activity.
-- **Security boundary:** native authorization expiry is rechecked after RPC preflight and again immediately before local signing or broadcast. This is adapter-side enforcement: the Substrate runtime does not verify Verigate signatures, so direct submissions that bypass this adapter can bypass its policy. The replay ledger is local single-host state, fee estimates do not guarantee final charges, and live transfer evidence uses one configured RPC.
+A plausible commercial model is hosted policy evaluation and authorization receipts, with a self-hosted option for teams that need control over policy data and infrastructure. This is a hypothesis to validate, not current traction: no paying customers, revenue, production deployments, external adoption or PortalDot team endorsement are claimed.
 
-The intended users are developers of autonomous services and AI agents that need to perform PortalDot payments under explicit spending authority. The ecosystem contribution is a public, reusable integration example and testable execution boundary that application teams can adapt, rather than a claim of PortalDot Wallet or DaaS integration.
-
-**Commercial hypothesis, not current traction:** offer hosted policy evaluation and authorization receipts for developers, with a self-hosted or enterprise deployment option for teams that require control of policy data and infrastructure. There are no verified paying customers, revenue, production deployments or PortalDot team endorsement claimed.
-
-The differentiator is the composition of intent-bound policy authorization, adapter-side cryptographic and runtime checks, and explicit execution evidence across the EVM and native Substrate paths. Recipient allowlists, spending caps, EIP-712 signatures and transaction simulation are not individually novel; the project does not claim they are. See [the mentor-feedback acceptance criteria](docs/mentor-feedback-acceptance.md) for the evidence gates being used to guide remaining work.
+The native adapter's authorization expiry is rechecked after RPC preflight and immediately before local signing or broadcast. The replay ledger remains local single-host state, fee estimates do not guarantee final charges, and the Substrate runtime does not verify Verigate signatures. Transactions that bypass the adapter can bypass its policy. Live transfer evidence currently uses one configured RPC. See [the mentor-feedback acceptance criteria](docs/mentor-feedback-acceptance.md) for the evidence gates guiding remaining work.
 
 ## Evidence and presentation
 
