@@ -154,7 +154,8 @@ The signer now requires `PORTALDOT_SUBSTRATE_SIGNER_RECIPIENT_SS58` and refuses 
 - `computeExpectedCallHex`: encode the call from the verified authorization using a connected API whose genesis is checked;
 - `computeActionCallHex`: encode the requested action without signing, before `planAction`;
 - `getPlanCallHex`: read the actual cached signed extrinsic's call bytes at execution time, not just the browser-returned plan snapshot;
-- `planAction` and `executePlan`: PortalPilot SDK operations.
+- `planAction`: PortalPilot plan creation/signing.
+- `executeAuthorizedPlan(planId, expectedCallHex, planSnapshot)`: a host SDK operation that must fetch the cached signed transaction once, compare that exact transaction's `tx.method.toHex()` with the expected bytes, and submit the same object without a second cache lookup or asynchronous gap. A separate `getPlanCallHex()` check followed by the existing `executePlan()` is insufficient to guarantee this under a mutable cache.
 
 `askWrite(action, network)` is intended for the write branch in POST /api/ask; `executeAuthorized(planId)` is intended for POST /api/execute. The adapter stores a one-time authorization binding with a short TTL and atomically consumes it before execution checks, so an expired or mismatched plan cannot be retried using the same binding. The store must implement atomic `putIfAbsent(key, value, ttlMs)` and atomic `take(key)` semantics.
 
