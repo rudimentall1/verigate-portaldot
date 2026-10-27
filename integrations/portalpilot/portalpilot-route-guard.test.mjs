@@ -55,7 +55,12 @@ function setup(overrides = {}) {
       };
     },
     getPlanCallHex: async () => { calls.push("read-cached-call"); return callHex; },
-    executePlan: async (id) => { calls.push("execute"); return { ok: true, id }; },
+    executeAuthorizedPlan: async (id, expectedCallHex, planSnapshot) => {
+      calls.push("execute");
+      assert.equal(expectedCallHex, callHex);
+      assert.equal(planSnapshot.id, id);
+      return { ok: true, id };
+    },
     nowSeconds,
     ...overrides,
   });
@@ -127,6 +132,6 @@ test("refuses to construct without atomic server-side storage", () => {
     computeActionCallHex: async () => callHex,
     planAction: async () => ({}),
     getPlanCallHex: async () => callHex,
-    executePlan: async () => ({}),
+    executeAuthorizedPlan: async () => ({}),
   }), /atomic server-side plan store/);
 });
