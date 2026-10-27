@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-27T07:31:26.314Z",
+  "status": "VERIFIED_BY_ONE_RPC_ENDPOINT",
+  "mode": "read-only",
+  "evidenceFile": "docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json",
+  "expected": {
+    "network": "PortalDot V3 Substrate testnet",
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "transactionHash": "0x098c3b320fd38a3062a5305b391fae81026aed267e5ed847186578a13600ef02",
+    "finalizedBlockHash": "0xe95f838bae67b8e3e4abed7215315c8059a06f19d9e26b1fa533ef4f4515ed83",
+    "signer": "5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB",
+    "recipient": "5Etb82346VeavrvzVB3NK3Vr6YrYeK4thENVGM9HogYy64Cj",
+    "amountBaseUnits": "10000000000000"
+  },
+  "providers": [
+    {
+      "origin": "wss://test-node-v3.portaldot.dev",
+      "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+      "runtime": {
+        "specName": "portaldot-v3",
+        "specVersion": "3002",
+        "transactionVersion": "2"
+      },
+      "observedBlockNumber": "175489",
+      "latestFinalizedBlockNumber": "214634",
+      "transactionHash": "0x098c3b320fd38a3062a5305b391fae81026aed267e5ed847186578a13600ef02",
+      "comparison": {
+        "match": true,
+        "mismatches": [],
+        "observed": {
+          "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+          "runtime": {
+            "specName": "portaldot-v3",
+            "specVersion": "3002",
+            "transactionVersion": "2"
+          },
+          "blockHash": "0xe95f838bae67b8e3e4abed7215315c8059a06f19d9e26b1fa533ef4f4515ed83",
+          "blockNumber": "175489",
+          "latestFinalizedBlockNumber": "214634",
+          "canonicalHashAtHeight": "0xe95f838bae67b8e3e4abed7215315c8059a06f19d9e26b1fa533ef4f4515ed83",
+          "transactionHash": "0x098c3b320fd38a3062a5305b391fae81026aed267e5ed847186578a13600ef02",
+          "extrinsicIndex": 1,
+          "extrinsicSigner": "5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB",
+          "extrinsicSection": "balances",
+          "extrinsicMethod": "transferKeepAlive",
+          "extrinsicRecipient": "5Etb82346VeavrvzVB3NK3Vr6YrYeK4thENVGM9HogYy64Cj",
+          "extrinsicAmountBaseUnits": "10000000000000",
+          "transferEventCount": 1,
+          "dispatchSuccessCount": 1,
+          "dispatchFailureCount": 0,
+          "feeEventCount": 1,
+          "feeEvent": {
+            "payer": "5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB",
+            "actualFeeBaseUnits": "1490531479031",
+            "tipBaseUnits": "0"
+          }
+        }
+      }
+    }
+  ],
+  "providerComparison": null,
+  "trustBoundary": [
+    "This script reads chain data only; it never signs or broadcasts an extrinsic.",
+    "A matching response confirms the recorded native extrinsic/events against the configured RPC response, not the RPC operator's honesty.",
+    "Two URL origins do not prove independent operators or infrastructure; verify provider ownership separately.",
+    "The saved evidence does not contain the Verigate Ed25519 signed artifacts, so this verifier does not cryptographically re-verify the off-chain policy decision."
+  ]
+}
