@@ -42,8 +42,10 @@ def load_private_key(path: Path):
     key = None
     for loader in (serialization.load_pem_private_key, serialization.load_der_private_key):
         try:
-            key = loader(raw, password=None)
-            break
+            candidate = loader(raw, password=None)
+            if isinstance(candidate, Ed25519PrivateKey):
+                key = candidate
+                break
         except (ValueError, TypeError):
             pass
     if key is None:
