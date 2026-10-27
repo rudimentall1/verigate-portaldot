@@ -37,9 +37,10 @@ export async function runAuthorizedPortalPilotTransfer({
   // Verify the exact unsigned call bytes before planAction(), which signs the extrinsic.
   const expectedBeforeSign = await computeExpectedCallHex(authorization);
   const actionCallBeforeSign = await computeActionCallHex(action, PORTALDOT_TESTNET_RPC);
-  if (typeof actionCallBeforeSign !== "string" ||
+  if (typeof expectedBeforeSign !== "string" || !/^0x[0-9a-f]+$/i.test(expectedBeforeSign) ||
+      typeof actionCallBeforeSign !== "string" || !/^0x[0-9a-f]+$/i.test(actionCallBeforeSign) ||
       actionCallBeforeSign.toLowerCase() !== expectedBeforeSign.toLowerCase()) {
-    fail("Unsigned PortalPilot call differs from the verified Verigate authorization; refusing to sign.");
+    fail("Unsigned PortalPilot call is invalid or differs from the verified Verigate authorization; refusing to sign.");
   }
   if (authorization.binding.expiresAt <= nowSeconds()) {
     fail("Verigate authorization expired before PortalPilot could sign the transfer.");
