@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Interface } from "ethers";
 import {
   compareProviderEvidence,
+  normalizeExpectedGenesisHash,
   normalizeTransferEvidence
 } from "../scripts/verify-receipt-quorum.mjs";
 
@@ -58,6 +59,15 @@ function validProviderObjects(overrides = {}) {
     guardAddress: guard
   };
 }
+
+test("optional expected genesis pin is normalized and validated", () => {
+  assert.equal(normalizeExpectedGenesisHash(""), null);
+  assert.equal(normalizeExpectedGenesisHash("  0x" + "A".repeat(64) + "  "), "0x" + "a".repeat(64));
+  assert.throws(
+    () => normalizeExpectedGenesisHash("not-a-genesis-hash"),
+    /32-byte hexadecimal block hash/
+  );
+});
 
 test("matching providers confirm the same receipt and guard event", () => {
   assert.deepEqual(compareProviderEvidence(evidence(), evidence()), { match: true, mismatches: [] });
