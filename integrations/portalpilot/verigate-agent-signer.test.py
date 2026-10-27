@@ -147,6 +147,30 @@ class SignerCliTests(unittest.TestCase):
         result = self.run_signer()
         self.assert_refused(result, "does not match the registered Verigate identity")
 
+    def test_refuses_metadata_recipient_mismatch(self):
+        payload = {**self.payload, "metadata": {"portaldot_substrate_v3": {
+            **self.payload["metadata"]["portaldot_substrate_v3"],
+            "recipient_ss58": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+        }}}
+        result = self.run_signer(payload)
+        self.assert_refused(result, "Action target and metadata recipient do not match.")
+
+    def test_refuses_metadata_amount_mismatch(self):
+        payload = {**self.payload, "metadata": {"portaldot_substrate_v3": {
+            **self.payload["metadata"]["portaldot_substrate_v3"],
+            "amount_base_units": "501",
+        }}}
+        result = self.run_signer(payload)
+        self.assert_refused(result, "Action amount_exact and metadata amount_base_units do not match.")
+
+    def test_refuses_fee_ceiling_above_configured_limit(self):
+        payload = {**self.payload, "metadata": {"portaldot_substrate_v3": {
+            **self.payload["metadata"]["portaldot_substrate_v3"],
+            "max_fee_base_units": "101",
+        }}}
+        result = self.run_signer(payload)
+        self.assert_refused(result, "Action fee ceiling is invalid or exceeds the configured signer ceiling.")
+
     def test_valid_fixture_emits_signature_only(self):
         result = self.run_signer()
         self.assertEqual(result.returncode, 0, result.stderr)
