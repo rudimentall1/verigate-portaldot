@@ -16,7 +16,7 @@ const EVENT = new Interface([
   "event TransferExecuted(bytes32 indexed actionId,address indexed recipient,uint256 amount,uint256 nonce)"
 ]);
 
-export function normalizeTransferEvidence({ tx, receipt, block, guardAddress, chainId, requestedTxHash }) {
+export function normalizeTransferEvidence({ tx, receipt, block, guardAddress, chainId, genesisHash = null, requestedTxHash }) {
   if (!tx || !receipt || !block) throw new Error("Provider did not return transaction, receipt and block.");
   if (block.number !== receipt.blockNumber) throw new Error("Fetched block number does not match receipt block number.");
   if (!block.hash || !receipt.blockHash) throw new Error("Block hash is missing from provider evidence.");
@@ -53,6 +53,7 @@ export function normalizeTransferEvidence({ tx, receipt, block, guardAddress, ch
   return {
     transactionHash: receipt.hash.toLowerCase(),
     chainId: chainId == null ? (tx.chainId == null ? null : tx.chainId.toString()) : BigInt(chainId).toString(),
+    genesisHash: genesisHash == null ? null : String(genesisHash).toLowerCase(),
     status: receipt.status,
     blockNumber: receipt.blockNumber,
     blockHash: receipt.blockHash.toLowerCase(),
@@ -64,7 +65,7 @@ export function normalizeTransferEvidence({ tx, receipt, block, guardAddress, ch
 
 export function compareProviderEvidence(primary, secondary) {
   const fields = [
-    "transactionHash", "chainId", "status", "blockNumber", "blockHash",
+    "transactionHash", "chainId", "genesisHash", "status", "blockNumber", "blockHash",
     "transactionTo", "guardAddress"
   ];
   const mismatches = fields.filter((field) => primary[field] !== secondary[field]);
@@ -75,19 +76,26 @@ export function compareProviderEvidence(primary, secondary) {
 }
 
 async function readEvidence(provider, txHash, guardAddress) {
-  const [network, tx, receipt] = await Promise.all([
+  const [network, tx, receipt, genesisBlock] = await Promise.all([
     provider.getNetwork(),
     provider.getTransaction(txHash),
-    provider.getTransactionReceipt(txHash)
+    provider.getTransactionReceipt(txHash),
+    provider.getBlock(0)
   ]);
   if (!tx || !receipt) throw new Error("Transaction or receipt unavailable; result is UNKNOWN, not failed.");
+  if (!genesisBlock?.hash) throw new Error("Provider did not return an EVM genesis block hash.");
   const block = await provider.getBlock(receipt.blockNumber);
   const code = await provider.getCode(guardAddress);
   if (code === "0x") throw new Error("Configured guard has no runtime code at this provider.");
   return {
     chainId: network.chainId.toString(),
     codeHash: keccak256(code),
-    evidence: normalizeTransferEvidence({ tx, receipt, block, guardAddress, chainId: network.chainId, requestedTxHash: txHash })
+    genesisHash: genesisBlock.hash.toLowerCase(),
+    evidence: normalizeTransferEvidence({
+      tx, receipt, block, guardAddress, chainId: network.chainId,
+      genesisHash: genesisBlock.hash,
+      requestedTxHash: txHash
+    })
   };
 }
 
@@ -107,6 +115,10 @@ async function main() {
   const primaryUrl = process.env.PORTALDOT_RPC_URL;
   const secondaryUrl = process.env.PORTALDOT_RPC_URL_SECONDARY;
   const expectedChainId = BigInt(process.env.PORTALDOT_CHAIN_ID || "420420777");
+  const expectedGenesisHash = String(process.env.PORTALDOT_EVM_GENESIS_HASH || "").trim().toLowerCase();
+  if (expectedGenesisHash && !/^0x[a-f0-9]{64}$/.test(expectedGenesisHash)) {
+    throw new Error("PORTALDOT_EVM_GENESIS_HASH must be a 32-byte hexadecimal block hash when configured.");
+  }
   if (!guardAddress || !expectedCodeHash || !primaryUrl || !secondaryUrl) {
     throw new Error("Require configured guard address/code hash and both PORTALDOT_RPC_URL and PORTALDOT_RPC_URL_SECONDARY.");
   }
@@ -124,6 +136,9 @@ async function main() {
       if (result.codeHash.toLowerCase() !== expectedCodeHash.toLowerCase()) {
         throw new Error(`Provider ${index + 1} guard code hash mismatch: ${result.codeHash}`);
       }
+      if (expectedGenesisHash && result.genesisHash !== expectedGenesisHash) {
+        throw new Error(`Provider ${index + 1} genesis hash mismatch: ${result.genesisHash}; expected ${expectedGenesisHash}.`);
+      }
     }
     const comparison = compareProviderEvidence(results[0].evidence, results[1].evidence);
     const report = {
@@ -132,6 +147,7 @@ async function main() {
       mode: "read-only",
       profile,
       chainId: expectedChainId.toString(),
+      expectedGenesisHash: expectedGenesisHash || null,
       transactionHash: txHash.toLowerCase(),
       providers: [
         { origin: new URL(primaryUrl).origin, codeHash: results[0].codeHash, evidence: results[0].evidence },
