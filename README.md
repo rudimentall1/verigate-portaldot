@@ -21,7 +21,7 @@ An AI agent can propose a transfer, but a proposal is not authority. Verigate ma
 | The deployed V2 code and policy matched the recorded configuration | Published Chromium check read chain ID `420420777`, runtime hash, authority signer, and the `0.1 POT` / `0.5 POT per resettable 3,600-second interval` policy | Snapshot is dated; one RPC; not independent authentication of the RPC operator |
 | V2 rejects an unlisted recipient and an over-cap amount | Live read-only `eth_call` probes returned `InvalidRecipient()` and `AmountExceedsCap` | Simulated calls, not mined public-chain revert transactions |
 | Interval overflow does not consume a nonce; interval accounting resets | Local Hardhat contract tests | Local test evidence, not a live public-chain overflow transaction |
-| Native Substrate transfer finalized on testnet | [Finalized native transfer evidence](docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json): Verigate `ALLOW`, pre-broadcast `system_dryRun` success, transaction `0x098c3b320fd38a3062a5305b391fae81026aed267e5ed847186578a13600ef02`, `system.ExtrinsicSuccess`, one matching `balances.Transfer`, and `TransactionFeePaid` of `0.01490531479031 POT` | Reported finalized through one configured RPC; no independent second-provider verification; recorded block hash but terminal output did not include block height |
+| Native Substrate transfer finalized on testnet | [Finalized native transfer evidence](docs/evidence/portaldot-native-substrate-finalized-transfer-2026-10-24.json): Verigate `ALLOW`, pre-broadcast `system_dryRun` success, transaction `0x098c3b320fd38a3062a5305b391fae81026aed267e5ed847186578a13600ef02`, `system.ExtrinsicSuccess`, one matching `balances.Transfer`, and `TransactionFeePaid` of `0.01490531479031 POT` | Reported finalized through one configured RPC; no independent second-provider verification; recorded block hash but terminal output did not include block height |
 
 **Scope:** PortalDot V3 EVM testnet prototype, not a security audit, production deployment, or mainnet-ready system. Verigate's Ed25519 decision verification occurs off-chain in the bridge; the contract verifies the bridge's EIP-712 authorization. The guard only controls payments from its own contract balance. No second RPC provider, PortalDot Wallet/DaaS integration, team endorsement, or mainnet deployment is claimed.
 
@@ -165,7 +165,7 @@ No integration into PortalDot Wallet or DaaS is currently claimed, and no Portal
 - [Funding and account-mapping investigation, including the confirmed SubWallet/Pindex/explorer address-association discrepancy](docs/funding-and-account-mapping.md)
 - [Deployment evidence](docs/deployment-evidence-2026-10-20.md)
 - [Native Substrate runtime dry-run evidence](docs/evidence/portaldot-native-substrate-dry-run-2026-10-24.json)
-- [Native Substrate finalized transfer evidence](docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json)
+- [Native Substrate finalized transfer evidence](docs/evidence/portaldot-native-substrate-finalized-transfer-2026-10-24.json)
 - [0.1 EVM POT transfer evidence](docs/authorized-transfer-evidence-2026-10-21-nondust.md)
 - [One-base-unit transfer evidence](docs/authorized-transfer-evidence-2026-10-21.md)
 - [Three-minute demo plan](docs/demo-script.md)
