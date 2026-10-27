@@ -105,6 +105,34 @@ test("route execute atomically consumes authorization before execution", async (
   assert.equal(calls.filter((call) => call === "execute").length, 1);
 });
 
+test("concurrent execute requests consume one authorization and submit at most once", async () => {
+  let submitCount = 0;
+  let releaseSubmit;
+  const submitBarrier = new Promise((resolve) => { releaseSubmit = resolve; });
+  const { guard, calls, store } = setup({
+    executeAuthorizedPlan: async (id, expectedCallHex, planSnapshot) => {
+      submitCount += 1;
+      assert.equal(expectedCallHex, callHex);
+      assert.equal(planSnapshot.id, id);
+      await submitBarrier;
+      return { ok: true, id };
+    },
+  });
+  await guard.askWrite(action, PORTALDOT_TESTNET_RPC);
+
+  const first = guard.executeAuthorized("plan-1");
+  await new Promise((resolve) => setImmediate(resolve));
+  await assert.rejects(
+    () => guard.executeAuthorized("plan-1"),
+    /No unconsumed Verigate authorization/,
+  );
+  releaseSubmit();
+  assert.deepEqual(await first, { ok: true, id: "plan-1" });
+  assert.equal(submitCount, 1);
+  assert.equal(calls.filter((call) => call === "execute").length, 0);
+  assert.equal(store.values.has("plan-1"), false);
+});
+
 test("changed cached signed extrinsic is refused and authorization is consumed", async () => {
   const { guard, calls, store } = setup({
     getPlanCallHex: async () => { calls.push("read-cached-call"); return "0x040101"; },
