@@ -25,7 +25,14 @@ function setup(overrides = {}) {
       assert.equal(network, PORTALDOT_TESTNET_RPC);
       return { id: "plan-1", network, action, callHex };
     },
-    computeExpectedCallHex: async () => { calls.push("encode"); return callHex; },
+    // Represents independent SCALE encoding from the verified authorization,
+    // not copying plan.callHex or trusting plan.action.
+    computeExpectedCallHex: async (authorization) => {
+      calls.push("encode");
+      assert.equal(authorization.recipient, recipient);
+      assert.equal(authorization.amountBaseUnits, "10000000000000");
+      return callHex;
+    },
     executePlan: async (id) => { calls.push("execute"); return { ok: true, id }; },
     nowSeconds,
     ...overrides,
@@ -52,8 +59,9 @@ test("expired authorization after planning prevents execution", async () => {
   let clock = 2_000_000_000;
   const { calls, deps } = setup({
     nowSeconds: () => clock,
-    computeExpectedCallHex: async () => {
+    computeExpectedCallHex: async (authorization) => {
       calls.push("encode");
+      assert.equal(authorization.recipient, recipient);
       clock = 2_000_000_101;
       return callHex;
     },
