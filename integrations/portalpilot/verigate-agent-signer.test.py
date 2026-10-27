@@ -58,8 +58,8 @@ class SignerCliTests(unittest.TestCase):
         self.key = Ed25519PrivateKey.generate()
         self.key_file = self.root / "agent.key"
         self.key_file.write_bytes(self.key.private_bytes(
-            encoding=serialization.Encoding.Raw,
-            format=serialization.PrivateFormat.Raw,
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),
         ))
         self.env = os.environ.copy()
@@ -140,8 +140,8 @@ class SignerCliTests(unittest.TestCase):
     def test_refuses_private_key_that_does_not_match_registered_identity(self):
         other_key = Ed25519PrivateKey.generate()
         self.key_file.write_bytes(other_key.private_bytes(
-            encoding=serialization.Encoding.Raw,
-            format=serialization.PrivateFormat.Raw,
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),
         ))
         result = self.run_signer()
