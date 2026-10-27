@@ -69,7 +69,7 @@ test("unsigned call mismatch refuses before planAction can sign", async () => {
   });
   await assert.rejects(
     () => runAuthorizedPortalPilotTransfer(deps),
-    /Unsigned PortalPilot call differs.*refusing to sign/,
+    /Unsigned PortalPilot call is invalid or differs.*refusing to sign/,
   );
   assert.equal(calls.includes("plan"), false);
   assert.equal(calls.includes("execute"), false);
@@ -90,9 +90,12 @@ test("authorization expiring during unsigned encoding refuses before signing", a
   assert.equal(calls.includes("execute"), false);
 });
 
-test("call-byte mismatch prevents executePlan", async () => {
+test("signed plan call-byte mismatch prevents executePlan", async () => {
   const { calls, deps } = setup({
-    computeExpectedCallHex: async () => { calls.push("encode-authorized"); return "0x040101"; },
+    planAction: async (_action, network) => {
+      calls.push("plan");
+      return { id: "plan-1", network, action, callHex: "0x040101", feePlanck: "100", warnings: [] };
+    },
   });
   await assert.rejects(() => runAuthorizedPortalPilotTransfer(deps), /SCALE call differs/);
   assert.equal(calls.includes("execute"), false);
