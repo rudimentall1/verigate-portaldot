@@ -159,7 +159,7 @@ PortalDot V3 exposes an EVM-compatible execution path alongside its Substrate ru
 The saved native transfer record can be re-queried with the read-only verifier:
 
 ```sh
-npm run verify:substrate-transfer -- docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json
+node scripts/verify-substrate-transfer.mjs docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json
 ```
 
 The verifier checks the recorded block, canonical finalized-chain hash at that height, exact extrinsic, runtime version, transfer/dispatch/fee events and genesis hash. Set `PORTALDOT_SUBSTRATE_RPC_URL_SECONDARY` to request the same check from a second WSS endpoint. A missing historical block or event is reported as unavailable, not as proof of failure. The verifier does not re-verify the off-chain Verigate signatures because the saved evidence file does not contain those signed artifacts.
