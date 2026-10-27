@@ -14,6 +14,7 @@ Required environment:
   VERIGATE_IDENTITY_ID
   VERIGATE_AGENT_PRIVATE_KEY_FILE
   PORTALDOT_SUBSTRATE_GENESIS_HASH
+  PORTALDOT_SUBSTRATE_SIGNER_RECIPIENT_SS58
   PORTALDOT_SUBSTRATE_SIGNER_MAX_AMOUNT_BASE_UNITS
   PORTALDOT_SUBSTRATE_SIGNER_MAX_FEE_BASE_UNITS
 """
@@ -74,6 +75,7 @@ def main() -> int:
         "VERIGATE_SOURCE_ROOT", "VERIGATE_DB", "VERIGATE_AGENT_ID",
         "VERIGATE_IDENTITY_ID", "VERIGATE_AGENT_PRIVATE_KEY_FILE",
         "PORTALDOT_SUBSTRATE_GENESIS_HASH",
+        "PORTALDOT_SUBSTRATE_SIGNER_RECIPIENT_SS58",
         "PORTALDOT_SUBSTRATE_SIGNER_MAX_AMOUNT_BASE_UNITS",
         "PORTALDOT_SUBSTRATE_SIGNER_MAX_FEE_BASE_UNITS",
     )
@@ -103,7 +105,6 @@ def main() -> int:
     if not isinstance(payload, dict):
         die("Action input must be a JSON object.")
 
-    # Construct the same canonical ActionIntent model Verigate itself signs.
     sys.path.insert(0, str(Path(env["VERIGATE_SOURCE_ROOT"]).resolve()))
     try:
         from core.identity import sign_action_intent
@@ -130,6 +131,8 @@ def main() -> int:
         die("intent_id is required.")
     if not isinstance(payload.get("timestamp"), (int, float)) or isinstance(payload.get("timestamp"), bool):
         die("timestamp must be numeric.")
+    if not isinstance(payload.get("target"), str) or payload["target"] != env["PORTALDOT_SUBSTRATE_SIGNER_RECIPIENT_SS58"]:
+        die("Action target is not the configured recipient allowlist entry.")
     amount_text = payload.get("amount_exact")
     if not isinstance(amount_text, str) or not re.fullmatch(r"[1-9][0-9]*", amount_text):
         die("amount_exact must be a canonical positive base-unit integer string.")
