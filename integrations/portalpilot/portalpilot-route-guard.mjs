@@ -68,9 +68,13 @@ export function createPortalPilotVerigateRouteGuard({
     });
     if (typeof plan.id !== "string" || !plan.id) fail("PortalPilot returned a plan without a stable ID.");
 
+    const planSnapshot = structuredClone(plan);
+    if (planSnapshot.action && typeof planSnapshot.action === "object") Object.freeze(planSnapshot.action);
+    if (Array.isArray(planSnapshot.warnings)) Object.freeze(planSnapshot.warnings);
+    Object.freeze(planSnapshot);
     const record = Object.freeze({
       planId: plan.id,
-      plan: Object.freeze({ ...plan }),
+      plan: planSnapshot,
       authorization,
       storedAt: nowSeconds(),
     });
@@ -93,7 +97,8 @@ export function createPortalPilotVerigateRouteGuard({
     }
     const expectedCallHex = await computeExpectedCallHex(record.authorization);
     const actualCachedCallHex = await getPlanCallHex(planId);
-    if (typeof actualCachedCallHex !== "string" ||
+    if (typeof expectedCallHex !== "string" || !/^0x[0-9a-f]+$/i.test(expectedCallHex) ||
+        typeof actualCachedCallHex !== "string" || !/^0x[0-9a-f]+$/i.test(actualCachedCallHex) ||
         actualCachedCallHex.toLowerCase() !== expectedCallHex.toLowerCase()) {
       fail("Cached signed extrinsic call differs from Verigate authorization; refusing execution.");
     }
