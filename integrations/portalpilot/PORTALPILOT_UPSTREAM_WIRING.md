@@ -1,0 +1,105 @@
+# PortalPilot server-side wiring patch
+
+Status: patch plan against the inspected upstream `ismailridwans/portalpilot` `main` source. This file is in Verigate's repository; it does **not** modify the upstream PortalPilot repository.
+
+## Why the route boundary matters
+
+At the inspected upstream revision, `POST /api/ask` calls `planAction(intent.action, network)` for every write. `planAction()` signs and caches the extrinsic before returning. `POST /api/execute` calls `executePlan(planId)` without any authorization check. The gate must therefore run before `planAction()` and again in `/api/execute`.
+
+## Required host signer
+
+Do not implement this by blindly calling the Substrate transaction signer. Verigate's `agent_signature` must use the canonicalization and registered identity expected by the deployed Verigate instance. PortalPilot needs a trusted server-side function with this contract:
+
+```ts
+type SignActionIntent = (
+  actionIntent: Record<string, unknown>,
+  identityId: string
+) => Promise<string>;
+```
+
+If PortalPilot does not have a confirmed compatible signer, leave the gate unavailable and refuse writes. Do not accept `agent_signature`, an authorization binding, or expected SCALE bytes from the browser.
+
+## Patch shape for `src/server.ts`
+
+1. Add a server-only integration module that wraps the helpers in this repository:
+   - `requestPortalPilotAuthorization(action, { signActionIntent })`
+   - `verifyPortalPilotVerigateResponse(response)`
+   - `assertPortalPilotTransferMatchesAuthorization(action, binding)`
+   - `assertPortalPilotPlanAuthorized(...)`
+
+   Copy the required modules and their dependencies into PortalPilot or publish them as a versioned package first. Do not import across two independent GitHub repositories using relative paths.
+
+2. Add a private in-memory map alongside the other server constants:
+
+```ts
+const verigatePlans = new Map<string, {
+  plan: Awaited<ReturnType<typeof planAction>>;
+  authorization: Awaited<ReturnType<typeof authorizePortalPilotAction>>;
+}>();
+```
+
+   This map is process-local. If the server is deployed serverlessly or runs multiple instances, use a shared server-side store with TTL and atomic consume semantics instead. The authorization must never be stored only in client state.
+
+3. In the `intent.type === "write"` branch of `POST /api/ask`, fail closed unless all of these are true:
+   - `intent.action.kind === "transfer"` (batch transfers and remarks remain disabled);
+   - the requested network is the pinned PortalDot V3 Substrate testnet endpoint, `wss://test-node-v3.portaldot.dev`;
+   - a trusted `signActionIntent` callback is configured;
+   - Verigate returns ALLOW and both signed artifacts pass local issuer-key verification plus the configured remote `/v1/verify` checks.
+
+   The order must be:
+
+```ts
+const authorization = await authorizePortalPilotAction(intent.action, {
+  requestAuthorization: (action) =>
+    requestPortalPilotAuthorization(action, { signActionIntent }),
+});
+const plan = await planAction(intent.action, PORTALDOT_TESTNET_RPC);
+const expectedCallHex = await expectedNativeTransferCallHex(
+  authorization.recipient,
+  authorization.amountBaseUnits,
+  PORTALDOT_TESTNET_RPC
+);
+assertPortalPilotPlanAuthorized({
+  plan, authorization, expectedCallHex,
+});
+verigatePlans.set(plan.id, { plan, authorization });
+return res.json({ kind: "plan", intent, plan });
+```
+
+   The names above are the intended host adapter contract, not functions currently exported by PortalPilot. Implement `expectedNativeTransferCallHex` inside PortalPilot's SDK so it obtains the connected API for the pinned endpoint and encodes `api.tx.balances.transferKeepAlive(recipient, BigInt(amountBaseUnits)).method.toHex()`. It must derive bytes from the verified authorization, never from `plan.callHex`.
+
+4. In `POST /api/execute`, replace the unconditional `executePlan(planId)` call with this sequence:
+   - retrieve the server-side `{ plan, authorization }` by `planId`, otherwise refuse;
+   - recompute the expected SCALE call from the immutable verified authorization using the pinned testnet API;
+   - re-run `assertPortalPilotPlanAuthorized` immediately before submission, including expiry and fee ceiling checks;
+   - only then call `executePlan(planId)`;
+   - consume the server-side authorization record on success or refusal so it cannot be replayed.
+
+5. The expected-call helper must verify the API's genesis hash equals the pinned genesis before encoding. Do not silently accept the existing `mainnet` or `local` network aliases. Reject if the fee estimate is unavailable, non-canonical, or above the signed fee ceiling.
+
+## Additional SDK helper
+
+Add an SDK helper in `src/sdk/tx.ts` that builds but does not sign or submit a single transfer using the already-connected pinned API and returns only the encoded call bytes. It should:
+- validate the SS58 recipient against the connected API's SS58 prefix;
+- accept the amount as exact base-unit `bigint` or canonical integer string, never floating point;
+- build `api.tx.balances.transferKeepAlive(recipient, amount)`;
+- return `tx.method.toHex()`;
+- refuse if the API genesis hash differs from `PORTALDOT_TESTNET_GENESIS`.
+
+Do not use `planAction()` to calculate expected bytes: that function signs the extrinsic.
+
+## Validation before claiming integration
+
+- Unit-test refusal before `planAction()` for BLOCK, bad signatures, wrong recipient, wrong amount, wrong genesis, missing signer, and unsupported action.
+- Unit-test refusal before `executePlan()` for expiry, changed SCALE bytes, missing/unavailable fee estimate, and fee above the signed ceiling.
+- Verify that client-supplied plan fields and authorization data are ignored.
+- Run the upstream TypeScript build and tests.
+- Only after the real server routes and signer are connected, test against the configured Verigate service and PortalDot V3 testnet. A fixture test is not live integration evidence.
+
+## Current boundary
+
+This patch specification is based on the inspected upstream files:
+- `src/server.ts` at the current upstream `main` revision inspected on 2026-10-27;
+- `src/sdk/tx.ts` at the current upstream `main` revision inspected on 2026-10-27.
+
+No upstream files have been changed by this document. The implementation remains blocked on a confirmed Verigate-compatible agent signing callback and write access/maintainer acceptance in the upstream repository.
