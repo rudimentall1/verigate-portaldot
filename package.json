@@ -9,13 +9,14 @@
   },
   "scripts": {
     "compile": "hardhat build",
-    "test": "hardhat test && npm run test:explorer && npm run test:dapp && npm run test:network-readiness && npm run test:substrate-adapter && npm run test:receipt-quorum && npm run test:rpc-monitor",
+    "test": "hardhat test && npm run test:explorer && npm run test:dapp && npm run test:network-readiness && npm run test:substrate-adapter && npm run test:receipt-quorum && npm run test:rpc-monitor && npm run test:substrate-evidence",
     "preflight": "node scripts/preflight.js",
     "deploy:portaldot": "npm run preflight && hardhat run scripts/deploy.mjs --network portaldot",
     "deploy:v2:portaldot": "npm run preflight && hardhat run scripts/deploy-v2.mjs --network portaldot",
     "bridge:sign": "node adapter/verigate-bridge.js",
     "execute:authorization": "node scripts/execute-authorized-transfer.mjs",
     "substrate:execute": "node scripts/execute-substrate-authorized-transfer.mjs",
+    "verify:substrate-transfer": "node scripts/verify-substrate-transfer.mjs",
     "monitor:rpc": "node scripts/monitor-rpc.js",
     "portal:readiness": "node scripts/portal-dot-readiness.mjs",
     "estimate:deployment": "npm run compile && node scripts/estimate-deployment.mjs",
@@ -40,6 +41,7 @@
     "test:receipt-quorum": "node --test test/receipt-quorum.test.mjs",
     "verify:receipt:quorum": "node scripts/verify-receipt-quorum.mjs",
     "test:rpc-monitor": "node --test scripts/monitor-rpc.test.cjs",
+    "test:substrate-evidence": "node --test test/verify-substrate-transfer.test.mjs",
     "prepare:substrate:auth": "python3 scripts/prepare-native-substrate-auth.py"
   },
   "devDependencies": {
