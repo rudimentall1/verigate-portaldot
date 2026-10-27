@@ -38,7 +38,7 @@ jobs:
         run: |
           mkdir -p artifacts
           set +e
-          npm run --silent verify:substrate-transfer -- docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json > artifacts/verifier.stdout.json 2> artifacts/verifier.stderr.log
+          node scripts/verify-substrate-transfer.mjs docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json > artifacts/verifier.stdout.json 2> artifacts/verifier.stderr.log
           verifier_exit_code=$?
           set -e
           printf '%s\n' "$verifier_exit_code" > artifacts/command-exit-code.txt
