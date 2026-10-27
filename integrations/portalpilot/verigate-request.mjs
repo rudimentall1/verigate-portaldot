@@ -25,6 +25,7 @@ export async function requestPortalPilotAuthorization(action, {
   identityId = process.env.VERIGATE_IDENTITY_ID,
   agentId = process.env.VERIGATE_AGENT_ID,
   capabilityId = process.env.VERIGATE_NATIVE_CAPABILITY_ID,
+  maxFeeBaseUnits = process.env.PORTALDOT_SUBSTRATE_MAX_FEE_BASE_UNITS,
   signActionIntent,
   fetchImpl = fetch,
   now = Date.now,
@@ -40,7 +41,7 @@ export async function requestPortalPilotAuthorization(action, {
   const recipient = String(action.to || "").trim();
   if (!recipient) fail("PortalDot recipient SS58 address is required.");
   const amountBaseUnits = potToBaseUnits(action.amountPot);
-  const maxFeeBaseUnits = String(action.maxFeeBaseUnits || "");
+  maxFeeBaseUnits = String(maxFeeBaseUnits || "");
   if (!/^[1-9][0-9]*$/.test(maxFeeBaseUnits)) {
     fail("A signed positive maxFeeBaseUnits value is required for the native transfer.");
   }
