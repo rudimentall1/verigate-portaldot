@@ -11,6 +11,7 @@ const recipient = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
 const action = { kind: "transfer", to: recipient, amountPot: "0.1" };
 const binding = {
   decision: "ALLOW", recipient, amountBaseUnits: "10000000000000",
+  maxFeeBaseUnits: "1000000000000",
   expiresAt: 2_000_000_100, expectedGenesisHash: PORTALDOT_TESTNET_GENESIS,
   authorizationId: "a".repeat(64), intentId: "intent-1",
   actionSha256: "b".repeat(64), policySha256: "c".repeat(64),
@@ -20,6 +21,7 @@ const response = {
   execution_authorization: { algorithm: "Ed25519", payload: { fixture: "authorization" }, signature: "authorization-signature" },
 };
 const callHex = "0x040100";
+const plan = { network: PORTALDOT_TESTNET_RPC, action, callHex, feePlanck: "100", warnings: [] };
 
 test("converts POT decimal text to exact base units without floating point", () => {
   assert.equal(potToBaseUnits("0.1"), "10000000000000");
@@ -72,9 +74,10 @@ test("expired authorization is rejected before plan creation", async () => {
   }), /expired before PortalPilot could plan/);
 });
 
-test("execution gate requires exact testnet, action and encoded SCALE call", () => {
-  const plan = { network: PORTALDOT_TESTNET_RPC, action, callHex };
-  assert.equal(assertPortalPilotPlanAuthorized({ plan, authorization: { response, binding }, expectedCallHex: callHex, now: 2_000_000_000 }), true);
+test("execution gate requires exact testnet, action, fee ceiling and encoded SCALE call", () => {
+  assert.equal(assertPortalPilotPlanAuthorized({
+    plan, authorization: { response, binding }, expectedCallHex: callHex, now: 2_000_000_000,
+  }), true);
   assert.throws(() => assertPortalPilotPlanAuthorized({
     plan: { ...plan, network: "mainnet" }, authorization: { response, binding },
     expectedCallHex: callHex, now: 2_000_000_000,
@@ -84,13 +87,25 @@ test("execution gate requires exact testnet, action and encoded SCALE call", () 
     expectedCallHex: callHex, now: 2_000_000_000,
   }), /amount differs/);
   assert.throws(() => assertPortalPilotPlanAuthorized({
+    plan: { ...plan, feePlanck: "1000000000001" }, authorization: { response, binding },
+    expectedCallHex: callHex, now: 2_000_000_000,
+  }), /exceeds the signed Verigate fee ceiling/);
+  assert.throws(() => assertPortalPilotPlanAuthorized({
+    plan: { ...plan, feePlanck: "0", warnings: ["Fee estimate unavailable"] },
+    authorization: { response, binding }, expectedCallHex: callHex, now: 2_000_000_000,
+  }), /fee estimate is unavailable/);
+  assert.throws(() => assertPortalPilotPlanAuthorized({
+    plan, authorization: { response, binding: { ...binding, maxFeeBaseUnits: undefined } },
+    expectedCallHex: callHex, now: 2_000_000_000,
+  }), /valid signed native fee ceiling/);
+  assert.throws(() => assertPortalPilotPlanAuthorized({
     plan, authorization: { response, binding }, expectedCallHex: "0x040101", now: 2_000_000_000,
   }), /SCALE call differs/);
 });
 
 test("expired authorization is rejected immediately before execution", () => {
   assert.throws(() => assertPortalPilotPlanAuthorized({
-    plan: { network: PORTALDOT_TESTNET_RPC, action, callHex },
+    plan,
     authorization: { response, binding: { ...binding, expiresAt: 2_000_000_000 } },
     expectedCallHex: callHex, now: 2_000_000_000,
   }), /expired before PortalPilot execution/);
@@ -102,7 +117,7 @@ test("live verifier fails closed when issuer key or verifier URL is missing", as
   }), /VERIGATE_PUBLIC_KEY_FILE/);
 });
 
-test("live verifier validates binding and both local and remote signature checks", async () => {
+test("live verifier preserves signed fee ceiling and checks both local and remote artifacts", async () => {
   const calls = [];
   const verified = await verifyPortalPilotVerigateResponse(response, {
     env: {
@@ -120,6 +135,7 @@ test("live verifier validates binding and both local and remote signature checks
   });
   assert.equal(verified.decision, "ALLOW");
   assert.equal(verified.recipient, recipient);
+  assert.equal(verified.maxFeeBaseUnits, binding.maxFeeBaseUnits);
   assert.equal(verified.verifiedLocally, true);
   assert.equal(verified.verifiedWithVerigate, true);
   assert.equal(calls.filter(([kind]) => kind === "local").length, 2);
