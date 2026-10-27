@@ -14,6 +14,7 @@ import {
   validateSubstrateRpcUrl,
   resolveExpectedGenesisHash,
   validateSubstrateTransferBinding,
+  assertAuthorizationFresh,
   runSubstrateTransfer,
   interpretDryRunResult,
   selectMortalEraConfig,
@@ -87,6 +88,18 @@ function validResponse(now = 2_000_000_000) {
   };
 }
 
+
+test("authorization freshness rejects expiry at the current second", () => {
+  assert.equal(assertAuthorizationFresh({ expiresAt: 101 }, 100), true);
+  assert.throws(
+    () => assertAuthorizationFresh({ expiresAt: 100 }, 100),
+    /expired during preflight/,
+  );
+  assert.throws(
+    () => assertAuthorizationFresh({ expiresAt: Number.NaN }, 99),
+    /expired during preflight/,
+  );
+});
 
 test("mortal-era checkpoint matches the runtime birth formula and respects hash retention", () => {
   const selected = selectMortalEraConfig(175214, 16);
@@ -170,6 +183,29 @@ test("BLOCK and WARN fail before the native adapter touches the RPC client", asy
     );
     assert.equal(apiTouched, false, `${decision} must fail before any RPC client access`);
   }
+});
+
+test("expired authorization fails before the native adapter accesses the RPC client", async () => {
+  const response = validResponse();
+  let apiTouched = false;
+  const forbiddenApi = new Proxy({}, {
+    get() {
+      apiTouched = true;
+      throw new Error("RPC client must not be accessed for an expired authorization");
+    },
+  });
+
+  await assert.rejects(
+    runSubstrateTransfer(response, {
+      rpcUrl: TESTNET_RPC,
+      expectedGenesisHash: TESTNET_GENESIS_HASH,
+      now: 2_000_000_100,
+      api: forbiddenApi,
+      signerAddress: testAddress(9),
+    }),
+    /expired or has invalid timestamps/,
+  );
+  assert.equal(apiTouched, false, "expired authorization must fail before any RPC client access");
 });
 
 test("rejects an expired authorization and an authorization with excessive TTL", () => {
