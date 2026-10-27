@@ -18,19 +18,20 @@ The PortalDot Hacker House mentor review marked the project **PASSED** for Check
 
 ### Required engineering gates
 
-- [x] The new orchestration test for BLOCK/WARN passed in [GitHub Actions run 40462293868](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40462293868). It asserts that a denied action fails before the native adapter accesses the RPC client; the native adapter suite reports 19 passing tests. This is a regression test for fail-closed ordering, not a complete external security audit.
-- [x] GitHub Actions ran `npm ci --no-audit --no-fund`, `npm test`, and `npm run compile` successfully on the updated branch in [run 40462293868](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40462293868). This confirms repository CI reproducibility; it is still not an independent rerun by an outside reviewer.
+- [x] Fail-closed ordering is tested: BLOCK/WARN and expired authorization fail before the native adapter touches the RPC client; the unit test also checks the authorization expiry boundary exactly at the current second. On the updated commit, the native adapter suite reports 21 passing tests.
+- [x] Authorization expiry is rechecked after asynchronous verification and RPC preflight, immediately before the native broadcast call, and before creating a locally signed dry-run extrinsic. If expiry is found after reservation, the replay record is changed to `refused_before_broadcast`.
+- [x] [GitHub Actions run 40462671557](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40462671557) passed `npm ci --no-audit --no-fund`, `npm test`, and `npm run compile` on commit `87c0a25c48ae`. [PortalDot CI run 40462671621](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40462671621) and [V2 read-only policy simulation run 40462671603](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40462671603) also passed for that revision. This confirms repository CI coverage; it is still not an independent rerun by an outside reviewer.
 - [ ] An outside reviewer independently clones the pinned commit and repeats the commands above without private keys or a public-chain broadcast.
 - [ ] Reports distinguish `LOCAL TEST`, `LIVE READ-ONLY SIMULATION`, and `PUBLIC TESTNET EXECUTION`. Never present a local transaction or read-only revert as a public testnet transaction.
 - [ ] Any second-provider verification is recorded only if a genuinely independent provider returns matching chain identity, transaction/receipt, block hash and event. If no such provider is available, retain the single-provider limitation.
-- [ ] Native action refusal remains before signing/submission for BLOCK, WARN, malformed or expired authorization, changed target/amount, wrong genesis, failed dry-run, and a fee estimate above the signed ceiling.
+- [ ] An outside reviewer independently verifies the full negative path for changed target/amount, wrong genesis/runtime, failed dry-run and fee estimates above the signed ceiling. Unit tests cover the validation helpers, but this full negative path has not yet been independently exercised against an external signer/submission observer.
 - [ ] A timeout, null historical receipt, or ambiguous submission is represented as `UNKNOWN` / unavailable unless there is positive evidence of failure. Do not infer that a transaction never existed from a missing RPC response.
 
 ### Security boundaries that must stay explicit
 
 - Verigate's Ed25519 artifacts are checked off-chain by the adapter/bridge. The EVM guard trusts its configured EIP-712 authority signer; it does not verify Verigate's Ed25519 signature on-chain.
 - `PortalDotAgentGuardV2` controls only funds routed through its own contract balance. It is not a universal wallet firewall.
-- The Substrate adapter supports the specific `Balances.transfer_keep_alive` action. Its local replay ledger is single-host state, not distributed replay protection.
+- The Substrate adapter supports the specific `Balances.transfer_keep_alive` action. Its local replay ledger is single-host state, not distributed replay protection. Verigate's authorization is enforced by the adapter, not by the Substrate runtime; direct native submissions outside the adapter can bypass policy, and expiry cannot be enforced by the runtime after the extrinsic has been submitted.
 - Native Substrate and EVM account identities and fee semantics must not be treated as interchangeable. No H160-to-SS58 mapping is inferred.
 - The native transfer fee is estimated before execution; actual runtime charges may differ. The EVM sender debit record is reconciled to `gasUsed × effectiveGasPriceWei`, but the exact execution-fee/storage-deposit split remains unresolved.
 
@@ -77,7 +78,7 @@ This architecture is a defensible integration contribution, not proof of market 
 
 ## 4. Prioritized delivery order
 
-1. **Close the technical regression gate:** get CI green for the new BLOCK/WARN-before-RPC test.
+1. **Close the technical regression gate:** BLOCK/WARN-before-RPC and expiry-boundary checks pass CI; next, have an outside reviewer reproduce the negative path.
 2. **Make reproduction easy:** ensure the README's clean-clone commands match the actual scripts; preserve a CI link tied to the tested commit.
 3. **Keep evidence boundaries visible:** link one EVM-positive record, one EVM read-only denial record, and the native Substrate finalized-transfer record; label their verification limits.
 4. **Publish the product explanation:** use the target user, integration contribution and commercial hypothesis above in README and submission copy.
