@@ -11,9 +11,11 @@ function fail(message) { throw new Error(message); }
  *
  * store must provide atomic putIfAbsent(key, value, ttlMs) and take(key).
  * take() must atomically return-and-delete the record. Use a durable/shared
- * implementation when running multiple instances. PortalPilot's signed tx
- * cache must still be colocated with executePlan() in the same persistent
- * process unless PortalPilot itself is changed to persist the signed tx.
+ * implementation when running multiple instances. executeAuthorizedPlan() must
+ * synchronously fetch the cached tx once, compare that exact tx's method bytes
+ * with expectedCallHex, and submit that same object without another cache lookup.
+ * This closes the read-check-submit gap; a separate getPlanCallHex()+executePlan()
+ * pair alone cannot guarantee this property.
  */
 export function createPortalPilotVerigateRouteGuard({
   store,
@@ -23,13 +25,13 @@ export function createPortalPilotVerigateRouteGuard({
   computeActionCallHex,
   planAction,
   getPlanCallHex,
-  executePlan,
+  executeAuthorizedPlan,
   nowSeconds = () => Math.floor(Date.now() / 1000),
   ttlMs = 120_000,
 } = {}) {
   for (const [name, fn] of Object.entries({
     requestAuthorization, verifyAuthorization, computeExpectedCallHex,
-    computeActionCallHex, planAction, getPlanCallHex, executePlan,
+    computeActionCallHex, planAction, getPlanCallHex, executeAuthorizedPlan,
   })) {
     if (typeof fn !== "function") fail(name + " callback is required.");
   }
@@ -108,7 +110,9 @@ export function createPortalPilotVerigateRouteGuard({
       expectedCallHex,
       now: nowSeconds(),
     });
-    return executePlan(planId);
+    // The host must re-read and compare the exact cached tx, then submit that same
+    // object atomically (no await/re-lookup between comparison and .send()).
+    return executeAuthorizedPlan(planId, expectedCallHex, record.plan);
   }
 
   return Object.freeze({ askWrite, executeAuthorized });
