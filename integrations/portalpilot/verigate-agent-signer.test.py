@@ -153,6 +153,16 @@ class SignerCliTests(unittest.TestCase):
         self.assertEqual(result.stdout, "test-signature-only\n")
         self.assertEqual(result.stderr, "")
 
+    def test_raw_ed25519_key_fallback_is_supported(self):
+        self.key_file.write_bytes(self.key.private_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PrivateFormat.Raw,
+            encryption_algorithm=serialization.NoEncryption(),
+        ))
+        result = self.run_signer()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "test-signature-only\n")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
