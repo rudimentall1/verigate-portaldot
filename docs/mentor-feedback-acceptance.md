@@ -64,6 +64,18 @@ The project currently has no verified paying customers, revenue, production depl
 
 The project does not claim that address allowlists, spending caps, EIP-712 signatures, fee estimation or transaction simulation are novel in isolation.
 
+### Comparison with adjacent tooling
+
+The [PortalPilot repository](https://github.com/ismailridwans/portalpilot) describes a Substrate-native copilot/explorer with chain reads, fee estimation, `system.dryRun`, and explicit user confirmation. The [PortalDot developer documentation](https://portaldot-dev.readthedocs.io/en/latest/) also exposes transaction-payment and runtime RPC concepts. Therefore neither a fee preview nor a dry-run is a defensible standalone innovation claim.
+
+The defensible differentiation to test is the policy-authorization layer placed before execution:
+- a signed Verigate decision is checked against the exact intent/action;
+- native target identity, recipient, amount and signed maximum-fee estimate are bound before adapter signing/submission;
+- authorization expiry is checked again after asynchronous preflight and immediately before signing/submission;
+- the EVM and native Substrate paths are clearly separated, with different enforcement guarantees.
+
+This makes Verigate complementary to interactive tooling rather than another explorer or chat copilot. It is an integration contribution, not proof that the project is unique in the market or that existing tools cannot add similar features.
+
 The proposed differentiation is their composition into a policy-to-execution path:
 
 1. An agent proposes a typed action.
