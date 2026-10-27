@@ -70,7 +70,7 @@ The [PortalPilot repository](https://github.com/ismailridwans/portalpilot) descr
 
 The defensible differentiation to test is the policy-authorization layer placed before execution:
 - a signed Verigate decision is checked against the exact intent/action;
-- native target identity, recipient, amount and signed maximum-fee estimate are bound before adapter signing/submission;
+- native target identity, recipient, amount and signed maximum-fee ceiling are bound before adapter signing/submission;
 - authorization expiry is checked again after asynchronous preflight and immediately before signing/submission;
 - the EVM and native Substrate paths are clearly separated, with different enforcement guarantees.
 
