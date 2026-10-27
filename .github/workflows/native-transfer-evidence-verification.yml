@@ -1,0 +1,105 @@
+name: Native transfer evidence verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/verify-substrate-transfer.mjs"
+      - "scripts/execute-substrate-authorized-transfer.mjs"
+      - "test/verify-substrate-transfer.test.mjs"
+      - "docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json"
+      - ".github/workflows/native-transfer-evidence-verification.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Read-only saved native transfer re-query
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.16.0"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Re-query saved PortalDot Substrate transfer
+        id: verify
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          set +e
+          npm run --silent verify:substrate-transfer -- docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json > artifacts/verifier.stdout.json 2> artifacts/verifier.stderr.log
+          verifier_exit_code=$?
+          set -e
+          printf '%s\n' "$verifier_exit_code" > artifacts/command-exit-code.txt
+
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const stdout = fs.readFileSync("artifacts/verifier.stdout.json", "utf8").trim();
+          const stderr = fs.readFileSync("artifacts/verifier.stderr.log", "utf8").trim();
+          const exitCode = Number(fs.readFileSync("artifacts/command-exit-code.txt", "utf8").trim());
+          let report;
+          try {
+            report = JSON.parse(stdout);
+          } catch {
+            report = {
+              schemaVersion: 1,
+              checkedAt: new Date().toISOString(),
+              status: "UNAVAILABLE",
+              mode: "read-only",
+              error: stderr || "Verifier produced no valid JSON report.",
+              commandExitCode: exitCode
+            };
+          }
+          fs.writeFileSync("artifacts/native-transfer-evidence-verification.json", JSON.stringify(report, null, 2) + "\n");
+          const providers = (report.providers || []).map((provider) => {
+            const state = provider.status || (provider.comparison?.match === true ? "MATCH" : "MISMATCH");
+            const detail = provider.error ? ": " + provider.error : "";
+            return "- " + (provider.origin || "unknown provider") + ": **" + state + "**" + detail;
+          });
+          const lines = [
+            "# Native transfer evidence verification",
+            "",
+            "- Checked at: " + (report.checkedAt || "unknown"),
+            "- Result: **" + (report.status || "UNAVAILABLE") + "**",
+            "- Evidence transaction: " + (report.expected?.transactionHash || "not queried"),
+            "- Recorded block hash: " + (report.expected?.finalizedBlockHash || "not queried"),
+            "",
+            "## Provider observations",
+            "",
+            ...(providers.length ? providers : ["- No provider report was returned."]),
+            "",
+            "## Trust boundary",
+            "",
+            ...(report.trustBoundary || ["- The historical transaction could not be re-queried; this result is unavailable, not evidence of failure."]),
+            "",
+            "The job is read-only. It does not sign or broadcast extrinsics. A matching response from two URLs does not by itself prove independent provider operators."
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
+          console.log("Native transfer evidence status: " + (report.status || "UNAVAILABLE"));
+          if (report.status === "CONFLICT") process.exit(1);
+          if (report.status !== "VERIFIED_BY_ONE_RPC_ENDPOINT" &&
+              report.status !== "MATCHING_EVIDENCE_FROM_TWO_RPC_ENDPOINTS") process.exit(2);
+          NODE
+
+      - name: Upload verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-transfer-evidence-verification
+          path: |
+            artifacts/native-transfer-evidence-verification.json
+            artifacts/verifier.stderr.log
+            artifacts/command-exit-code.txt
+          if-no-files-found: warn
+          retention-days: 30
