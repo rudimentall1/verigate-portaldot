@@ -31,7 +31,7 @@ The request adapter now targets the documented `POST /v1/actions/authorize` endp
 Run in this repository:
 
 \`\`\`sh
-node --test integrations/portalpilot/verigate-gate.test.mjs
+node --test integrations/portalpilot/verigate-gate.test.mjs integrations/portalpilot/verigate-request.test.mjs integrations/portalpilot/portalpilot-runner.test.mjs
 \`\`\`
 
 Tests use injected verification functions and fixtures. They check fail-closed wiring but do not contact the real Verigate service, PortalPilot, or PortalDot, and do not prove a live integration.
