@@ -111,10 +111,24 @@ Before submitting, review the exact `ALLOW`, recipient, base-unit amount and fee
 
 The replay ledger is local to one filesystem and is not a distributed nonce service. Multiple executor replicas need shared durable replay state before this pattern can be relied on in a distributed deployment. A crash after reserving authorization but before recording the result intentionally requires operator reconciliation rather than automatic replay.
 
+## Verify saved native transfer evidence
+
+The repository includes a saved record at `docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json`. Re-query it without signing or broadcasting:
+
+```sh
+node scripts/verify-substrate-transfer.mjs docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json
+```
+
+By default the verifier uses `PORTALDOT_SUBSTRATE_RPC_URL` (or the endpoint recorded in the evidence file). To compare the same evidence through a second endpoint, configure `PORTALDOT_SUBSTRATE_RPC_URL_SECONDARY` with a different WSS origin. The secondary endpoint must be independently operated for that comparison to add meaningful trust; a different hostname alone does not prove operator independence.
+
+The verifier reads the saved block hash, the extrinsic in that block, current finality/canonical hash at the recorded height, runtime version and events in the target extrinsic phase. It requires the signer, recipient, amount, successful dispatch, `Balances.Transfer`, and `TransactionFeePaid` values to match the evidence. Possible statuses are `VERIFIED_BY_ONE_RPC_ENDPOINT`, `MATCHING_EVIDENCE_FROM_TWO_RPC_ENDPOINTS`, `CONFLICT`, and `UNAVAILABLE`.
+
+A pruned historical block or unavailable `system.events` state returns `UNAVAILABLE`, not evidence that the transfer failed or never existed. This verifier corroborates chain observations; it does not cryptographically re-verify Verigate's off-chain signed artifacts, perform an audit, or authenticate the RPC operator.
+
 ## Safety boundaries and status
 
 - The adapter accepts one native call: `Balances.transfer_keep_alive`. It does not dispatch arbitrary runtime calls, DaaS liquidation calls, governance actions, or EVM contract calls.
 - The native runtime executes the transfer; Verigate authorization is verified by the adapter before submission. The Substrate runtime does not natively verify the Verigate Ed25519 artifact.
-- It uses one configured Substrate endpoint; a receipt/finalized event is an observation from that endpoint, not independent network authentication.
-- This repository currently has public testnet evidence for the EVM V2 transfer. The new native adapter's unit tests are local fixture tests only until an explicitly authorized native testnet transfer is performed and its finalized extrinsic/event is saved.
+- Native transfer execution evidence was saved on 24 October 2026 from one configured Substrate RPC. Use the read-only evidence verifier above to re-query it; this has not yet been independently corroborated through a second provider.
+- The verifier checks chain observations against the saved evidence but does not contain or re-verify the Verigate Ed25519 signed artifacts. Its unit tests use fixtures; only a successful run against the live endpoint establishes that the saved block and event are currently available from that endpoint.
 - The adapter is not security-audited or production-ready. Do not use a valuable account or mainnet credentials.

@@ -156,6 +156,14 @@ Never commit `.env`, private keys, seed phrases, live issuer secrets or signed a
 
 PortalDot V3 exposes an EVM-compatible execution path alongside its Substrate runtime. Verigate PortalDot uses the EVM path for the guarded contract-balance transfer and also has a separate native Substrate adapter. For the native path, a fresh Verigate `ALLOW` was followed by successful `system_dryRun` and a reported finalized `Balances.transfer_keep_alive` extrinsic with one matching `balances.Transfer` event. The evidence is single-RPC and is explicitly separate from the EVM guard's on-chain execution proof.
 
+The saved native transfer record can be re-queried with the read-only verifier:
+
+```sh
+node scripts/verify-substrate-transfer.mjs docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json
+```
+
+The verifier checks the recorded block, canonical finalized-chain hash at that height, exact extrinsic, runtime version, transfer/dispatch/fee events and genesis hash. Set `PORTALDOT_SUBSTRATE_RPC_URL_SECONDARY` to request the same check from a second WSS endpoint. A missing historical block or event is reported as unavailable, not as proof of failure. The verifier does not re-verify the off-chain Verigate signatures because the saved evidence file does not contain those signed artifacts.
+
 No integration into PortalDot Wallet or DaaS is currently claimed, and no PortalDot team endorsement or external user adoption has been confirmed. This repository does not claim a production-ready multichain agent framework, a WASM/EVM cross-execution bridge, universal transaction interception, an independent audit, or mainnet readiness. The current V2 spending counter resets after its configured interval; it is not a continuously sliding rolling-window algorithm.
 
 ## Product value, differentiation, and ecosystem contribution
