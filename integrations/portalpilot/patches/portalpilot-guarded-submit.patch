@@ -1,7 +1,7 @@
 diff --git a/src/sdk/tx.ts b/src/sdk/tx.ts
 --- a/src/sdk/tx.ts
 +++ b/src/sdk/tx.ts
-@@
+@@ -194,34 +194,57 @@
 -export async function executePlan(id: string): Promise<Receipt> {
 -  const cached = planCache.get(id);
 -  if (!cached) throw new Error("Plan expired or not found. Please re-issue the command.");
