@@ -18,8 +18,9 @@ The PortalDot Hacker House mentor review marked the project **PASSED** for Check
 
 ### Required engineering gates
 
-- [ ] The new orchestration test for BLOCK/WARN passes in CI on this branch. It asserts that a denied action fails before the native adapter accesses the RPC client; this is a regression test for fail-closed ordering, not a complete external security audit.
-- [ ] An outsider can clone the pinned commit, run `npm ci --no-audit --no-fund`, `npm test`, and `npm run compile`, and obtain a reproducible result without private keys or an actual public-chain broadcast.
+- [x] The new orchestration test for BLOCK/WARN passed in [GitHub Actions run 40462293868](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40462293868). It asserts that a denied action fails before the native adapter accesses the RPC client; the native adapter suite reports 19 passing tests. This is a regression test for fail-closed ordering, not a complete external security audit.
+- [x] GitHub Actions ran `npm ci --no-audit --no-fund`, `npm test`, and `npm run compile` successfully on the updated branch in [run 40462293868](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40462293868). This confirms repository CI reproducibility; it is still not an independent rerun by an outside reviewer.
+- [ ] An outside reviewer independently clones the pinned commit and repeats the commands above without private keys or a public-chain broadcast.
 - [ ] Reports distinguish `LOCAL TEST`, `LIVE READ-ONLY SIMULATION`, and `PUBLIC TESTNET EXECUTION`. Never present a local transaction or read-only revert as a public testnet transaction.
 - [ ] Any second-provider verification is recorded only if a genuinely independent provider returns matching chain identity, transaction/receipt, block hash and event. If no such provider is available, retain the single-provider limitation.
 - [ ] Native action refusal remains before signing/submission for BLOCK, WARN, malformed or expired authorization, changed target/amount, wrong genesis, failed dry-run, and a fee estimate above the signed ceiling.
