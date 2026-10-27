@@ -6,6 +6,8 @@ An AI agent can propose a transfer, but a proposal is not authority. Verigate ma
 
 **Scope:** the primary on-chain guard demonstration is Verigate authorization followed by a guarded native-POT transfer on PortalDot V3 EVM testnet. A separate native Substrate adapter has also completed a Verigate-authorized `Balances.transfer_keep_alive` on PortalDot V3 Substrate testnet: `system_dryRun` succeeded first, then the broadcast was reported finalized with one matching `balances.Transfer` event. That native-path evidence was observed through one configured RPC and has not been cross-checked through a second provider. Neither path establishes that the PortalDot team requested this capability, and no PortalDot Wallet or DaaS integration is claimed. The EVM guard controls only transfers routed through its own contract balance.
 
+**For PortalDot builders:** [what this integration provides, how to adapt it, and how to validate its value](docs/portal-dot-developer-value.md). This is a reference integration; external adoption and commercial demand have not yet been validated.
+
 ## Verigate on PortalDot V3 EVM testnet
 
 1. **Open the [live V2 guard dashboard](https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6).** It shows the deployed contract, its current policy and runtime code. The dashboard is read-only; connecting a wallet or sending a transaction is not required.
