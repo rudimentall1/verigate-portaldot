@@ -145,3 +145,19 @@ Important limitation: this is a source-level adapter, not a deployed signer. Its
 ### Signer hardening note
 
 The signer now requires `PORTALDOT_SUBSTRATE_SIGNER_RECIPIENT_SS58` and refuses any target that differs byte-for-byte from this configured allowlist entry. This prevents the signer CLI itself from being used as a generic signing oracle for arbitrary recipients. The Verigate authorization/capability check remains mandatory after signing; this recipient restriction is an additional layer, not a replacement for policy enforcement.
+
+
+## Route-guard adapter added (integration code, not upstream wiring)
+
+`integrations/portalpilot/portalpilot-route-guard.mjs` now provides server-handler orchestration for the two route boundaries. It refuses construction without an atomic server-side store and requires these host callbacks:
+- `requestAuthorization` and `verifyAuthorization`: request and cryptographically verify Verigate's signed decision artifacts;
+- `computeExpectedCallHex`: encode the call from the verified authorization using a connected API whose genesis is checked;
+- `computeActionCallHex`: encode the requested action without signing, before `planAction`;
+- `getPlanCallHex`: read the actual cached signed extrinsic's call bytes at execution time, not just the browser-returned plan snapshot;
+- `planAction` and `executePlan`: PortalPilot SDK operations.
+
+`askWrite(action, network)` is intended for the write branch in POST /api/ask; `executeAuthorized(planId)` is intended for POST /api/execute. The adapter stores a one-time authorization binding with a short TTL and atomically consumes it before execution checks, so an expired or mismatched plan cannot be retried using the same binding. The store must implement atomic `putIfAbsent(key, value, ttlMs)` and atomic `take(key)` semantics.
+
+The adapter alone does not solve PortalPilot's process-local signed-transaction cache. `getPlanCallHex` and `executePlan` must access the same cached transaction; therefore use one persistent backend process, or separately change PortalPilot to persist signed extrinsics and their authorization binding in a shared store with atomic one-time consumption. Do not deploy this design on independent serverless instances while the transaction remains in a local Map.
+
+The adapter's tests are included in `npm run test:portalpilot-gate`. They are unit tests with fake callbacks and storage, not proof of a live PortalPilot or PortalDot execution. Upstream `src/server.ts` and `src/sdk/tx.ts` still require a maintainer-accepted patch to wire the actual routes and SDK helpers.
