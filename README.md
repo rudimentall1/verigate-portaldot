@@ -164,6 +164,8 @@ node scripts/verify-substrate-transfer.mjs docs/evidence/portaldot-native-substr
 
 The verifier checks the recorded block, canonical finalized-chain hash at that height, exact extrinsic, runtime version, transfer/dispatch/fee events and genesis hash. Set `PORTALDOT_SUBSTRATE_RPC_URL_SECONDARY` to request the same check from a second WSS endpoint. A missing historical block or event is reported as unavailable, not as proof of failure. The verifier does not re-verify the off-chain Verigate signatures because the saved evidence file does not contain those signed artifacts.
 
+Live re-query of the saved transfer passed on 27 October 2026 in [GitHub Actions run 40467595612](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40467595612). The RPC returned the expected transaction in canonical block `175489`, runtime `portaldot-v3/3002`, the correct signer/recipient/amount and matching dispatch, transfer and fee events. See the committed [machine-readable re-verification report](docs/evidence/portaldot-native-substrate-reverification-2026-10-27.json). This is a one-RPC confirmation; it is not independent RPC authentication or Ed25519 signature verification.
+
 No integration into PortalDot Wallet or DaaS is currently claimed, and no PortalDot team endorsement or external user adoption has been confirmed. This repository does not claim a production-ready multichain agent framework, a WASM/EVM cross-execution bridge, universal transaction interception, an independent audit, or mainnet readiness. The current V2 spending counter resets after its configured interval; it is not a continuously sliding rolling-window algorithm.
 
 ## Product value, differentiation, and ecosystem contribution
