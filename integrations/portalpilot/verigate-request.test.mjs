@@ -7,7 +7,6 @@ const action = {
   kind: "transfer",
   to: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
   amountPot: "0.01",
-  maxFeeBaseUnits: "1000000000000",
 };
 
 test("request posts an exact native intent to /v1/actions/authorize", async () => {
@@ -22,6 +21,7 @@ test("request posts an exact native intent to /v1/actions/authorize", async () =
     identityId: "identity-1",
     agentId: "agent-1",
     capabilityId: "native-capability",
+    maxFeeBaseUnits: "1000000000000",
     now: () => 2_000_000_000_000,
     signActionIntent: async (intent, identityId) => {
       assert.equal(identityId, "identity-1");
