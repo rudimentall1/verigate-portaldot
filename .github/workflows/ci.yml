@@ -65,6 +65,10 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Install isolated Verigate API dependencies
         run: python -m pip install -r verigate-upstream/requirements.txt
+      - name: Validate and test PortalPilot signer refusal boundaries
+        run: |
+          python -m py_compile integrations/portalpilot/verigate-agent-signer.py integrations/portalpilot/verigate-agent-signer.test.py
+          python integrations/portalpilot/verigate-agent-signer.test.py
       - name: Run isolated Verigate ALLOW/BLOCK integration
         run: |
           mkdir -p "$RUNNER_TEMP/verigate-portaldot-evidence"
