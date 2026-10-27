@@ -14,6 +14,7 @@ import {
   validateSubstrateRpcUrl,
   resolveExpectedGenesisHash,
   validateSubstrateTransferBinding,
+  runSubstrateTransfer,
   interpretDryRunResult,
   selectMortalEraConfig,
 } from "./execute-substrate-authorized-transfer.mjs";
@@ -143,6 +144,31 @@ test("rejects BLOCK and WARN before authorizing an extrinsic", () => {
       () => validateSubstrateTransferBinding(response, { now: 2_000_000_000 }),
       /decision is not ALLOW/,
     );
+  }
+});
+
+test("BLOCK and WARN fail before the native adapter touches the RPC client", async () => {
+  for (const decision of ["BLOCK", "WARN"]) {
+    const response = validResponse();
+    response.decision_receipt.payload.decision.decision = decision;
+    let apiTouched = false;
+    const forbiddenApi = new Proxy({}, {
+      get() {
+        apiTouched = true;
+        throw new Error("RPC client must not be accessed for a denied action");
+      },
+    });
+
+    await assert.rejects(
+      runSubstrateTransfer(response, {
+        rpcUrl: TESTNET_RPC,
+        expectedGenesisHash: TESTNET_GENESIS_HASH,
+        api: forbiddenApi,
+        signerAddress: testAddress(9),
+      }),
+      /decision is not ALLOW/,
+    );
+    assert.equal(apiTouched, false, `${decision} must fail before any RPC client access`);
   }
 });
 
