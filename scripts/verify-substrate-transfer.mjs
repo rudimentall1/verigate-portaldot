@@ -62,6 +62,20 @@ export function validateNativeTransferEvidence(evidence) {
   const signer = requiredString(authorization.signer, "authorization.signer");
   const recipient = requiredString(authorization.recipient, "authorization.recipient");
   const amountBaseUnits = canonicalInteger(authorization.amountBaseUnits, "authorization.amountBaseUnits", { allowZero: false });
+  const recordedTransfer = execution.matchedTransferEvent;
+  if (!recordedTransfer || recordedTransfer.section !== "balances" || recordedTransfer.method !== "Transfer" ||
+      !Array.isArray(recordedTransfer.data) || recordedTransfer.data.length < 3 ||
+      String(recordedTransfer.data[0]) !== signer ||
+      String(recordedTransfer.data[1]) !== recipient ||
+      String(recordedTransfer.data[2]) !== amountBaseUnits) {
+    fail("Evidence matchedTransferEvent must agree with the recorded signer, recipient, and amount.");
+  }
+  if (execution.dispatchEvent?.section !== "system" || execution.dispatchEvent?.method !== "ExtrinsicSuccess") {
+    fail("Evidence must record a System.ExtrinsicSuccess dispatch event.");
+  }
+  if (feeEvent.section !== "transactionPayment" || feeEvent.method !== "TransactionFeePaid") {
+    fail("Evidence fee event must be transactionPayment.TransactionFeePaid.");
+  }
   if (execution.transactionBroadcast !== true || execution.extrinsicSubmitted !== true || execution.finalized !== true) {
     fail("Evidence does not assert a broadcast and finalized native extrinsic.");
   }
@@ -88,6 +102,13 @@ export function validateNativeTransferEvidence(evidence) {
       tipBaseUnits: canonicalInteger(feeEvent.tipBaseUnits, "execution.feeEvent.tipBaseUnits")
     }
   };
+}
+
+function normalizeAddressCodec(value) {
+  if (value && value.isId && value.asId) return normalizeSs58Address(value.asId.toString());
+  if (value && value.isAddress32 && value.asAddress32) return normalizeSs58Address(value.asAddress32.toString());
+  if (value && value.isAccountId32 && value.asAccountId32) return normalizeSs58Address(value.asAccountId32.toString());
+  return normalizeSs58Address(value?.toString?.() ?? value);
 }
 
 function normalizedEvent(record) {
@@ -267,7 +288,7 @@ async function readProviderEvidence(evidence, rpcUrl) {
       extrinsicSection = String(target.method.section);
       extrinsicMethod = String(target.method.method);
       if (args.length >= 2) {
-        extrinsicRecipient = normalizeSs58Address(args[0].toString());
+        extrinsicRecipient = normalizeAddressCodec(args[0]);
         extrinsicAmountBaseUnits = BigInt(args[1].toString()).toString();
       }
     }
