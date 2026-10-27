@@ -56,6 +56,7 @@ test("refuses missing signer, missing identity configuration, and non-ALLOW", as
   await assert.rejects(() => requestPortalPilotAuthorization(action, {
     baseUrl: "https://verigate.example",
     identityId: "i", agentId: "a", capabilityId: "c",
+    maxFeeBaseUnits: "1000000000000",
     signActionIntent: async () => "signature",
     fetchImpl: async () => ({
       ok: true, status: 200,
