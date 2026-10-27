@@ -36,7 +36,7 @@
     "test:dapp": "node scripts/validate-dapp.mjs && node --test test/receipt-lookup.test.mjs",
     "test:network-readiness": "node --test scripts/portal-dot-readiness.test.mjs",
     "test:substrate-adapter": "node --test scripts/execute-substrate-authorized-transfer.test.mjs",
-    "test:portalpilot-gate": "node --test integrations/portalpilot/verigate-gate.test.mjs",
+    "test:portalpilot-gate": "node --test integrations/portalpilot/verigate-gate.test.mjs integrations/portalpilot/verigate-request.test.mjs",
     "verify:policy:v2:readonly": "node scripts/verify-v2-policy-readonly.mjs",
     "test:receipt-quorum": "node --test test/receipt-quorum.test.mjs",
     "verify:receipt:quorum": "node scripts/verify-receipt-quorum.mjs",
