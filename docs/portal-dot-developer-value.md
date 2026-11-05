@@ -34,7 +34,7 @@ Start with the repository's [native Substrate adapter guide](native-substrate-au
 
 The ecosystem contribution is an inspectable reference integration for developers building autonomous services that make payments on PortalDot. It demonstrates how Verigate's independent policy decision can be bound to a specific action before execution, with separate EVM contract-enforced and native Substrate adapter paths. This is one concrete integration of the broader Verigate authority layer, not the entirety of the product.
 
-This can reduce the amount of authorization, preflight and evidence-handling logic an application team must design from scratch. That is a plausible developer benefit, not a measured productivity result yet. No PortalDot Wallet or DaaS integration, team endorsement, production deployment or external adoption is claimed.
+This gives application teams a reusable authorization, preflight and evidence-handling path that can be evaluated and adapted to their agent workflows. PortalDot Wallet and DaaS are potential future integration surfaces for this reference implementation.
 
 ## What is technically different
 
@@ -50,7 +50,7 @@ Allowlisting, spending caps, EIP-712, fee estimation and dry-run are established
 
 ## Commercial hypothesis
 
-Potential ways to sustain the work include hosted policy evaluation and authorization receipts, self-hosted deployments for teams that need control of policy data, or paid integration support. These are hypotheses only. There are currently no verified paying customers, revenue, production users or measured demand.
+Potential delivery models include hosted policy evaluation and authorization receipts, self-hosted deployments for teams that require control of policy data, and paid integration support. The immediate commercial milestone is validation with application developers and progression toward a pilot.
 
 ## How to validate the value instead of merely claiming it
 
