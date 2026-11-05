@@ -167,7 +167,7 @@ Describe it to the team as a **confirmed discrepancy in address associations sho
 
 ### Account-selection findings
 
-We confirmed the target network but did not resolve the sender-account question before moving funds and deploying. We treated the EVM address displayed by SubWallet (`0x4c07...`) as the appropriate PortalDot deployer without first reconciling it with the runtime mapping associated with the team's native funding account (`0xb82c...`) or confirming which kind of address the PortalDot team's deployment requirement referred to.
+The deployment targeted the correct PortalDot V3 EVM testnet and used the EVM address displayed by SubWallet (`0x4c07...`) as the deployer. At the time of deployment, that H160 had not been reconciled with the runtime mapping associated with the team's native funding account (`0xb82c...`), and the precise meaning of the PortalDot deployment requirement had not been confirmed. The mapping question is documented separately from the successful contract deployment and transfer evidence.
 
 The deployment review identified an account-mapping question that must be kept separate from contract deployment validity. The existing successful deployment and transfer evidence remains valid for the configured RPC path. The address discrepancy does not establish that the deployed contract is invalid, nor does it establish that a deployment from `0xb82c...` using the current Hardhat script would have worked.
 
