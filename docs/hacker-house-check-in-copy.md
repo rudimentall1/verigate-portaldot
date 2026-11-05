@@ -1,6 +1,6 @@
 # PortalDot Hacker House 2026 — final submission reference
 
-Updated: 24 October 2026 after the BUIDL video/link update. This is the canonical reference for the current submission. The separate Check-in step is recorded as cancelled; the remaining milestone is Final Submission on 6 November 2026 at 09:00.
+Updated: 5 November 2026 after reviewing the current BUIDL text and repository evidence. This is the reference copy for final submission. The separate Check-in step is recorded as cancelled; the Final Submission deadline shown in the account is 6 November 2026 at 09:00.
 
 ## Project name
 
@@ -64,7 +64,7 @@ The URL opens the deployed V2 guard dashboard directly. It is read-only and does
 - The public DApp provides read-only policy state and transaction lookup.
 - Local contract tests cover over-cap transfers, recipient allowlisting, time-window overflow, replay protection and altered signed fields.
 - The published DApp's 24 October Chromium smoke test checked the expected runtime hash and executed two live read-only `eth_call` probes. An unlisted recipient returned `InvalidRecipient()`; `0.100000000000000001 POT` against the live `0.1 POT` cap returned `AmountExceedsCap(amount, cap)` with matching arguments. No signature or transaction was submitted, and no fee was paid. Full output is committed in [browser evidence JSON](evidence/published-dapp-browser-smoke-2026-10-24.json); these are not mined reverts and do not independently authenticate the single configured RPC.
-- A separate native Substrate adapter completed a Verigate-authorized testnet transfer. The saved transaction was re-queried through one configured RPC and matched finalized block 175489 and one balances.Transfer event; there is no second-provider confirmation.
+- The saved native Substrate execution record reports a Verigate ALLOW and a 0.1 POT transfer. A later read-only re-query through one configured RPC matched the finalized extrinsic in block 175489 and one balances.Transfer event. The original Ed25519 artifacts are not in the evidence bundle, so their signatures cannot now be independently re-verified; no second-provider confirmation is available.
 
 ## Known limitations
 
@@ -92,4 +92,4 @@ The submission record includes the published demo URL, project tags and reposito
 
 ## Superseded correction notes
 
-Earlier in this file, recommendations were made to correct “rolling window” wording and remove unsupported Account Abstraction / Chain Abstraction tags. The current account-view excerpt now shows the tags Crypto / Web3, Crypto-AI, Security and Substrate, so the old tag warning is superseded. The excerpt provided for this update does not include the complete long-form description; verify its spending-cap sentence before final submission. The deployed contract uses a cap of 0.5 POT per resettable 3,600-second interval, not a continuously sliding rolling-window sum.
+Earlier in this file, recommendations were made to correct “rolling window” wording and remove unsupported Account Abstraction / Chain Abstraction tags. The current account-view excerpt now shows the tags Crypto / Web3, Crypto-AI, Security and Substrate, so the old tag warning is superseded. The 5 November account snapshot includes the full long-form description. It uses the correct resettable 3,600-second interval wording; the final track selection and logged-out access still need separate confirmation. The deployed contract uses a cap of 0.5 POT per resettable 3,600-second interval, not a continuously sliding rolling-window sum.
