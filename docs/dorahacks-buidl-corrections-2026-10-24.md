@@ -35,6 +35,7 @@ Do not say the live chain demonstrated a window-cap violation. The window-overfl
 
 ### Supported by current repo evidence
 
+- Native Substrate path: a separate Verigate-authorized `Balances.transfer_keep_alive` is recorded as finalized in block `175489`, with one matching `balances.Transfer` event. The saved transaction was re-queried through one configured RPC only; see the [native transfer record](evidence/portaldot-native-substrate-live-transfer-2026-10-24.json) and [re-verification report](evidence/portaldot-native-substrate-reverification-2026-10-27.json).
 - Positive path: V2 transaction `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`, block `149241`, receipt status 1 and one matching `TransferExecuted` event. Sender and recipient balance deltas were reconciled through the configured RPC.
 - Live denial simulations: `InvalidRecipient()` for an unlisted recipient and `AmountExceedsCap(amount, cap)` for `0.100000000000000001 POT` against the live `0.1 POT` limit. These were read-only `eth_call` probes and incurred no transaction fee.
 - Local tests: spending-window overflow reverts without consuming the nonce or changing the accumulated window spend; window accounting resets after the configured interval. Latest CI run: https://github.com/rudimentall1/verigate-portaldot/actions/runs/40088327004.
@@ -45,7 +46,7 @@ Do not say the live chain demonstrated a window-cap violation. The window-overfl
 - All live EVM reads and balance reconciliation used one configured RPC. There is no second-provider authentication.
 - The historical V2 deployment receipt is no longer returned by the configured RPC, although saved earlier deployment evidence and later code/configuration readbacks exist. Do not claim a fresh deployment-receipt lookup.
 - The sender's gross balance debit of `7.82782148139542551 POT` matches `gasUsed × effectiveGasPriceWei` in the isolated block, but the runtime execution-fee and storage-deposit components have not been separated. Do not call the entire amount an independently verified irrecoverable fee.
-- No live native Substrate transfer, PortalDot Wallet/DaaS integration, PortalDot team endorsement, independent audit, production readiness or mainnet deployment is claimed.
+- A separate native Substrate transfer is recorded in block `175489` and re-queried through one configured RPC. It has no second-provider confirmation or fresh re-verification of the original Ed25519 artifacts. Do not merge this evidence with the EVM guard result. PortalDot Wallet/DaaS integration, PortalDot team endorsement, independent audit, production readiness and mainnet deployment are not claimed.
 - The project reuses the pre-existing Verigate policy engine. The public submission should retain the explicit provenance and licensing disclosure in [the final-submission reference](hacker-house-check-in-copy.md). The latest account-view excerpt does not prove that this disclosure is present in the submitted long-form text.
 
 ## Final submission gates that remain
