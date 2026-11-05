@@ -8,7 +8,9 @@ An agent can prepare a payment, but it should not be able to approve its own spe
 
 ## Project presentation
 
-[Read the Verigate + PortalDot presentation](docs/VERIGATE-PORTALDOT-PRESENTATION.md) — architecture, execution flow, testnet transaction evidence, policy rejection checks and current scope.
+[Open the original 7-page Verigate + PortalDot presentation PDF](docs/Verigate-PortalDot-Presentation.pdf). This is the archived deck retained with the published demo materials; it is not regenerated from the newer copy edits in this PR.
+
+**Demo video:** [Verigate PortalDot Hacker House Demo](https://www.youtube.com/watch?v=9WhBdwGgXLk). The video remains unchanged.
 
 ## Verigate's role in the PortalDot integration
 
