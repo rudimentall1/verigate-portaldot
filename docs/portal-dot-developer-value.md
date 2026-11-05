@@ -1,75 +1,76 @@
-# Verigate authority layer: PortalDot integration
+# Verigate on PortalDot: a reference integration for agent payments
 
-Verigate is an independent authority and execution-control layer for autonomous AI systems. It evaluates proposed actions against explicit human-defined policy, returns ALLOW/WARN/BLOCK decisions, and binds an authorization to the exact action before an execution adapter can proceed.
+An AI agent can prepare a payment, but the application still needs a way to decide whether that payment is allowed. Verigate makes that decision before execution and binds the approval to the action being requested.
 
-This document describes the PortalDot reference integration, the developer workflow and the path to ecosystem validation.
+This repository shows two ways to put that check into a PortalDot payment flow: an EVM guard and a separate native Substrate adapter.
 
-## The developer problem
+## The problem for application developers
 
-An AI agent may be able to construct a valid payment, but that should not automatically give it authority to spend. An application needs a boundary between a proposed action and an action that is allowed to execute.
+A transaction can be valid on the network and still break the rules set by the person or application using the agent. For example, the agent might choose a different recipient, send more than the allowed amount or reuse an old approval.
 
-Verigate provides a policy decision before execution and binds the approval to the exact payment. The adapter checks the signed decision and action parameters before it signs or submits a transaction.
+The integration puts a policy check between the agent and the code that submits the payment. Verigate evaluates the request and returns ALLOW, WARN or BLOCK. The relevant adapter verifies the signed decision and checks that it applies to the exact action before submission.
 
-## What the PortalDot reference integration demonstrates
+## What is implemented
 
-- A reference path for a policy-authorized native POT transfer using `Balances.transfer_keep_alive` on PortalDot V3 Substrate testnet.
-- A separate EVM path where `PortalDotAgentGuardV2` enforces a signed authorization, recipient allowlist, per-transfer cap and resettable spending-interval cap against funds held by the guard contract.
-- Fail-closed adapter checks for the expected network identity, recipient, amount, expiry and signed maximum-fee ceiling, plus read-only preflight and explicit opt-in broadcast.
-- Machine-readable evidence, runnable tests and implementation notes that a developer can inspect before adapting the path.
+- **EVM path:** `PortalDotAgentGuardV2` checks the bridge's EIP-712 authorization, recipient allowlist, per-transfer limit and resettable spending-interval limit. It transfers only funds held by the guard contract.
+- **Native Substrate path:** a separate adapter verifies the Verigate authorization and checks the requested `Balances.transfer_keep_alive` before it submits the transfer.
+- **Operational checks:** the adapters check network identity, recipient, amount, expiry and applicable fee limits. They default to read-only preflight; sending a transaction requires an explicit broadcast option.
+- **Evidence:** the repository includes contracts, adapter code, tests, machine-readable transaction records and verification instructions.
 
-These are two separate adapters, not a unified wallet firewall. The EVM guard controls only its own contract balance. The native Substrate policy checks happen in the adapter; a direct transaction that bypasses that adapter is not protected by Verigate.
+These are two different execution paths, not one cross-chain policy engine. The EVM guard cannot control funds held in an unrelated wallet. The Substrate adapter cannot stop a transaction submitted outside that adapter.
 
-## Integration shape
+## How an application uses the flow
 
-1. The application asks its agent to propose a typed payment: target network, recipient, amount and relevant limits.
-2. Verigate evaluates the request against the configured policy and returns a signed decision.
-3. The adapter verifies the signed artifacts and confirms that the authorization matches the exact requested action.
-4. The adapter checks the target network/runtime and applicable balance, fee and simulation conditions.
-5. A denied, expired or mismatched action is refused before submission. An allowed action is only broadcast through the explicit execution path.
-6. The application stores the decision, action parameters and resulting transaction evidence for review.
+1. The application asks its agent to prepare a payment with a network, recipient and amount.
+2. Verigate checks the request against the configured policy.
+3. The adapter verifies the signed decision and confirms that it covers the same payment.
+4. The adapter checks the network and the relevant balance, fee and simulation conditions.
+5. If the request is denied, expired or changed, the adapter stops. An approved payment is submitted only through the explicit execution path.
+6. The application can retain the decision, payment details and transaction record for review.
 
-Start with the repository's [native Substrate adapter guide](native-substrate-authorized-transfer.md), [architecture and trust boundaries](architecture.md), and [Quick start in the README](../README.md#quick-start). The local ALLOW/BLOCK harness is a local integration demonstration, not a public-chain transaction.
+The repository includes a [native Substrate adapter guide](native-substrate-authorized-transfer.md), [architecture and trust boundaries](architecture.md), and [README quick start](../README.md#quick-start). The local ALLOW/BLOCK harness runs against a local EVM; it is not a public-chain transaction.
 
-## Why this contributes to PortalDot
+## Why this is useful to PortalDot developers
 
-The ecosystem contribution is an inspectable reference integration for developers building autonomous services that make payments on PortalDot. It demonstrates how Verigate's independent policy decision can be bound to a specific action before execution, with separate EVM contract-enforced and native Substrate adapter paths. This is one concrete integration of the broader Verigate authority layer, not the entirety of the product.
+The goal is to give developers a working example they can inspect and adapt when building services that let AI agents make payments. It shows where the policy decision happens, how it is tied to the requested action, and what each execution path checks before it submits a transaction.
 
-This gives application teams a reusable authorization, preflight and evidence-handling path that can be evaluated and adapted to their agent workflows. PortalDot Wallet and DaaS are potential future integration surfaces for this reference implementation.
+This is a reference integration, not a claim that PortalDot requested or adopted the feature. PortalDot Wallet and DaaS are possible future integration points; neither is integrated here.
 
-## What is technically different
+## What is and is not new
 
-The defensible contribution is the composition of:
+The contribution is in putting the pieces together into an inspectable payment flow:
 
 - a signed policy decision;
-- binding that decision to the exact recipient, amount and target;
-- fail-closed checks around network identity, expiry and applicable fee constraints;
-- an explicit submission boundary; and
-- inspectable execution evidence.
+- a check that binds approval to the exact recipient, amount and target;
+- fail-closed checks for network identity, expiry and applicable fee limits;
+- a clear point where a transaction can be submitted; and
+- records that let another developer inspect what happened.
 
-Allowlisting, spending caps, EIP-712, fee estimation and dry-run are established techniques and are not claimed as individually novel. The EVM and Substrate adapters have different enforcement guarantees and must not be described as one shared on-chain policy engine.
+Allowlisting, spending caps, EIP-712 signatures, fee estimation and dry-run checks are established techniques. We do not claim that any one of them is new by itself. The EVM and Substrate paths also have different security guarantees; they should not be presented as one shared on-chain policy engine.
 
-## Business model and pilot path
+## Commercial direction
 
-Potential delivery models include hosted policy evaluation and authorization receipts, self-hosted deployments for teams that require control of policy data, and paid integration support. The immediate commercial milestone is validation with application developers and progression toward a pilot.
+The practical next step is to work with an application developer who needs agent payments and test whether this integration fits their workflow. If that proves useful, possible delivery models include hosted policy evaluation, self-hosted deployment for teams that need to keep policy data under their control, or paid integration support. These are options to validate, not existing revenue or customer commitments.
 
-## How to validate the value instead of merely claiming it
+## What would validate the work
 
-The next meaningful validation is an independent PortalDot developer using the repository to adapt or reproduce one payment flow. Record:
+A useful next test is for a PortalDot developer who was not involved in building this repository to reproduce one payment flow. We should record:
 
-1. whether they can follow the guide on a clean checkout without private assistance;
-2. elapsed time and undocumented steps needed to get a local test passing;
-3. whether the policy boundary addresses a real requirement in their application;
-4. which integration surface is missing (API, SDK, example or operational support); and
-5. whether they would use it in a pilot, and under what deployment/security requirements.
+1. whether the instructions work from a clean checkout;
+2. what setup steps or missing details they encounter;
+3. whether the authorization boundary solves a real requirement;
+4. what would be needed to integrate it into their application; and
+5. whether they would consider using it in a pilot.
 
-Do not report these as successful until a developer has actually completed the exercise. A useful outcome can also be a clear rejection of the product hypothesis; it is better evidence than commit counts.
+Until someone has completed that exercise, it should be described as a proposed validation step, not as external adoption.
 
-## Current evidence and limits
+## Evidence and limits
 
-- The repository records a successful 0.1 POT EVM V2 transfer and read-only probes that returned the deployed guard's recipient/cap reverts. The negative probes were simulations, not mined failed transactions.
-- The native Substrate evidence records a Verigate ALLOW, successful `system_dryRun`, and a reported finalized `Balances.transfer_keep_alive` with a matching transfer event. The saved transfer was re-queried through one configured RPC; there is no second-provider confirmation.
-- Local CI and test results are repository evidence, not an independent review.
-- The native runtime does not verify Verigate's signature. The native adapter enforces the policy, so direct submissions outside it can bypass those checks.
-- No security audit, mainnet readiness, universal transaction interception or independent market validation is claimed.
+- The EVM V2 record shows a 0.1 POT testnet transfer and a successful receipt with one matching `TransferExecuted` event.
+- The published dashboard's recipient and amount rejection checks are read-only `eth_call` simulations. They are not mined failed transactions.
+- The native Substrate record shows a Verigate ALLOW, successful `system_dryRun`, and a reported finalized `Balances.transfer_keep_alive` with a matching transfer event. The transaction was re-queried through one configured RPC; no second-provider confirmation is available.
+- Local tests and CI results show the behavior of the code under those test conditions. They are not an independent security review.
+- The Substrate runtime does not verify Verigate's signature. That check is performed by the adapter, so direct submissions outside it are not covered.
+- No independent security audit, mainnet deployment, universal wallet protection or external market validation is claimed.
 
-See the [mentor-feedback acceptance criteria](mentor-feedback-acceptance.md) for the project's evidence gates.
+See the [mentor-feedback acceptance criteria](mentor-feedback-acceptance.md) for the remaining evidence and validation steps.
