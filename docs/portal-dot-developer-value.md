@@ -2,7 +2,7 @@
 
 Verigate is an independent authority and execution-control layer for autonomous AI systems. It evaluates proposed actions against explicit human-defined policy, returns ALLOW/WARN/BLOCK decisions, and binds an authorization to the exact action before an execution adapter can proceed.
 
-This document explains what the PortalDot reference integration demonstrates, how a developer can evaluate it, and what remains unproven.
+This document describes the PortalDot reference integration, the developer workflow and the path to ecosystem validation.
 
 ## The developer problem
 
@@ -48,7 +48,7 @@ The defensible contribution is the composition of:
 
 Allowlisting, spending caps, EIP-712, fee estimation and dry-run are established techniques and are not claimed as individually novel. The EVM and Substrate adapters have different enforcement guarantees and must not be described as one shared on-chain policy engine.
 
-## Commercial hypothesis
+## Business model and pilot path
 
 Potential delivery models include hosted policy evaluation and authorization receipts, self-hosted deployments for teams that require control of policy data, and paid integration support. The immediate commercial milestone is validation with application developers and progression toward a pilot.
 
