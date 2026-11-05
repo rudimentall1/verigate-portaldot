@@ -1,6 +1,8 @@
-# PortalDot developer value: Verigate integration
+# Verigate authority layer: PortalDot integration
 
-This document explains the concrete value the current prototype offers to a PortalDot application developer, how to evaluate it, and what remains unproven.
+Verigate is an independent authority and execution-control layer for autonomous AI systems. It evaluates proposed actions against explicit human-defined policy, returns ALLOW/WARN/BLOCK decisions, and binds an authorization to the exact action before an execution adapter can proceed.
+
+This document explains what the PortalDot reference integration demonstrates, how a developer can evaluate it, and what remains unproven.
 
 ## The developer problem
 
@@ -8,7 +10,7 @@ An AI agent may be able to construct a valid payment, but that should not automa
 
 Verigate provides a policy decision before execution and binds the approval to the exact payment. The adapter checks the signed decision and action parameters before it signs or submits a transaction.
 
-## What a PortalDot developer can reuse today
+## What the PortalDot reference integration demonstrates
 
 - A reference path for a policy-authorized native POT transfer using `Balances.transfer_keep_alive` on PortalDot V3 Substrate testnet.
 - A separate EVM path where `PortalDotAgentGuardV2` enforces a signed authorization, recipient allowlist, per-transfer cap and resettable spending-interval cap against funds held by the guard contract.
@@ -30,7 +32,7 @@ Start with the repository's [native Substrate adapter guide](native-substrate-au
 
 ## Why this contributes to PortalDot
 
-The ecosystem contribution is a reusable example for developers building autonomous services that make payments on PortalDot. It demonstrates how to put a policy-authorization boundary in front of a specific native Substrate payment, while preserving an EVM contract-enforced option for applications that deliberately route funds through a guard contract.
+The ecosystem contribution is an inspectable reference integration for developers building autonomous services that make payments on PortalDot. It demonstrates how Verigate's independent policy decision can be bound to a specific action before execution, with separate EVM contract-enforced and native Substrate adapter paths. This is one concrete integration of the broader Verigate authority layer, not the entirety of the product.
 
 This can reduce the amount of authorization, preflight and evidence-handling logic an application team must design from scratch. That is a plausible developer benefit, not a measured productivity result yet. No PortalDot Wallet or DaaS integration, team endorsement, production deployment or external adoption is claimed.
 
