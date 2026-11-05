@@ -1,12 +1,14 @@
 # Verigate PortalDot
 
-**A policy-to-execution gate for AI-agent payments on PortalDot V3 EVM testnet.**
+**An independent authority and execution-control layer for autonomous AI systems, demonstrated through policy-bound payments on PortalDot V3 EVM testnet.**
 
-An AI agent can propose a transfer, but a proposal is not authority. Verigate makes the off-chain policy decision. The bridge verifies the signed decision and binds it to one exact action. The deployed `PortalDotAgentGuardV2` then checks the authorization, recipient allowlist and spending limits before moving native POT held by the guard.
+An AI agent can propose an action, but a proposal is not authority. Verigate evaluates the action against human-defined policy and returns an explicit ALLOW, WARN or BLOCK decision. The PortalDot bridge verifies the signed decision and binds authorization to the exact payment. The deployed `PortalDotAgentGuardV2` then enforces the authorization, recipient allowlist and spending limits before moving native POT held by the guard.
 
-## What PortalDot adds for PortalDot developers
+**Canonical live demo (keep this URL unchanged):** https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
 
-Verigate lets an AI-agent application check a proposed payment against explicit authorization rules before execution. It is a reusable middleware example for developers building agent-driven payment flows.
+## Verigate's role in the PortalDot integration
+
+Verigate is the independent policy and authority layer between an autonomous agent's proposed action and the execution mechanism. The PortalDot integration demonstrates how a signed policy decision can be bound to one exact payment and checked at the execution boundary. The repository provides a concrete reference integration for developers building agent-driven payment flows.
 
 - **EVM:** the deployed guard rejects unauthorized transfers routed through its own contract balance, including an unlisted recipient or an amount above the configured cap.
 - **Native Substrate:** a separate adapter checks policy before submitting a native transfer. This does not block transactions sent directly outside the adapter.
@@ -108,7 +110,7 @@ A Verigate-authorized transfer of `0.1` EVM POT is recorded against the V1 prede
 
 **Historical-RPC limitation:** the configured RPC later stopped returning this old transaction and receipt and reported discarded historical block state. The report preserves the verification performed when the receipt was available; the live dashboard does not substitute saved success for a fresh RPC response. These are single-provider testnet observations, not a second-provider cross-check or independent network authentication.
 
-Node console is the PortalDot node UI; a dedicated EVM explorer deep link is not guaranteed to be available there. The [live DApp](https://rudimentall1.github.io/verigate-portaldot/) reads current RPC state and supports transaction-hash lookup, but an old receipt may be unavailable from the configured endpoint.
+Node console is the PortalDot node UI; a dedicated EVM explorer deep link is not guaranteed to be available there. The canonical demo URL above opens the V2 guard dashboard directly. It reads current RPC state and supports transaction-hash lookup, but an old receipt may be unavailable from the configured endpoint.
 
 ## Quick start
 
@@ -199,6 +201,6 @@ The native adapter's authorization expiry is rechecked after RPC preflight and i
 - [Claims-to-verify wording matrix](claims-to-verify.md)
 - [Hacker House checklist](docs/hacker-house-check-in.md)
 - [Presentation PDF](docs/Verigate-PortalDot-Presentation.pdf)
-- [Live DApp](https://rudimentall1.github.io/verigate-portaldot/)
+- [Canonical live demo: V2 guard dashboard](https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6)
 
 **Demo recording:** [Verigate PortalDot Hacker House Demo](https://www.youtube.com/watch?v=9WhBdwGgXLk) (2:54.7, 1920×1080, 30 fps). The video labels the 21 October 2026 dashboard footage as a V1 recording and presents V2 transfer evidence for block `149241` as a text card, not as live V2 dashboard footage. The V2 receipt, event and balance readbacks used one configured RPC; no second-provider verification is claimed. Keep local ALLOW/BLOCK integration results distinct from public V1/V2 testnet transfer evidence. The MP4 and matching SRT are not committed as source files in this repository.
