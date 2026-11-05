@@ -66,7 +66,7 @@ The differentiator is not an allowlist or a signature scheme in isolation. It is
 
 The EVM adapter demonstrates this with a short-lived EIP-712 authorization enforced by `PortalDotAgentGuardV2`. The PortalDot-specific direction is the separate native Substrate adapter for `Balances.transfer_keep_alive`: it binds the intent to the target testnet genesis, SS58 recipient, base-unit amount and maximum estimated fee; checks the runtime and balances; supports runtime `system_dryRun`; and submits only with explicit `--broadcast`. These are separate paths, not a claim that the EVM guard protects native Substrate or arbitrary wallet transactions.
 
-The project does not claim that the individual primitives are novel, that the design is unique, or that PortalDot has adopted the integration. Its contribution is a reusable reference implementation showing how policy authorization can be connected to two distinct execution surfaces with explicit trust boundaries.
+Verigate's contribution is the policy-to-execution architecture: a signed, action-bound authorization is verified at the execution boundary before a supported adapter can submit the action. The PortalDot reference implementation demonstrates this architecture across two distinct execution surfaces, EVM and native Substrate, with explicit trust boundaries.
 
 ### Differentiation from adjacent PortalDot tooling
 
@@ -85,7 +85,7 @@ The claim is complementary, not competitive superiority: an interactive wallet/c
 
 The target user is a team building an autonomous service or AI agent that must make native POT payments without receiving unrestricted spending authority. The reusable contribution to PortalDot developers is source code, testnet deployment evidence, a native Substrate execution adapter, fail-closed preflight checks, and a documented route for integrating policy-controlled payments into an application.
 
-A possible commercial model is hosted policy evaluation and authorization receipts for application developers, with a self-hosted or enterprise option for teams needing control over policy data and infrastructure. This is a business hypothesis only: the project has no verified revenue, paying customers, production deployment, PortalDot Wallet/DaaS integration, or team endorsement to claim. The next validation step is developer feedback or a third-party integration, not an unsupported adoption statement.
+Potential commercial delivery models include hosted policy evaluation and authorization receipts, self-hosted deployments for teams requiring control over policy data, and enterprise integration support. The next milestone is developer-led validation through a reproducible integration and a pilot with an application team.
 
 ## Current limitations (disclose, do not hide)
 
