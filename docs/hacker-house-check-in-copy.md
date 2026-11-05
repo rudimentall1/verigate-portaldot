@@ -8,7 +8,7 @@ Verigate PortalDot
 
 ## Current public positioning line
 
-Cryptographic policy & signature authorization guard for autonomous AI-agent payments on Portaldot V3 Testnet
+Independent authority and execution-control layer for autonomous AI systems, demonstrated through policy-bound payments on PortalDot V3 EVM testnet
 
 ## Current tags shown in the user's page view
 
@@ -16,7 +16,7 @@ Crypto / Web3; Crypto-AI; Security; Substrate
 
 ## One-line description
 
-Policy-gated execution for AI agents on PortalDot: Verigate authorizes an exact action off-chain, and a deployed EVM guard enforces recipient and native-token spending limits before transferring funds held by the guard.
+Verigate is an independent authority and execution-control layer for autonomous AI systems. It evaluates proposed actions against human-defined policies, issues cryptographically verifiable decisions, and binds authorization to the exact action before execution. The PortalDot V3 testnet integration demonstrates this model for native-POT payments: a signed Verigate decision is verified by the bridge, and the deployed EVM guard enforces recipient and spending limits on funds held by that guard.
 
 ## Short project description
 
@@ -32,14 +32,19 @@ This project builds on the pre-existing Verigate policy engine. The PortalDot-sp
 
 The page excerpt supplied for this update shows tags but not the selected hackathon track. Confirm that field in DoraHacks if it is displayed separately; a Substrate tag does not itself prove the track choice.
 
-## Links
+## Canonical demo link
 
-- Demo video (published): https://www.youtube.com/watch?v=9WhBdwGgXLk
+**Demo URL (use this exact URL in DoraHacks and all submission materials; do not replace it with the site root or another query variant):**
+
+https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
+
+The URL opens the deployed V2 guard dashboard directly. It is read-only and does not require a wallet connection or transaction.
+
+## Other project links
+
+- Demo video (separate video field): https://www.youtube.com/watch?v=9WhBdwGgXLk
 - Repository: https://github.com/rudimentall1/verigate-portaldot
-- Public DApp: https://rudimentall1.github.io/verigate-portaldot/
-- V2 guard view: https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
 - V2 guard: `0x87C494a5e4B0A8E055F283767579667E10E046C6`
-- Public DApp guard view and transaction lookup: https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
 - Successful transaction hash: `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`
 - Block: `149241`
 - Recorded transaction evidence: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json
