@@ -13,7 +13,7 @@ The published event mirror lists the check-in deadline as 24 October 2026 at 20:
 
 The latest BUIDL account snapshot shows the project positioning line, tags `Crypto / Web3`, `Crypto-AI`, `Security`, `Substrate`, the current YouTube link, repository and social links. These are consistent with the project's implemented scope.
 
-The available account snapshot does **not** display the complete long-form description or selected track. Direct public-page retrieval was not available during this audit, so those two fields are not marked verified. Do not infer that a field is correct merely because the title, tags and links are visible.
+The available account snapshot records the project overview, tags and links. Confirm the final long-form description and selected track directly in the BUIDL editor before submission.
 
 ## Track recommendation
 
