@@ -1,8 +1,8 @@
 # Verigate PortalDot
 
-**An independent authority and execution-control layer for autonomous AI systems, demonstrated through policy-bound payments on PortalDot V3 EVM testnet.**
+**Verigate adds an authorization check between an AI agent's decision and the action that moves funds. This repository shows that check working in a PortalDot V3 testnet payment flow.**
 
-An AI agent can propose an action, but a proposal is not authority. Verigate evaluates the action against human-defined policy and returns an explicit ALLOW, WARN or BLOCK decision. The PortalDot bridge verifies the signed decision and binds authorization to the exact payment. The deployed `PortalDotAgentGuardV2` then enforces the authorization, recipient allowlist and spending limits before moving native POT held by the guard.
+An agent can prepare a payment, but it should not be able to approve its own spending. Verigate checks the proposed action against rules set by the application or owner and returns ALLOW, WARN or BLOCK. For the EVM demo, the bridge verifies Verigate's signed decision and creates a short-lived EIP-712 authorization for the exact recipient and amount. The deployed `PortalDotAgentGuardV2` checks that authorization and its spending rules before transferring POT from the guard's own balance.
 
 **Canonical live demo (keep this URL unchanged):** https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
 
@@ -12,7 +12,7 @@ An AI agent can propose an action, but a proposal is not authority. Verigate eva
 
 ## Verigate's role in the PortalDot integration
 
-Verigate is the independent policy and authority layer between an autonomous agent's proposed action and the execution mechanism. The PortalDot integration demonstrates how a signed policy decision can be bound to one exact payment and checked at the execution boundary. The repository provides a concrete reference integration for developers building agent-driven payment flows.
+The point of the integration is straightforward: keep the decision about whether an agent may act separate from the code that carries out the action. Verigate makes the policy decision; the PortalDot adapters check that decision before submitting a payment. The repository includes the contracts, adapters, tests and evidence so another developer can inspect how the boundary works.
 
 - **EVM:** the deployed guard rejects unauthorized transfers routed through its own contract balance, including an unlisted recipient or an amount above the configured cap.
 - **Native Substrate:** a separate adapter checks policy before submitting a native transfer. This does not block transactions sent directly outside the adapter.
