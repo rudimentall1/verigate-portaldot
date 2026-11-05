@@ -43,7 +43,7 @@ Accordingly, the support excerpts do not resolve any separate verbal instruction
 4. Compare the dry-run's reported success, contract address, consumed weight and storage-deposit requirements with the deployed V2 contract. A local or runtime dry-run is feasibility evidence only; it is not a deployment.
 5. Only if the team confirms that the native-account sender is mandatory and the dry-run passes should a second deployment be considered. It would create a different contract instance and require explicit bridge/configuration migration; preserve the existing V2 and its evidence.
 
-The precise conclusion is: **deploying on PortalDot V3 EVM testnet is confirmed; a rule requiring the deployer to equal the H160 mapped to the team's native SS58 account is not established by the public documentation I found. The native-origin path exists upstream, but PortalDot-specific feasibility still needs a dry-run.**
+The available evidence supports this conclusion: **the contract was deployed on PortalDot V3 EVM testnet, but the public requirements reviewed here do not establish that the deployer had to be the H160 mapped to the team's native SS58 account. The native-origin path exists upstream; PortalDot-specific feasibility still needs a dry-run.**
  
 ## Safety model
 
