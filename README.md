@@ -1,6 +1,6 @@
 # Verigate PortalDot
 
-**Verigate adds an authorization check between an AI agent's decision and the action that moves funds. This repository shows that check working in a PortalDot V3 testnet payment flow.**
+**Verigate checks an AI agent's proposed action against rules set by the application, then authorizes that action before execution. This repository shows the process in a PortalDot V3 testnet payment flow.**
 
 An agent can prepare a payment, but it should not be able to approve its own spending. Verigate checks the proposed action against rules set by the application or owner and returns ALLOW, WARN or BLOCK. For the EVM demo, the bridge verifies Verigate's signed decision and creates a short-lived EIP-712 authorization for the exact recipient and amount. The deployed `PortalDotAgentGuardV2` checks that authorization and its spending rules before transferring POT from the guard's own balance.
 
@@ -8,7 +8,7 @@ An agent can prepare a payment, but it should not be able to approve its own spe
 
 ## Project presentation
 
-[Open the original 7-page Verigate + PortalDot presentation PDF](docs/Verigate-PortalDot-Presentation.pdf). This is the archived deck retained with the published demo materials; it is not regenerated from the newer copy edits in this PR.
+[Open the original 7-page Verigate + PortalDot presentation PDF](docs/Verigate-PortalDot-Presentation.pdf). This is the deck retained with the published demo. It reflects the state shown at that time; a separate native Substrate transfer was recorded later, on 24 October 2026, and is documented below. The PDF is intentionally unchanged.
 
 **Demo video:** [Verigate PortalDot Hacker House Demo](https://www.youtube.com/watch?v=9WhBdwGgXLk). The video remains unchanged.
 
@@ -20,7 +20,7 @@ The point of the integration is straightforward: keep the decision about whether
 - **Native Substrate:** a separate adapter checks policy before submitting a native transfer. This does not block transactions sent directly outside the adapter.
 - **Current status:** Verigate is demonstrated through two distinct PortalDot V3 testnet execution paths: an EVM guard and a native Substrate adapter. The repository includes deployment records, transaction evidence, verification tooling and developer integration guidance. The next product milestone is ecosystem integration and pilot validation. [Integration details and developer adoption path](docs/portal-dot-developer-value.md).
 
-**Scope:** the primary on-chain guard demonstration is Verigate authorization followed by a guarded native-POT transfer on PortalDot V3 EVM testnet. A separate native Substrate adapter has also completed a Verigate-authorized `Balances.transfer_keep_alive` on PortalDot V3 Substrate testnet: `system_dryRun` succeeded first, then the broadcast was reported finalized with one matching `balances.Transfer` event. That native-path evidence was observed through one configured RPC and has not been cross-checked through a second provider. Neither path establishes that the PortalDot team requested this capability, and no PortalDot Wallet or DaaS integration is claimed. The EVM guard controls only transfers routed through its own contract balance.
+**Scope:** the primary EVM demonstration is a Verigate-authorized transfer of the chain's native POT token through a guard contract on PortalDot V3 EVM testnet. A separate native Substrate adapter has also completed a Verigate-authorized `Balances.transfer_keep_alive` on PortalDot V3 Substrate testnet: `system_dryRun` succeeded first, then the broadcast was reported finalized with one matching `balances.Transfer` event. That native-path evidence was observed through one configured RPC and has not been cross-checked through a second provider. Neither path establishes that the PortalDot team requested this capability, and no PortalDot Wallet or DaaS integration is claimed. The EVM guard controls only transfers routed through its own contract balance.
 
 
 ## Verigate on PortalDot V3 EVM testnet
