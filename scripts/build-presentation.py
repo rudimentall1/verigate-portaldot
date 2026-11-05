@@ -64,7 +64,7 @@ def base(title, subtitle, n):
     d.line((76,190,1840,190), fill=BLUE, width=3)
     if subtitle:
         paragraph(d,(80,215),subtitle,font(24),MUTED,max_width=1680,leading=1.2,max_lines=2)
-    d.text((78,1030),"OPEN-SOURCE AUTHORIZATION MIDDLEWARE  •  TESTNET PROTOTYPE",font=font(17,True),fill=MUTED)
+    d.text((78,1030),"INDEPENDENT AI AUTHORITY & EXECUTION CONTROL  •  TESTNET PROTOTYPE",font=font(17,True),fill=MUTED)
     return im,d
 
 def bullet(draw, x, y, title, desc, width=760, color=BLUE):
@@ -75,10 +75,10 @@ def bullet(draw, x, y, title, desc, width=760, color=BLUE):
 slides=[]
 
 # 1. Cover
-im,d=base("Verigate PortalDot","Authorization middleware for AI-agent payments on PortalDot V3",1)
+im,d=base("Verigate PortalDot","Independent authority and execution control for autonomous AI systems",1)
 rounded(d,(78,330,1145,740),32,fill=PANEL)
 d.text((125,380),"A proposal is not authority.",font=font(46,True),fill=WHITE)
-paragraph(d,(128,470),"Verigate evaluates the action. The bridge verifies signed evidence. A dedicated Solidity guard enforces the exact approved transfer.",font(29),BODY,max_width=900,leading=1.4)
+paragraph(d,(128,470),"Verigate evaluates each proposed action against human-defined policy. The bridge verifies the signed decision and binds it to the exact payment. The PortalDot guard enforces the approved transfer.",font(29),BODY,max_width=900,leading=1.4)
 chips=[("VERIGATE","Ed25519 decision"),("BRIDGE","Exact action binding"),("PORTALDOT","EIP-712 guard")]
 x=122
 for label,sub in chips:
@@ -93,7 +93,8 @@ paragraph(d,(1300,535),"PortalDot V3 EVM testnet",font(26),BODY,max_width=440)
 paragraph(d,(1300,605),"V2 transfer recorded  •  receipt/event matched",font(19),GREEN,max_width=450,leading=1.2)
 d.text((82,805),"Best-fit track",font=font(22,True),fill=MUTED)
 d.text((82,850),"Modular Cloud & Middleware",font=font(31,True),fill=WHITE)
-paragraph(d,(82,910),"Built around a narrow, reusable control point between AI intent and token execution.",font(23),BODY,max_width=1460)
+paragraph(d,(82,910),"An independent authority layer between AI intent and execution. PortalDot is the concrete testnet integration.",font(23),BODY,max_width=1460)
+d.text((82,978),"LIVE DEMO: rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6",font=font(15,True),fill=CYAN)
 slides.append(im)
 
 # 2. Problem
