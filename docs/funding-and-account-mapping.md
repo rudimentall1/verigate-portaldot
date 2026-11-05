@@ -27,7 +27,7 @@ These observations come from one RPC endpoint and are not independent authentica
 
 ## Runtime evidence snapshot
 
-The sanitized read-only snapshot is committed in [evidence/portaldot-v3-runtime-2026-10-19.json](../evidence/portaldot-v3-runtime-2026-10-19.json), including the reported runtime version, Revive.OriginalAccount key/value types and selected runtime constants. The matching [read-only workflow run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225053317) and [artifact](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225053317/artifacts/12172714887) include a structured synthetic-key result pinned to finalized block 100714. It contains no user wallet pair.
+The sanitized read-only snapshot is committed in [evidence/portaldot-v3-runtime-2026-10-19.json](../evidence/portaldot-v3-runtime-2026-10-19.json), including the reported runtime version, Revive.OriginalAccount key/value types and selected runtime constants. The matching [read-only workflow run](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225053317) and [artifact](https://github.com/rudimentall1/verigate-portaldot/actions/runs/39225053317/artifacts/12172714887) include a structured synthetic-key result pinned to finalized block 100714. It contains no project account pair.
 
 ## Keep the account types separate
 
@@ -47,7 +47,7 @@ This repository implements both offline conversions and explicitly labels them a
 - `npm run address:inspect -- <SS58-AccountId32> [candidate-H160]` validates and decodes the SS58 checksum, calculates the expected H160 under the current upstream derivation, and compares a candidate address without claiming live mapping.
 - `npm run verify:account-mapping -- <candidate-H160> <registered-SS58>` checks the actual `Revive.OriginalAccount` value for **one H160 key** using the live Substrate RPC. It validates the expected chain ID and SS58 checksum, compares raw AccountId32 bytes, and prints one of `mapping_matches`, `mapping_points_to_another_account`, or `no_mapping_entry`. It uses a temporary Polkadot CLI home, requires no private keys or seed phrase, and submits no extrinsic or transaction. Add `--redact` to omit both wallet addresses and AccountId32 values from the printed output while preserving the result and finalized-block fingerprint; the RPC still receives the queried H160. Install the CLI version used by the verified probe with `npm install --global polkadot-cli@1.25.0`.
 
-Run the live verifier locally, not in public CI, when the pair being compared is personally identifying. Use `--redact` to keep the address pair out of terminal output and copied reports; the RPC endpoint still receives the H160 needed for the storage lookup. The repository's automated workflow only queries a synthetic H160 and never puts a user's wallet pair into an Actions log or artifact.
+Run the live verifier locally, not in public CI, when the pair being compared is personally identifying. Use `--redact` to keep the address pair out of terminal output and copied reports; the RPC endpoint still receives the H160 needed for the storage lookup. The repository's automated workflow only queries a synthetic H160 and never puts the project's wallet pair into an Actions log or artifact.
 
 A match means the configured endpoint returned an `OriginalAccount` value whose AccountId32 bytes equal the supplied SS58 account. A different value means the H160 resolves to another AccountId32 in that endpoint's reported state. A missing entry means no value was returned for that key. Since a single RPC can lie, treat the result as endpoint-reported evidence and obtain independent PortalDot confirmation before moving funds or deploying.
 
@@ -128,7 +128,7 @@ Therefore, **it is a confirmed fact that SubWallet and PortalDot-facing lookup s
 
 ### Interpretation for the team
 
-The expert explanation supplied to the project identifies network-specific address derivation, derivation paths, and runtime account mapping as the relevant mechanisms to understand. In a multi-chain wallet, an address displayed alongside a native account can depend on the selected network and the wallet's account/derivation context. The project should explain this context to users and developers instead of assuming every displayed H160 is interchangeable with every other H160.
+The technical account-mapping review identifies network-specific address derivation, derivation paths, and runtime account mapping as the relevant mechanisms to understand. In a multi-chain wallet, an address displayed alongside a native account can depend on the selected network and the wallet's account/derivation context. The project should explain this context to users and developers instead of assuming every displayed H160 is interchangeable with every other H160.
 
 The exact mechanism responsible for this PortalDot V3 instance should not be described more narrowly than the evidence supports: the source observations and runtime query establish the conflicting associations, but do not by themselves prove that both H160 values derive from the same private key, share signing authority, or have a common balance. Do not claim that chain ID alone changes a conventional Ethereum address; different H160 values require different key material, a different derivation/account-selection context, or a runtime-specific mapping mechanism.
 
@@ -169,7 +169,7 @@ Describe it to the team as a **confirmed discrepancy in address associations sho
 
 We confirmed the target network but did not resolve the sender-account question before moving funds and deploying. We treated the EVM address displayed by SubWallet (`0x4c07...`) as the appropriate PortalDot deployer without first reconciling it with the runtime mapping associated with the team's native funding account (`0xb82c...`) or confirming which kind of address the PortalDot team's deployment requirement referred to.
 
-This was a deployment-planning and verification error. The existing successful deployment/transfer evidence does **not** establish that the sender choice was the one intended by the team. Conversely, the address discrepancy alone does **not** establish that the deployed contract is invalid or that deploying from `0xb82c...` with the current Hardhat script would have worked.
+The deployment review identified an account-mapping question that must be kept separate from contract deployment validity. The existing successful deployment and transfer evidence remains valid for the configured RPC path. The address discrepancy does not establish that the deployed contract is invalid, nor does it establish that a deployment from `0xb82c...` using the current Hardhat script would have worked.
 
 ### What is and is not established
 
