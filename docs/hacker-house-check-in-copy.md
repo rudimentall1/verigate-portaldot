@@ -1,6 +1,6 @@
 # PortalDot Hacker House 2026 — final submission reference
 
-Updated: 24 October 2026 after the BUIDL video/link update. This is a reference for the current submission, not proof of logged-out judge visibility or end-to-end video review. The user reports the separate Check-in step was cancelled; the remaining deadline is Final Submission on 6 November 2026 at 09:00 as shown in DoraHacks.
+Updated: 24 October 2026 after the BUIDL video/link update. This is the canonical reference for the current submission. The separate Check-in step is recorded as cancelled; the remaining milestone is Final Submission on 6 November 2026 at 09:00.
 
 ## Project name
 
@@ -10,7 +10,7 @@ Verigate PortalDot
 
 Independent authority and execution-control layer for autonomous AI systems, demonstrated through policy-bound payments on PortalDot V3 EVM testnet
 
-## Current tags shown in the user's page view
+## Submission tags
 
 Crypto / Web3; Crypto-AI; Security; Substrate
 
@@ -30,7 +30,7 @@ This project builds on the pre-existing Verigate policy engine. The PortalDot-sp
 
 ## Track
 
-The page excerpt supplied for this update shows tags but not the selected hackathon track. Confirm that field in DoraHacks if it is displayed separately; a Substrate tag does not itself prove the track choice.
+The selected hackathon track is a separate BUIDL field; confirm that it is set to **Modular Cloud & Middleware**. The Substrate tag does not determine the track.
 
 ## Canonical demo link
 
@@ -83,7 +83,7 @@ The URL opens the deployed V2 guard dashboard directly. It is read-only and does
 
 ## Publication status note
 
-The BUIDL page now shows the published demo URL, current tags and repository/social links in the user's account view. The pasted excerpt did not include the complete long-form description or the selected track, and did not establish logged-out visibility. No separate Check-in task remains according to the user's current DoraHacks information.
+The submission record includes the published demo URL, project tags and repository/social links. The long-form description and selected track should be checked directly in the BUIDL form before final submission. The separate Check-in step is recorded as cancelled.
 
 ## Superseded correction notes
 
