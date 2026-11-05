@@ -179,7 +179,7 @@ Live re-query of the saved transfer passed on 27 October 2026 in [GitHub Actions
 
 The current implementation provides two distinct execution paths: an EVM guard for transfers held by its contract balance, and a native Substrate adapter for the supported transfer flow. These paths have separate trust boundaries and are not a universal wallet firewall or a cross-chain asset bridge. PortalDot Wallet and DaaS are potential future integration surfaces. The V2 spending counter resets after its configured interval; it is not a continuously sliding rolling-window algorithm.
 
-## Differentiation and commercial hypothesis
+## Differentiation and business model
 
 The technical differentiation is the composition of intent-bound policy authorization, cryptographic binding to the exact action, network-aware preflight and enforcement at the execution boundary across EVM and native Substrate adapters.
 
