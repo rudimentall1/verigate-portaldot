@@ -1,6 +1,6 @@
 # PortalPilot integration spike: native transfer gate
 
-Status: **fail-closed integration boundary and regression tests prepared for upstream PortalPilot integration**. The guarded execution path is designed to verify authorization before submission; full upstream wiring and live credential verification are separate integration milestones.
+Status: **not integrated into PortalPilot and not verified against live Verigate credentials**. The repository contains a fail-closed integration boundary and regression tests. Upstream wiring and a verified signing callback are still required.
 
 ## Code findings
 
