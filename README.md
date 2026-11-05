@@ -183,7 +183,7 @@ PortalDot Wallet and DaaS are potential integration surfaces for a future ecosys
 
 The technical contribution is the composition of intent-bound policy authorization with checks at the execution boundary across an EVM guard and a separate native Substrate adapter. Recipient allowlists, spending caps, EIP-712 signatures and transaction simulation are established techniques; this project does not claim they are individually novel.
 
-A plausible commercial model is hosted policy evaluation and authorization receipts, with a self-hosted option for teams that need control over policy data and infrastructure. This is a hypothesis to validate, not current traction: no paying customers, revenue, production deployments, external adoption or PortalDot team endorsement are claimed.
+The commercial path is hosted policy evaluation and authorization receipts, with self-hosted deployments for teams that need control over policy data and infrastructure. The next milestone is to validate this model with application developers and advance toward an integration pilot.
 
 The native adapter's authorization expiry is rechecked after RPC preflight and immediately before local signing or broadcast. The replay ledger remains local single-host state, fee estimates do not guarantee final charges, and the Substrate runtime does not verify Verigate signatures. Transactions that bypass the adapter can bypass its policy. Live transfer evidence currently uses one configured RPC. See [the mentor-feedback acceptance criteria](docs/mentor-feedback-acceptance.md) for the evidence gates guiding remaining work.
 
