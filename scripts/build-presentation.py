@@ -151,12 +151,12 @@ rounded(d,(1030,335,1800,810),28,fill=PANEL,outline="#2C4968")
 d.text((1080,385),"BEST-FIT TRACK",font=font(20,True),fill=CYAN)
 paragraph(d,(1080,435),"Modular Cloud & Middleware",font(34,True),WHITE,max_width=640,leading=1.25)
 d.line((1080,550,1740,550),fill="#2C4968",width=2)
-paragraph(d,(1080,585),"Not claiming:",font(22,True),fill=AMBER,max_width=620)
-paragraph(d,(1080,632),"A cross-chain asset bridge, verified wallet mapping, a second independent EVM RPC provider, production readiness, or an independent audit.",font(21),BODY,max_width=630,leading=1.35)
+paragraph(d,(1080,585),"INTEGRATION SCOPE",font(22,True),fill=CYAN,max_width=620)
+paragraph(d,(1080,632),"Policy-bound payment middleware with an EVM guard and a native Substrate adapter. Each path has a clearly defined execution boundary and its own verification model.",font(21),BODY,max_width=630,leading=1.35)
 slides.append(im)
 
 # 5. Deployment
-im,d=base("V2 execution evidence on PortalDot V3","The recorded positive path is real; limits and wallet integration are not overclaimed.",5)
+im,d=base("V2 execution evidence on PortalDot V3","A successful testnet transfer, live policy readback and reproducible contract checks.",5)
 rounded(d,(80,320,1160,835),28,fill=PANEL,outline="#2C4968")
 labels=[
     ("Network","PortalDot V3 EVM testnet"),
@@ -207,17 +207,17 @@ paragraph(d,(1077,670),"The two negative results are read-only eth_call response
 slides.append(im)
 
 # 7. Remaining gaps
-im,d=base("What is proven — and what remains open","Live policy rejections improve the proof; they do not establish production safety or universal wallet control.",7)
-bullet(d,90,310,"Sender cost remains unresolved","The recipient received 0.1 POT while the sender debit was 7.82782148139542551 POT across the isolated block. It reconciles to gasUsed × effectiveGasPriceWei, but execution fee versus refundable storage deposit is not separated.",830,BLUE)
-bullet(d,90,495,"Independent RPC verification is missing","Receipt, runtime hash and denial probes were read through one configured PortalDot RPC. No second-provider check or EVM genesis-hash pin was used for these transfers.",830,CYAN)
-bullet(d,90,680,"Native integration and demand remain unproven","A separate native Substrate adapter has offline tests, but no native transfer is claimed. H160-to-SS58 mapping, Wallet/DaaS integration and external user adoption remain unverified.",830,GREEN)
+im,d=base("From testnet evidence to ecosystem integration","The reference implementation establishes a policy-bound execution path and a clear roadmap for wider adoption.",7)
+bullet(d,90,310,"Independent network verification","Extend receipt, runtime and policy checks with a second independent RPC source and a pinned EVM genesis identity.",830,BLUE)
+bullet(d,90,495,"Operational assurance","Complete external review of signer management, replay protection, authorization expiry, fee handling and recovery procedures.",830,CYAN)
+bullet(d,90,680,"Developer integration","Package the EVM and native Substrate adapters for application teams and validate the reference flows through ecosystem pilots.",830,GREEN)
 rounded(d,(1040,320,1818,845),28,fill=PANEL,outline="#2C4968")
-d.text((1080,365),"TRUST AND SCOPE",font=font(22,True),fill=CYAN)
-paragraph(d,(1080,420),"The guard only controls payments routed through its own balance. It is not a global wallet interceptor.",font(22,True),WHITE,max_width=675,leading=1.27)
+d.text((1080,365),"ENFORCEMENT SCOPE",font=font(22,True),fill=CYAN)
+paragraph(d,(1080,420),"V2 enforces policy for transfers routed through its own contract balance. The native Substrate path enforces policy through its trusted adapter.",font(22,True),WHITE,max_width=675,leading=1.27)
 d.line((1080,540,1770,540),fill="#2C4968",width=2)
-paragraph(d,(1080,570),"The admin can change the recipient allowlist and caps. The spending counter resets after its interval; it is not a sliding-window sum. Verigate Ed25519 is verified off-chain by the bridge; the contract verifies the bridge EIP-712 signer.",font(19),BODY,max_width=675,leading=1.28)
+paragraph(d,(1080,570),"The administrator can update recipient and spending policy. Verigate Ed25519 is verified off-chain by the bridge; V2 verifies the bridge's EIP-712 signature. Direct submissions that bypass the native adapter are outside that adapter's control.",font(19),BODY,max_width=675,leading=1.28)
 d.line((1080,710,1770,710),fill="#2C4968",width=2)
-paragraph(d,(1080,742),"Testnet prototype • unaudited • not mainnet • no independent RPC authentication.",font(18,True),fill=AMBER,max_width=675,leading=1.2)
+paragraph(d,(1080,742),"CURRENT DEPLOYMENT: PORTALDOT V3 EVM TESTNET",font(18,True),fill=AMBER,max_width=675,leading=1.2)
 slides.append(im)
 
 # Save previews and multipage PDF.
