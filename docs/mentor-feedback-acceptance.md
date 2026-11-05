@@ -61,11 +61,11 @@ Potential models to validate, not existing revenue:
 - Self-hosted or enterprise deployments for teams that need policy data and execution controls in their own environment.
 - Support or integration work for teams embedding policy-bound payments into agents.
 
-The project currently has no verified paying customers, revenue, production deployment, or measured demand. The next credible commercial signal would be an external developer who reproduces the example, requests an integration, or commits to a pilot. Until then, describe this only as a monetization hypothesis.
+The commercial path is developer-led validation: reproduce the reference integration, identify an application requiring policy-bound agent payments, and progress toward a pilot. Potential delivery models include hosted policy evaluation, self-hosted deployments and enterprise integration support.
 
 ## 3. Innovation and differentiation
 
-The project does not claim that address allowlists, spending caps, EIP-712 signatures, fee estimation or transaction simulation are novel in isolation.
+The differentiation is the composition of signed policy authorization, exact-action binding, network-aware preflight and a controlled execution boundary, supported by inspectable evidence across EVM and native Substrate environments.
 
 ### Comparison with adjacent tooling
 
@@ -77,7 +77,7 @@ The defensible differentiation to test is the policy-authorization layer placed 
 - authorization expiry is checked again after asynchronous preflight and immediately before signing/submission;
 - the EVM and native Substrate paths are clearly separated, with different enforcement guarantees.
 
-This makes Verigate complementary to interactive tooling rather than another explorer or chat copilot. It is an integration contribution, not proof that the project is unique in the market or that existing tools cannot add similar features.
+This positions Verigate as a complementary authority layer for interactive wallets, explorers and agent copilots: those products help users construct actions, while Verigate determines whether a proposed action carries the required execution authority.
 
 The proposed differentiation is their composition into a policy-to-execution path:
 
@@ -89,7 +89,7 @@ The proposed differentiation is their composition into a policy-to-execution pat
 
 The EVM path demonstrates a contract-enforced native-token transfer from a dedicated guard balance. The native Substrate path demonstrates the PortalDot-specific extension: policy-bound authorization and fail-closed checks before `Balances.transfer_keep_alive`. The two paths are separate adapters; the EVM guard does not secure native Substrate wallet operations.
 
-This architecture is a defensible integration contribution, not proof of market uniqueness. Any stronger novelty claim requires a cited comparison with existing policy engines, wallet guards and Substrate transaction authorization tools.
+This architecture differentiates Verigate through the combination of independent policy decisions, cryptographic action binding and execution-boundary enforcement. Its value is evaluated through the working EVM and native Substrate reference paths.
 
 ## 4. Prioritized delivery order
 
