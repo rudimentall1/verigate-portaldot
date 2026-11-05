@@ -1,18 +1,26 @@
 # Verigate PortalDot
 
-**A policy-to-execution gate for AI-agent payments on PortalDot V3 EVM testnet.**
+**Verigate checks an AI agent's proposed action against rules set by the application, then authorizes that action before execution. This repository shows the process in a PortalDot V3 testnet payment flow.**
 
-An AI agent can propose a transfer, but a proposal is not authority. Verigate makes the off-chain policy decision. The bridge verifies the signed decision and binds it to one exact action. The deployed `PortalDotAgentGuardV2` then checks the authorization, recipient allowlist and spending limits before moving native POT held by the guard.
+An agent can prepare a payment, but it should not be able to approve its own spending. Verigate checks the proposed action against rules set by the application or owner and returns ALLOW, WARN or BLOCK. For the EVM demo, the bridge verifies Verigate's signed decision and creates a short-lived EIP-712 authorization for the exact recipient and amount. The deployed `PortalDotAgentGuardV2` checks that authorization and its spending rules before transferring POT from the guard's own balance.
 
-## What PortalDot adds for PortalDot developers
+**Canonical live demo (keep this URL unchanged):** https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
 
-Verigate lets an AI-agent application check a proposed payment against explicit authorization rules before execution. It is a reusable middleware example for developers building agent-driven payment flows.
+## Project presentation
+
+[Open the original 7-page Verigate + PortalDot presentation PDF](docs/Verigate-PortalDot-Presentation.pdf). This is the deck retained with the published demo. It reflects the state shown at that time; a separate native Substrate transfer was recorded later, on 24 October 2026, and is documented below. The PDF is intentionally unchanged.
+
+**Demo video:** [Verigate PortalDot Hacker House Demo](https://www.youtube.com/watch?v=9WhBdwGgXLk). The video remains unchanged.
+
+## Verigate's role in the PortalDot integration
+
+The point of the integration is straightforward: keep the decision about whether an agent may act separate from the code that carries out the action. Verigate makes the policy decision; the PortalDot adapters check that decision before submitting a payment. The repository includes the contracts, adapters, tests and evidence so another developer can inspect how the boundary works.
 
 - **EVM:** the deployed guard rejects unauthorized transfers routed through its own contract balance, including an unlisted recipient or an amount above the configured cap.
 - **Native Substrate:** a separate adapter checks policy before submitting a native transfer. This does not block transactions sent directly outside the adapter.
-- **Current status:** both paths have testnet execution evidence, but neither is integrated into PortalDot Wallet or DaaS. External adoption and commercial demand remain unvalidated. [Integration details and a validation path for other developers](docs/portal-dot-developer-value.md).
+- **Current status:** Verigate is demonstrated through two distinct PortalDot V3 testnet execution paths: an EVM guard and a native Substrate adapter. The repository includes deployment records, transaction evidence, verification tooling and developer integration guidance. The next product milestone is ecosystem integration and pilot validation. [Integration details and developer adoption path](docs/portal-dot-developer-value.md).
 
-**Scope:** the primary on-chain guard demonstration is Verigate authorization followed by a guarded native-POT transfer on PortalDot V3 EVM testnet. A separate native Substrate adapter has also completed a Verigate-authorized `Balances.transfer_keep_alive` on PortalDot V3 Substrate testnet: `system_dryRun` succeeded first, then the broadcast was reported finalized with one matching `balances.Transfer` event. That native-path evidence was observed through one configured RPC and has not been cross-checked through a second provider. Neither path establishes that the PortalDot team requested this capability, and no PortalDot Wallet or DaaS integration is claimed. The EVM guard controls only transfers routed through its own contract balance.
+**Scope:** the primary EVM demonstration is a Verigate-authorized transfer of the chain's native POT token through a guard contract on PortalDot V3 EVM testnet. A separate native Substrate adapter has also completed a Verigate-authorized `Balances.transfer_keep_alive` on PortalDot V3 Substrate testnet: `system_dryRun` succeeded first, then the broadcast was reported finalized with one matching `balances.Transfer` event. That native-path evidence was observed through one configured RPC and has not been cross-checked through a second provider. Neither path establishes that the PortalDot team requested this capability, and no PortalDot Wallet or DaaS integration is claimed. The EVM guard controls only transfers routed through its own contract balance.
 
 
 ## Verigate on PortalDot V3 EVM testnet
@@ -108,7 +116,7 @@ A Verigate-authorized transfer of `0.1` EVM POT is recorded against the V1 prede
 
 **Historical-RPC limitation:** the configured RPC later stopped returning this old transaction and receipt and reported discarded historical block state. The report preserves the verification performed when the receipt was available; the live dashboard does not substitute saved success for a fresh RPC response. These are single-provider testnet observations, not a second-provider cross-check or independent network authentication.
 
-Node console is the PortalDot node UI; a dedicated EVM explorer deep link is not guaranteed to be available there. The [live DApp](https://rudimentall1.github.io/verigate-portaldot/) reads current RPC state and supports transaction-hash lookup, but an old receipt may be unavailable from the configured endpoint.
+Node console is the PortalDot node UI; a dedicated EVM explorer deep link is not guaranteed to be available there. The canonical demo URL above opens the V2 guard dashboard directly. It reads current RPC state and supports transaction-hash lookup, but an old receipt may be unavailable from the configured endpoint.
 
 ## Quick start
 
@@ -175,13 +183,13 @@ The verifier checks the recorded block, canonical finalized-chain hash at that h
 
 Live re-query of the saved transfer passed on 27 October 2026 in [GitHub Actions run 40467595612](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40467595612). The RPC returned the expected transaction in canonical block `175489`, runtime `portaldot-v3/3002`, the correct signer/recipient/amount and matching dispatch, transfer and fee events. See the committed [machine-readable re-verification report](docs/evidence/portaldot-native-substrate-reverification-2026-10-27.json). This is a one-RPC confirmation; it is not independent RPC authentication or Ed25519 signature verification.
 
-No integration into PortalDot Wallet or DaaS is currently claimed, and no PortalDot team endorsement or external user adoption has been confirmed. This repository does not claim a production-ready multichain agent framework, a WASM/EVM cross-execution bridge, universal transaction interception, an independent audit, or mainnet readiness. The current V2 spending counter resets after its configured interval; it is not a continuously sliding rolling-window algorithm.
+The current implementation provides two distinct execution paths: an EVM guard for transfers held by its contract balance, and a native Substrate adapter for the supported transfer flow. These paths have separate trust boundaries and are not a universal wallet firewall or a cross-chain asset bridge. PortalDot Wallet and DaaS are potential future integration surfaces. The V2 spending counter resets after its configured interval; it is not a continuously sliding rolling-window algorithm.
 
-## Differentiation and commercial hypothesis
+## Differentiation and business model
 
-The technical contribution is the composition of intent-bound policy authorization with checks at the execution boundary across an EVM guard and a separate native Substrate adapter. Recipient allowlists, spending caps, EIP-712 signatures and transaction simulation are established techniques; this project does not claim they are individually novel.
+The technical differentiation is the composition of intent-bound policy authorization, cryptographic binding to the exact action, network-aware preflight and enforcement at the execution boundary across EVM and native Substrate adapters.
 
-A plausible commercial model is hosted policy evaluation and authorization receipts, with a self-hosted option for teams that need control over policy data and infrastructure. This is a hypothesis to validate, not current traction: no paying customers, revenue, production deployments, external adoption or PortalDot team endorsement are claimed.
+The commercial path is hosted policy evaluation and authorization receipts, with self-hosted deployments for teams that need control over policy data and infrastructure. The next milestone is to validate this model with application developers and advance toward an integration pilot.
 
 The native adapter's authorization expiry is rechecked after RPC preflight and immediately before local signing or broadcast. The replay ledger remains local single-host state, fee estimates do not guarantee final charges, and the Substrate runtime does not verify Verigate signatures. Transactions that bypass the adapter can bypass its policy. Live transfer evidence currently uses one configured RPC. See [the mentor-feedback acceptance criteria](docs/mentor-feedback-acceptance.md) for the evidence gates guiding remaining work.
 
@@ -199,6 +207,6 @@ The native adapter's authorization expiry is rechecked after RPC preflight and i
 - [Claims-to-verify wording matrix](claims-to-verify.md)
 - [Hacker House checklist](docs/hacker-house-check-in.md)
 - [Presentation PDF](docs/Verigate-PortalDot-Presentation.pdf)
-- [Live DApp](https://rudimentall1.github.io/verigate-portaldot/)
+- [Canonical live demo: V2 guard dashboard](https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6)
 
 **Demo recording:** [Verigate PortalDot Hacker House Demo](https://www.youtube.com/watch?v=9WhBdwGgXLk) (2:54.7, 1920×1080, 30 fps). The video labels the 21 October 2026 dashboard footage as a V1 recording and presents V2 transfer evidence for block `149241` as a text card, not as live V2 dashboard footage. The V2 receipt, event and balance readbacks used one configured RPC; no second-provider verification is claimed. Keep local ALLOW/BLOCK integration results distinct from public V1/V2 testnet transfer evidence. The MP4 and matching SRT are not committed as source files in this repository.

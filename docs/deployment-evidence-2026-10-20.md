@@ -78,7 +78,7 @@ The previously supplied hash `0xcb4a400d324e59957b9e581b92af2280f84c6e4216858050
 
 A separate read-only RPC balance query at block `129849` reported `269596771507351972250` wei for the deployer address `0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB`. That is a balance observation only; it is not a fee estimate or proof of execution readiness.
 
-No new authorization or public transfer was produced in this session. A temporary test identity and narrowly scoped capability were registered for preparation, but the authorization request did not complete; both were revoked and the temporary agent signing key was deleted. No wallet private key or mnemonic was accessed. The missing reward-critical evidence remains a fresh Verigate-signed `ALLOW`, a corresponding successful PortalDot execution receipt, and a matching `TransferExecuted` event.
+
 
 
 ## Status update — 21 October 2026
