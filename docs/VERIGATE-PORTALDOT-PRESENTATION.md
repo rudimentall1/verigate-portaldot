@@ -29,7 +29,7 @@ The EVM contract verifies the bridge's EIP-712 signature. Verigate's Ed25519 art
 - A single transfer is limited to **0.1 POT**.
 - Spending is limited to **0.5 POT per resettable 3,600-second interval**.
 
-The interval counter resets after the configured period. It is not a continuously sliding rolling-window calculation. The administrator can change the allowlist and limits.
+The interval counter resets after the configured period. It is not a continuously sliding rolling-window calculation. The administrator can change the allowlist and limits. The interval-overflow case is covered by local contract tests; no live testnet overflow transaction is claimed.
 
 ### 5. What is running on PortalDot V3
 
