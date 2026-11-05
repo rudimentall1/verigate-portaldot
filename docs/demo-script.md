@@ -1,6 +1,6 @@
 # PortalDot Hacker House demo script
 
-Published demo video: https://www.youtube.com/watch?v=9WhBdwGgXLk. The reviewed render is 174.733 seconds (2:54.7), 1920×1080, 30 fps, H.264/AAC, within the three-minute limit. Final media QA is to review the exact public upload for voice-over and burned-in caption synchronization; the working sidecar SRT retains earlier wording at cues 4–8 and 46. Public dashboard: https://rudimentall1.github.io/verigate-portaldot/
+Published demo video: https://www.youtube.com/watch?v=9WhBdwGgXLk. The supplied source render is 174.733 seconds (2:54.7), 1920×1080, 30 fps, H.264/AAC, within the three-minute limit. The exact public upload still needs a continuous audio/caption review; the sidecar SRT in working materials retains earlier wording at cues 4–8 and 46 and may predate the upload. The narration lines below are retained as the published-cut reference, not as a request to re-record. Public dashboard: https://rudimentall1.github.io/verigate-portaldot/
 
 ## Gate before final render/submission
 
@@ -34,7 +34,7 @@ Target: 2:50–2:58. Record the live probes only after the page has confirmed th
 
 On screen: dashboard title, then the architecture overview.
 
-Say: “An AI agent can prepare a payment, but it should not be able to approve its own spending. Verigate checks the action against the rules set by the application. The bridge verifies that decision and ties it to this exact payment. The PortalDot guard checks it before funds move.”
+Say: “An AI agent can propose a payment, but a proposal is not spending authority. Verigate decides off-chain, the bridge verifies the signed decision and binds authorization to one exact action, and the PortalDot guard checks the payment before funds move.”
 
 ### 0:15–0:40 — Live PortalDot V2 state
 
@@ -46,13 +46,13 @@ Say: “These values come from the deployed contract over the PortalDot V3 RPC. 
 
 On screen: click “Inspect denial proof”. Run “Simulate unlisted recipient (read-only)” and show `InvalidRecipient()`. Then run “Simulate over-cap amount (read-only)” and show the requested `0.100000000000000001 POT` against the live `0.1 POT` cap and `AmountExceedsCap(amount, cap)`.
 
-Say: “The first check uses an address that is not on the allowlist, and the contract returns `InvalidRecipient()`. The second asks to send one wei more than the 0.1 POT limit, and the contract returns `AmountExceedsCap`. These are read-only calls to the deployed contract. Nothing was signed or sent, so there is no failed transaction on-chain and no fee. The separate local test shows how the Verigate decision reaches the bridge.”
+Say: “These are live read-only `eth_call` probes against the confirmed V2 runtime. The first returns `InvalidRecipient()`; the second returns `AmountExceedsCap` with the exact live amount and cap. The contract checks recipient and amount before signature recovery, so no valid signing key is needed for these probes. No transaction was broadcast, no fee was paid, and this is not a mined revert transaction. It proves the deployed contract's enforcement branches respond; the Verigate-to-bridge ALLOW/BLOCK path is separately tested in local integration.”
 
 ### 1:15–1:35 — End-to-end Verigate integration, local
 
 On screen: show the isolated `scripts/verigate_local_demo.py` output and passing CI.
 
-Say: “Here the local test runs through Verigate and the bridge. When the decision is BLOCK, the bridge does not authorize execution. When it is ALLOW, the bridge signs the exact action and the guard code executes it on a temporary local EVM. This is a local integration test, not a PortalDot testnet payment.”
+Say: “The local end-to-end harness exercises Verigate's actual API and bridge path. BLOCK has no execution authorization and the bridge refuses it. ALLOW is signed and executed against the real guard source on a temporary Hardhat EVM. This segment is local integration evidence, not a public PortalDot transaction.”
 
 ### 1:35–2:10 — Successful public testnet payment
 
@@ -70,7 +70,7 @@ Say: “For that isolated transaction, the sender's EVM balance decreased by 7.8
 
 On screen: show the repository, deployed V2 contract address, demo URL, and replacement V1/V2 evidence card.
 
-Say: “This project puts a policy check between an AI agent and a payment. The EVM demo has a recorded PortalDot testnet transfer and live read-only checks against the deployed guard. A separate adapter demonstrates the native Substrate path. These are testnet results, not an audit or a production wallet product. The EVM guard only controls funds routed through it, and the chain reads shown here came from one RPC provider.”
+Say: “Verigate demonstrates off-chain policy authorization, exact-action signing, live on-chain recipient and amount checks, and a recorded PortalDot testnet payment. It is an unaudited testnet prototype. It does not protect payments that bypass this guard, and we have not independently authenticated the RPC provider.”
 
 ## Final checks before submission
 
