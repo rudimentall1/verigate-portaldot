@@ -77,8 +77,8 @@ slides=[]
 # 1. Cover
 im,d=base("Verigate PortalDot","Independent authority and execution control for autonomous AI systems",1)
 rounded(d,(78,330,1145,740),32,fill=PANEL)
-d.text((125,380),"A proposal is not authority.",font=font(46,True),fill=WHITE)
-paragraph(d,(128,470),"Verigate evaluates each proposed action against human-defined policy. The bridge verifies the signed decision and binds it to the exact payment. The PortalDot guard enforces the approved transfer.",font(29),BODY,max_width=900,leading=1.4)
+d.text((125,380),"An agent can prepare a payment. It should not approve its own spending.",font=font(46,True),fill=WHITE)
+paragraph(d,(128,470),"Verigate checks the proposed payment against the application's rules. The bridge verifies that decision and ties it to the exact recipient and amount. The PortalDot guard checks it before funds move.",font(29),BODY,max_width=900,leading=1.4)
 chips=[("VERIGATE","Ed25519 decision"),("BRIDGE","Exact action binding"),("PORTALDOT","EIP-712 guard")]
 x=122
 for label,sub in chips:
@@ -98,11 +98,11 @@ d.text((82,978),"LIVE DEMO: rudimentall1.github.io/verigate-portaldot/?guard=0x8
 slides.append(im)
 
 # 2. Problem
-im,d=base("Preventing unrestricted agent spending","The authorization must bind the decision to the exact thing the executor is allowed to do.",2)
+im,d=base("Keep agent payments within the owner's rules","The payment must match the action that was actually approved.",2)
 cards=[
-    ("01  RECIPIENT SUBSTITUTION","An approved payment must not be reused with a different destination.",RED),
-    ("02  AMOUNT TAMPERING","The amount must remain the same from signed intent to contract call.",AMBER),
-    ("03  REPLAY OR EXPIRY","A valid authorization should not be usable again or after its deadline.",CYAN),
+    ("01  RECIPIENT","The destination must be the one the owner approved.",RED),
+    ("02  AMOUNT","The amount must not change between approval and execution.",AMBER),
+    ("03  REPLAY AND EXPIRY","An approval must not be reused or accepted after it expires.",CYAN),
 ]
 x0=80
 for title,desc,col in cards:
@@ -113,11 +113,11 @@ for title,desc,col in cards:
     x0+=590
 rounded(d,(80,665,1820,870),26,fill="#102E45",outline=BLUE,width=2)
 d.text((122,704),"Design principle",font=font(22,True),fill=CYAN)
-paragraph(d,(122,756),"A signed ALLOW is necessary but not enough: its authority must be short-lived, narrowly scoped, and bound to a recipient, amount, chain and contract.",font(31,True),WHITE,max_width=1580,leading=1.33)
+paragraph(d,(122,756),"An ALLOW only applies to the payment it approved. It is short-lived and tied to the recipient, amount, chain and contract.",font(31,True),WHITE,max_width=1580,leading=1.33)
 slides.append(im)
 
 # 3. Architecture
-im,d=base("A narrow path from decision to execution","Off-chain verification and on-chain enforcement have separate, explicit trust boundaries.",3)
+im,d=base("From policy decision to payment","Each step checks the authorization before the next one can proceed.",3)
 steps=[
     ("1","AGENT INTENT","Proposed action"),
     ("2","VERIGATE","Signed ALLOW + execution authorization"),
@@ -143,7 +143,7 @@ paragraph(d,(118,805),"The bridge refuses to sign; the contract cannot independe
 slides.append(im)
 
 # 4. Why PortalDot / track
-im,d=base("Why PortalDot V3 — and where this project fits","Two 0.1 POT testnet transfer records exist, with different evidence availability for V1 and V2.",4)
+im,d=base("What we tested on PortalDot V3","The EVM guard and native Substrate adapter are separate paths, each with its own evidence.",4)
 bullet(d,90,320,"Recorded testnet transfers (V1 + V2)","V1: 0.1 EVM POT in block 132475; saved success receipt and matching TransferExecuted event. A later query to the same configured RPC no longer returned that historical receipt. V2: 0.1 EVM POT in block 149241; receipt, event, sender debit and recipient credit were re-queried through that same RPC.",790,BLUE)
 bullet(d,90,495,"EVM-compatible contract execution","The guard uses EIP-712 signatures bound to chain ID and contract address. V2 is the current execution demo; V1 remains a separate predecessor.",790,CYAN)
 bullet(d,90,670,"Native Substrate adapter execution","A separate adapter completed a Verigate-authorized Balances.transferKeepAlive on PortalDot V3 testnet. The saved transaction was re-checked read-only against one configured RPC in finalized block 175489 with one matching balances.Transfer event. No second-provider or fresh Ed25519 re-verification is claimed.",790,GREEN)
@@ -207,7 +207,7 @@ paragraph(d,(1077,670),"The two negative results are read-only eth_call response
 slides.append(im)
 
 # 7. Remaining gaps
-im,d=base("From testnet evidence to ecosystem integration","The reference implementation establishes a policy-bound execution path and a clear roadmap for wider adoption.",7)
+im,d=base("What comes next","The testnet work is ready for reproduction and review by an independent application developer.",7)
 bullet(d,90,310,"Independent network verification","Extend receipt, runtime and policy checks with a second independent RPC source and a pinned EVM genesis identity.",830,BLUE)
 bullet(d,90,495,"Operational assurance","Complete external review of signer management, replay protection, authorization expiry, fee handling and recovery procedures.",830,CYAN)
 bullet(d,90,680,"Developer integration","Package the EVM and native Substrate adapters for application teams and validate the reference flows through ecosystem pilots.",830,GREEN)
