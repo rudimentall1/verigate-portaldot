@@ -1,25 +1,25 @@
 # DoraHacks BUIDL review — 24 October 2026
 
-> **Current status addendum:** the user subsequently updated the BUIDL page and published the new demo link https://www.youtube.com/watch?v=9WhBdwGgXLk. The current account-view excerpt shows the newer tags and project links. The user also reports that the separate Check-in step was cancelled. The check-in-deadline instructions below are historical notes from the earlier page view, not current action items. Remaining manual checks are the exact public video's end-to-end audio/caption review, the full long-form description/track, and logged-out reviewer access.
+> **Current status addendum:** the BUIDL submission was updated with the published demo link https://www.youtube.com/watch?v=9WhBdwGgXLk. The current account-view excerpt shows the newer tags and project links. The separate Check-in step is recorded as cancelled. The check-in-deadline instructions below are historical notes from the earlier page view, not current action items. Remaining manual checks are the exact public video's end-to-end audio/caption review, the full long-form description/track, and logged-out reviewer access.
 
 
 ## Status from the current page view
 
-The user-provided account view shows a populated Verigate PortalDot BUIDL entry with the YouTube video URL, public GitHub repository, social links and a detailed overview/evidence section. This is materially stronger evidence than an empty or draft-only entry. It does not, by itself, prove logged-out judge visibility or the event-specific check-in status.
+The current BUIDL account snapshot shows a populated Verigate PortalDot BUIDL entry with the YouTube video URL, public GitHub repository, social links and a detailed overview/evidence section. This is materially stronger evidence than an empty or draft-only entry. It does not, by itself, prove logged-out judge visibility or the event-specific check-in status.
 
 The published event mirror lists the check-in deadline as 24 October 2026 at 20:00 UTC+8 (12:00 UTC). The workflow timestamps checked at 07:58 UTC on 24 October were still before that deadline. Confirm the saved check-in state in the DoraHacks UI now.
 
 ## Audit of the current account-view excerpt
 
-The latest account view supplied for this review shows the project positioning line, tags `Crypto / Web3`, `Crypto-AI`, `Security`, `Substrate`, the current YouTube link, repository and social links. These are consistent with the project's implemented scope.
+The latest BUIDL account snapshot shows the project positioning line, tags `Crypto / Web3`, `Crypto-AI`, `Security`, `Substrate`, the current YouTube link, repository and social links. These are consistent with the project's implemented scope.
 
-The supplied excerpt does **not** expose the complete long-form description or selected track. Direct public-page retrieval was not available during this audit, so those two fields are not marked verified. Do not infer that a field is correct merely because the title, tags and links are visible.
+The available account snapshot does **not** display the complete long-form description or selected track. Direct public-page retrieval was not available during this audit, so those two fields are not marked verified. Do not infer that a field is correct merely because the title, tags and links are visible.
 
 ## Track recommendation
 
 The published event listing names four tracks: Modular Cloud & Middleware, Multi-Chain & Cross-Chain Infra, Node Operations & Tooling, and Ecosystem DApps. See https://www.hackathonradar.com/database/hackathon/portaldot-hacker-house-2026.
 
-**Recommended fit: Modular Cloud & Middleware.** The submission is a policy-to-execution middleware component with a bridge, EVM guard and read-only DApp. It is not primarily node monitoring/staking, a cross-chain asset bridge, or a consumer-facing DApp. Earlier project notes record Node Operations & Tooling as the original track choice, but the latest supplied account-view excerpt does not show the currently selected track. If the form still permits a change, switch to **Modular Cloud & Middleware**; otherwise, confirm the existing selection and do not describe the recommendation as the actual selected track.
+**Recommended fit: Modular Cloud & Middleware.** The submission is a policy-to-execution middleware component with a bridge, EVM guard and read-only DApp. It is not primarily node monitoring/staking, a cross-chain asset bridge, or a consumer-facing DApp. Earlier project notes record Node Operations & Tooling as the original track choice, but the latest account snapshot does not show the currently selected track. If the form still permits a change, switch to **Modular Cloud & Middleware**; otherwise, confirm the existing selection and do not describe the recommendation as the actual selected track.
 
 ## Mandatory factual wording for the spending policy
 
@@ -56,4 +56,4 @@ Do not say the live chain demonstrated a window-cap violation. The window-overfl
 4. Watch/listen to the exact public video upload from beginning to end to confirm voice-over and burned-in captions agree.
 5. Save/verify the final submission by 6 November 2026, 09:00 in the current DoraHacks view (04:00 UTC at UTC+5).
 
-The revised video link is already reflected in the user's reported account view. Do not re-render or replace it unless the playback check finds a real defect.
+The revised video link is already reflected in the current BUIDL account snapshot. Do not re-render or replace it unless the playback check finds a real defect.
