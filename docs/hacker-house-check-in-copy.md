@@ -8,7 +8,7 @@ Verigate PortalDot
 
 ## Current public positioning line
 
-Independent authority and execution-control layer for autonomous AI systems, demonstrated through policy-bound payments on PortalDot V3 EVM testnet
+Policy authorization and spending controls for AI-agent payments on PortalDot V3
 
 ## Submission tags
 
@@ -20,9 +20,9 @@ Verigate checks whether an AI agent is allowed to take a specific action. In thi
 
 ## Short project description
 
-An agent can prepare a valid payment without having the authority to approve it. Verigate evaluates the proposed action against the application's policy. In the EVM path, the bridge verifies the signed ALLOW decision and creates a short-lived EIP-712 authorization tied to the recipient, amount, nonce, deadline and action ID. The deployed V2 guard checks that authorization, the recipient allowlist and the spending limits before moving POT from its own balance.
+An AI agent can prepare a valid payment without having the authority to approve it. Verigate checks the proposed action against the application's policy and issues a signed ALLOW, WARN or BLOCK decision. For an approved EVM payment, the bridge verifies Verigate's Ed25519-signed artifacts and creates a short-lived EIP-712 authorization tied to the recipient, amount, nonce, deadline and action ID. PortalDotAgentGuardV2 verifies that authorization and checks the recipient allowlist and spending limits before transferring POT held by the contract.
 
-The recorded EVM testnet flow transferred 0.1 POT in block 149241 and produced a successful receipt with one matching TransferExecuted event. The public dashboard also demonstrates two read-only rejection checks against the deployed contract. Separately, the native Substrate adapter completed a Verigate-authorized transfer recorded in block 175489. Both records were checked through one configured RPC; neither has a second-provider confirmation. This is a testnet reference implementation, not a global wallet firewall, DaaS integration, security audit or production deployment.
+The recorded EVM testnet flow transferred 0.1 POT in block 149241 and produced a successful receipt with one matching TransferExecuted event. The public dashboard also demonstrates two read-only rejection checks against the deployed contract. A separate native Substrate adapter completed a Verigate-authorized 0.1 POT Balances.transfer_keep_alive in block 175489. A later read-only re-query matched the transaction, signer, recipient and transfer event through the same configured Substrate RPC. This is a separate adapter path, not an extension of the EVM guard; the Substrate runtime does not verify Verigate's signature, and direct extrinsics outside the adapter are not covered. Both the EVM and Substrate evidence use one configured RPC each, with no second-provider confirmation. This is a testnet reference implementation, not a global wallet firewall, DaaS integration, security audit or production deployment.
 
 ## Project provenance and licensing disclosure
 
@@ -69,7 +69,7 @@ The URL opens the deployed V2 guard dashboard directly. It is read-only and does
 - The recorded live transaction and readbacks use one configured PortalDot RPC. They are not an independent second-provider verification.
 - The historical deployment receipt later became unavailable from the configured RPC; do not interpret that as deployment failure or redeploy solely to recreate receipt history.
 - No direct DaaS integration is claimed because a verified public DaaS call interface was not found.
-- No live native Substrate transfer, security audit, production readiness or mainnet deployment is claimed.
+- No independent security audit, production readiness or mainnet deployment is claimed.
 
 ## Final submission checklist
 
