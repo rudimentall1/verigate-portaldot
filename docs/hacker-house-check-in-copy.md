@@ -16,13 +16,13 @@ Crypto / Web3; Crypto-AI; Security; Substrate
 
 ## One-line description
 
-Verigate is an independent authority and execution-control layer for autonomous AI systems. It evaluates proposed actions against human-defined policies, issues cryptographically verifiable decisions, and binds authorization to the exact action before execution. The PortalDot V3 testnet integration demonstrates this model for native-POT payments: a signed Verigate decision is verified by the bridge, and the deployed EVM guard enforces recipient and spending limits on funds held by that guard.
+Verigate checks whether an AI agent is allowed to take a specific action. In this PortalDot V3 testnet integration, the decision is checked before a payment is submitted: the EVM guard enforces recipient and spending limits on funds held by the guard, while a separate native Substrate adapter checks the signed decision before submitting a native transfer.
 
 ## Short project description
 
-AI agents can propose token transfers, but a warning or fee estimate does not enforce the owner's authority limits. Verigate PortalDot connects Verigate's signed ALLOW decision to a narrowly scoped PortalDot V3 EVM guard. The bridge verifies the signed decision and binds a short-lived EIP-712 authorization to the exact recipient, amount, nonce, deadline and action ID. The deployed guard enforces an allowlist, a per-transfer cap and a resettable spending-interval cap for funds held by that guard.
+An agent can prepare a valid payment without having the authority to approve it. Verigate evaluates the proposed action against the application's policy. In the EVM path, the bridge verifies the signed ALLOW decision and creates a short-lived EIP-712 authorization tied to the recipient, amount, nonce, deadline and action ID. The deployed V2 guard checks that authorization, the recipient allowlist and the spending limits before moving POT from its own balance.
 
-The public testnet evidence includes a 0.1 POT transfer following a fresh Verigate ALLOW. The transaction succeeded in block 149241 and emitted one matching TransferExecuted event. This is a testnet prototype, not a global wallet firewall, DaaS integration, security audit or production deployment.
+The recorded EVM testnet flow transferred 0.1 POT in block 149241 and produced a successful receipt with one matching TransferExecuted event. The public dashboard also demonstrates two read-only rejection checks against the deployed contract. Separately, the native Substrate adapter completed a Verigate-authorized transfer recorded in block 175489. Both records were checked through one configured RPC; neither has a second-provider confirmation. This is a testnet reference implementation, not a global wallet firewall, DaaS integration, security audit or production deployment.
 
 ## Project provenance and licensing disclosure
 
@@ -59,7 +59,7 @@ The URL opens the deployed V2 guard dashboard directly. It is read-only and does
 - The public DApp provides read-only policy state and transaction lookup.
 - Local contract tests cover over-cap transfers, recipient allowlisting, time-window overflow, replay protection and altered signed fields.
 - The published DApp's 24 October Chromium smoke test checked the expected runtime hash and executed two live read-only `eth_call` probes. An unlisted recipient returned `InvalidRecipient()`; `0.100000000000000001 POT` against the live `0.1 POT` cap returned `AmountExceedsCap(amount, cap)` with matching arguments. No signature or transaction was submitted, and no fee was paid. Full output is committed in [browser evidence JSON](evidence/published-dapp-browser-smoke-2026-10-24.json); these are not mined reverts and do not independently authenticate the single configured RPC.
-- A separate native Substrate adapter exists in code and offline tests, but no native Substrate transfer is claimed as live evidence.
+- A separate native Substrate adapter completed a Verigate-authorized testnet transfer. The saved transaction was re-queried through one configured RPC and matched finalized block 175489 and one balances.Transfer event; there is no second-provider confirmation.
 
 ## Known limitations
 
