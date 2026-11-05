@@ -90,7 +90,7 @@ The guard protects transfers from its own contract balance. It does not protect 
 ## 09 — Current limitations
 
 - No live testnet simulation of a time-window cap violation.
-- No successful live native Substrate transfer is claimed.
+- The separate native Substrate adapter has a recorded finalized `Balances.transferKeepAlive` testnet execution (block `175489`, one matching `balances.Transfer` event). The 27 October 2026 read-only re-check matched the saved transaction against one configured RPC; it is not a second-provider confirmation or a fresh Ed25519 signature verification.
 - No verified PortalDot DaaS integration is demonstrated.
 - No independent second-RPC confirmation is claimed.
 - No independent security audit, mainnet deployment or production-readiness claim.
