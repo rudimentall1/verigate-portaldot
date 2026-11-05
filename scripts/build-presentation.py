@@ -209,7 +209,7 @@ slides.append(im)
 # 7. Remaining gaps
 im,d=base("What comes next","The testnet work is ready for reproduction and review by an independent application developer.",7)
 bullet(d,90,310,"Independent network verification","Extend receipt, runtime and policy checks with a second independent RPC source and a pinned EVM genesis identity.",830,BLUE)
-bullet(d,90,495,"Operational assurance","Complete external review of signer management, replay protection, authorization expiry, fee handling and recovery procedures.",830,CYAN)
+bullet(d,90,495,"Operational assurance","The sender debit reconciles to 7.82782148139542551 POT through one RPC; the execution-fee and storage-deposit split remains unresolved. External review of signer management, replay protection and recovery is still needed.",830,CYAN)
 bullet(d,90,680,"Developer integration","Package the EVM and native Substrate adapters for application teams and validate the reference flows through ecosystem pilots.",830,GREEN)
 rounded(d,(1040,320,1818,845),28,fill=PANEL,outline="#2C4968")
 d.text((1080,365),"ENFORCEMENT SCOPE",font=font(22,True),fill=CYAN)
