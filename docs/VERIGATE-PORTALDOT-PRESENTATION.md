@@ -1,114 +1,90 @@
 # Verigate + PortalDot
-## Transaction authorization for AI-driven applications
+## Put an authorization check between an AI agent and a payment
 
----
+### 1. The problem
 
-## 01 — The problem
+AI agents are becoming capable of preparing and submitting payments. The application still needs to decide what each agent is allowed to do.
 
-AI agents can propose transactions. A proposal must not automatically grant spending authority.
+A valid transaction is not necessarily an authorized transaction. The recipient, amount and timing must stay within rules set by the owner or application.
 
-Authorization and execution need separate controls.
+### 2. What we built
 
----
+Verigate evaluates a proposed action against those rules and returns an ALLOW, WARN or BLOCK decision.
 
-## 02 — The approach
+For the PortalDot EVM demo, the bridge verifies Verigate's signed decision and creates a short-lived EIP-712 authorization for one exact payment. The deployed `PortalDotAgentGuardV2` checks that authorization before transferring funds held by the guard.
 
-Verigate evaluates the proposed action against policy and signs an authorization decision.
+### 3. How a payment is checked
 
-The bridge verifies the Ed25519 artifact and binds approval to the exact transfer using EIP-712.
+1. The application or agent proposes a payment.
+2. Verigate evaluates it against the configured policy.
+3. The bridge verifies the signed Verigate artifacts and checks the exact recipient and amount.
+4. A separate EIP-712 authorization is created for the PortalDot guard.
+5. The guard checks the signature, recipient, amount, nonce and deadline before moving funds.
 
-PortalDotAgentGuardV2 validates that authorization and enforces contract-level limits.
+The EVM contract verifies the bridge's EIP-712 signature. Verigate's Ed25519 artifacts are verified off-chain by the bridge.
 
----
+### 4. What the EVM guard enforces
 
-## 03 — Execution flow
+- Only approved recipient addresses can receive a transfer.
+- A single transfer is limited to **0.1 POT**.
+- Spending is limited to **0.5 POT per resettable 3,600-second interval**.
 
-1. An AI application proposes a transfer.
-2. Verigate evaluates policy and issues a signed decision.
-3. The bridge verifies the signed artifact and prepares action-bound EIP-712 authorization.
-4. The guard checks signature, recipient, amount and spending interval.
-5. The contract transfers native POT from its own balance.
+The interval counter resets after the configured period. It is not a continuously sliding rolling-window calculation. The administrator can change the allowlist and limits.
 
----
+### 5. What is running on PortalDot V3
 
-## 04 — On-chain policy
+The current EVM demo uses `PortalDotAgentGuardV2` on PortalDot V3 EVM testnet.
 
-- Recipient allowlist.
-- Maximum **0.1 POT per transfer**.
-- Maximum **0.5 POT per resettable 3,600-second interval**.
+- A **0.1 POT** transfer was executed after a Verigate ALLOW decision.
+- The recorded receipt succeeded in block **149241** and contains one matching `TransferExecuted` event.
+- The published read-only dashboard checks the deployed contract and can run recipient and amount rejection probes.
+- A separate native Substrate adapter has also completed a Verigate-authorized `Balances.transfer_keep_alive` testnet transfer. Its saved transaction was re-queried through one configured RPC and matched block **175489** and one `balances.Transfer` event.
 
-The interval counter resets after expiry. It is not a continuously sliding rolling-window sum.
+These are two separate execution paths with different enforcement models.
 
----
-
-## 05 — Implemented on PortalDot V3
-
-- PortalDotAgentGuardV2 deployed on EVM testnet.
-- Successful 0.1 POT transfer with matching `TransferExecuted` event.
-- Live read-only rejection simulations for an over-cap amount and a non-allowlisted recipient.
-- Public read-only DApp, automated tests and recorded evidence.
-
----
-
-## 06 — Successful testnet execution
+### 6. EVM transfer record
 
 **Contract:** `0x87C494a5e4B0A8E055F283767579667E10E046C6`
 
 **Network:** PortalDot V3 EVM testnet  
 **Chain ID:** `420420777`  
-**Block:** `149241`
+**Block:** `149241`  
+**Amount:** `0.1 POT`  
+**Transaction:** `0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`
 
-**Transaction:**  
-`0xaf3df785fdeaf85bbc9af2ae1342a7c664f4a55877469c4996eff2fe90f5551e`
+The saved evidence reports a successful receipt and one matching `TransferExecuted` event. The receipt and balance checks used one configured RPC; they have not been independently checked through a second provider.
 
-**Receipt:** successful  
-**Event:** `TransferExecuted`  
-**Amount:** 0.1 POT
+### 7. Rejection checks against the deployed guard
 
----
+The published dashboard ran two read-only `eth_call` checks against the V2 contract:
 
-## 07 — Live policy rejection checks
+- An address outside the allowlist returned `InvalidRecipient()`.
+- A request for `0.100000000000000001 POT` returned `AmountExceedsCap(amount, cap)`.
 
-**Over-cap request:** `0.100000000000000001 POT`  
-**Contract result:** `AmountExceedsCap(amount, cap)`
+These calls did not create signatures or transactions, did not produce mined reverts and did not incur transaction fees. They show how the deployed contract responds to those inputs. They do not establish that Verigate itself returned BLOCK for those exact probes.
 
-**Non-allowlisted recipient**  
-**Contract result:** `InvalidRecipient()`
+### 8. The native Substrate path
 
-Both checks were read-only `eth_call` simulations. No transaction was signed or broadcast, and no transaction fee was incurred.
+The separate Substrate adapter checked a Verigate ALLOW decision, completed a successful `system_dryRun`, and submitted `Balances.transfer_keep_alive`. The saved record reports finalization in block **175489** with one matching `balances.Transfer` event.
 
----
+The transaction was re-queried through one configured RPC. There is no second-provider confirmation or fresh re-verification of the original Ed25519 artifacts. The Substrate runtime does not verify Verigate's signature; that check is performed by the adapter. A direct transaction that bypasses the adapter is outside this control path.
 
-## 08 — Security boundary
+### 9. What this does — and does not — protect
 
-The bridge verifies Verigate's Ed25519-signed artifacts. The contract does not verify Ed25519 directly; it verifies the bridge's EIP-712 execution authorization.
+The EVM guard controls transfers routed through its own contract balance. It is not a firewall for a user's entire wallet. The native Substrate adapter checks actions submitted through that adapter; it cannot stop a user or application from submitting a separate transaction outside it.
 
-The guard protects transfers from its own contract balance. It does not protect arbitrary wallets or prevent bypass through other fund-access paths.
+This is a testnet reference implementation, not an audited or production-ready wallet security product. No mainnet deployment, PortalDot Wallet integration or DaaS integration is claimed. The live chain reads described here used one configured RPC.
 
----
+### 10. Why this is useful
 
-## 09 — Current limitations
+The integration gives developers a working example of where to place an authorization check in an agent payment flow. They can inspect the policy decision, the action binding, the EVM contract checks and the separate Substrate adapter rather than treating an agent's intent as permission to spend.
 
-- No live testnet simulation of a time-window cap violation.
-- The separate native Substrate adapter has a recorded finalized `Balances.transferKeepAlive` testnet execution (block `175489`, one matching `balances.Transfer` event). The 27 October 2026 read-only re-check matched the saved transaction against one configured RPC; it is not a second-provider confirmation or a fresh Ed25519 signature verification.
-- No verified PortalDot DaaS integration is demonstrated.
-- No independent second-RPC confirmation is claimed.
-- No independent security audit, mainnet deployment or production-readiness claim.
+The next step is to have an independent application developer reproduce one of these flows and assess what would be needed for a real pilot.
 
----
+### 11. Code and evidence
 
-## 10 — Why it matters
-
-An AI agent may generate an action, but it should not define its own authority.
-
-**Verigate authorizes. The bridge binds authorization to the exact action. The on-chain guard enforces explicit limits.**
-
-This is an evidence-backed reference authorization-to-execution path for AI-driven payments on PortalDot.
-
----
-
-## 11 — Code and evidence
-
-Repository: [rudimentall1/verigate-portaldot](https://github.com/rudimentall1/verigate-portaldot)
-
-The repository contains Solidity contracts, bridge implementation, deployment and verification scripts, automated tests, workflows and recorded testnet evidence.
+- **Repository:** [rudimentall1/verigate-portaldot](https://github.com/rudimentall1/verigate-portaldot)
+- **Live read-only demo:** [PortalDot V2 guard dashboard](https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6)
+- **EVM transfer evidence:** [V2 live transfer record](https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json)
+- **Native Substrate evidence:** [finalized transfer record](https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json)
+- **Implementation:** Solidity contracts, bridge and adapter code, tests, verification scripts and machine-readable evidence are in the repository.
