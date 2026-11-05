@@ -90,7 +90,7 @@ Never query the storage map without a key in shared CI; a keyless query may enum
 
 ## Account-mapping safety rule
 
-The hackathon account supplied to PortalDot and funded by the team is the user's original Substrate address. Do not replace it in the application, and do not send further test funds to a derived fallback address based only on offline conversion.
+The hackathon account registered with PortalDot and funded by the team is the project's original Substrate address. Keep this address as the canonical native account; do not replace it in the application or send further test funds to a derived fallback address based only on offline conversion.
 
 A read-only check of the wallet-displayed H160 returned `no_mapping_entry` for the registered SS58 account. A separate H160 produced by the current upstream offline derivation returned `mapping_matches` for that SS58 account at the endpoint's reported finalized block. A separate EVM balance read returned non-zero balances for both H160s. These observations do not prove that the wallet-displayed H160 is incorrect, nor that the project controls the private key for the H160 found in storage. The two addresses must not be treated as interchangeable. Do not send further funds, call `map_account`, or use the derived H160 as a signer based on these observations alone. No transfer is needed to continue read-only investigation.
 
@@ -142,7 +142,7 @@ The project has the following observations:
 | Pindex (account mapping record) | `5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB` | `0xb82c4b7923080251c6cbb3bab79de1e56f901ce1` | Shows a different H160 for the same SS58. |
 | Read-only `Revive.OriginalAccount` probe recorded 19 October | Same SS58 | `0xb82c4b7923080251c6cbb3bab79de1e56f901ce1` | Stored AccountId32 matched this SS58. No entry was returned for `0x4c07...D2CB` at the time of that query. |
 | PortalDot explorer (explorer record, 22 October) | `5DnPnXhtA9w1z28Vv2p5RMZnzeg7aGcwLbcFLhATjgQ2sNEj` | `0x4c07B4f328FA738290Db96BCE2F9CBc4d020D2CB` | Displays native balance 262.0243 tPOT. |
-| PortalDot explorer (user-provided result, 22 October) | `5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB` | `0xb82c4b7923080251c6cbb3bab79de1e56f901ce1` | Displays native balance 47.9551 tPOT. |
+| PortalDot explorer (recorded result, 22 October) | `5CwFhhZoS2LP5tWAzurDznL949zEemjePH1XBdw6grgyrEPB` | `0xb82c4b7923080251c6cbb3bab79de1e56f901ce1` | Displays native balance 47.9551 tPOT. |
 
 The explorer results associate `0x4c07...D2CB` with `5DnPnX...Q2sNEj`, while SubWallet groups that same H160 with `5CwFhh...gyrEPB`. Pindex and the recorded runtime storage probe associate `5CwFhh...gyrEPB` with `0xb82c...901ce1`. These are conflicting observations from different interfaces and query paths. The explorer balances above are the native balances shown in the recorded explorer result; they are not a fresh `eth_getBalance` result for either H160.
 
@@ -150,7 +150,7 @@ The explorer results associate `0x4c07...D2CB` with `5DnPnX...Q2sNEj`, while Sub
 
 - SS58 and H160 are different account identifiers. A wallet UI grouping them does not, by itself, prove a runtime `Revive.OriginalAccount` entry or prove that the same private key controls both account paths.
 - `Revive.OriginalAccount` is keyed by H160 and stores AccountId32. A matching entry proves only what the queried endpoint returned for that key at the queried block; a missing entry does not prove that a wallet display is invalid.
-- Offline derivation of `0xb82c...1ce1` from the SS58 account and the observed runtime entry are consistent with each other, but do not prove that the user controls the private key for that H160.
+- Offline derivation of `0xb82c...1ce1` from the SS58 account and the observed runtime entry are consistent with each other, but do not establish key ownership for that H160. Key control must be verified by a signing challenge, not inferred from address mapping alone.
 - Do not treat `0x4c07...D2CB` and `0xb82c...1ce1` as interchangeable. Do not change the project's configured deployer, send funds to a derived address, or deploy/sign from either address solely on the basis of these UI results.
 - The configured deployer key must be verified locally against the intended H160 with `npm run verify:deployer-address -- <expected-H160> --redact`. This proves the key-to-H160 relation only; it does not resolve the SS58 mapping discrepancy.
 - Record a new read-only `Revive.OriginalAccount` query with its finalized block fingerprint and independently ask PortalDot to explain the runtime/wallet mapping semantics before changing funding or deployment decisions. Never share seed phrases or private keys.
