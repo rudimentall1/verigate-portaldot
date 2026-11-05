@@ -177,11 +177,11 @@ The verifier checks the recorded block, canonical finalized-chain hash at that h
 
 Live re-query of the saved transfer passed on 27 October 2026 in [GitHub Actions run 40467595612](https://github.com/rudimentall1/verigate-portaldot/actions/runs/40467595612). The RPC returned the expected transaction in canonical block `175489`, runtime `portaldot-v3/3002`, the correct signer/recipient/amount and matching dispatch, transfer and fee events. See the committed [machine-readable re-verification report](docs/evidence/portaldot-native-substrate-reverification-2026-10-27.json). This is a one-RPC confirmation; it is not independent RPC authentication or Ed25519 signature verification.
 
-PortalDot Wallet and DaaS are potential integration surfaces for a future ecosystem deployment. The current repository provides the reference middleware, adapters and evidence needed to evaluate that integration. This repository does not claim a production-ready multichain agent framework, a WASM/EVM cross-execution bridge, universal transaction interception, an independent audit, or mainnet readiness. The current V2 spending counter resets after its configured interval; it is not a continuously sliding rolling-window algorithm.
+The current implementation provides two distinct execution paths: an EVM guard for transfers held by its contract balance, and a native Substrate adapter for the supported transfer flow. These paths have separate trust boundaries and are not a universal wallet firewall or a cross-chain asset bridge. PortalDot Wallet and DaaS are potential future integration surfaces. The V2 spending counter resets after its configured interval; it is not a continuously sliding rolling-window algorithm.
 
 ## Differentiation and commercial hypothesis
 
-The technical contribution is the composition of intent-bound policy authorization with checks at the execution boundary across an EVM guard and a separate native Substrate adapter. Recipient allowlists, spending caps, EIP-712 signatures and transaction simulation are established techniques; this project does not claim they are individually novel.
+The technical differentiation is the composition of intent-bound policy authorization, cryptographic binding to the exact action, network-aware preflight and enforcement at the execution boundary across EVM and native Substrate adapters.
 
 The commercial path is hosted policy evaluation and authorization receipts, with self-hosted deployments for teams that need control over policy data and infrastructure. The next milestone is to validate this model with application developers and advance toward an integration pilot.
 
