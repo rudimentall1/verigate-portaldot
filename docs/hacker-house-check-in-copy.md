@@ -24,6 +24,8 @@ An AI agent can prepare a valid payment without having the authority to approve 
 
 The recorded EVM testnet flow transferred 0.1 POT in block 149241 and produced a successful receipt with one matching TransferExecuted event. The public dashboard also demonstrates two read-only rejection checks against the deployed contract. A separate native Substrate adapter completed a Verigate-authorized 0.1 POT Balances.transfer_keep_alive in block 175489. A later read-only re-query matched the transaction, signer, recipient and transfer event through the same configured Substrate RPC. This is a separate adapter path, not an extension of the EVM guard; the Substrate runtime does not verify Verigate's signature, and direct extrinsics outside the adapter are not covered. Both the EVM and Substrate evidence use one configured RPC each, with no second-provider confirmation. This is a testnet reference implementation, not a global wallet firewall, DaaS integration, security audit or production deployment.
 
+The deployed V2 policy allows configured recipients, caps each transfer at 0.1 POT, and sets a 0.5 POT limit for a resettable 3,600-second interval. The counter resets after the interval expires; it is not a sliding rolling-window sum. The contract administrator can change the recipient allowlist and spending limits.
+
 ## Project provenance and licensing disclosure
 
 This project builds on the pre-existing Verigate policy engine. The PortalDot-specific integration in this repository includes the bridge authorization path, the V2 EVM guard, the read-only DApp/receipt lookup and the testnet verification tooling. The project does not claim that all Verigate components originated during this hackathon. The repository is MIT-licensed; third-party dependency licenses remain applicable.
@@ -49,6 +51,8 @@ The URL opens the deployed V2 guard dashboard directly. It is read-only and does
 - Block: `149241`
 - Recorded transaction evidence: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json
 - Live denial-probe evidence (read-only `eth_call`, not mined reverts): https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/published-dapp-browser-smoke-2026-10-24.json
+- Native Substrate transfer evidence (separate adapter): https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json
+- Native Substrate read-only re-verification (block 175489; one RPC): https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-native-substrate-reverification-2026-10-27.json
 - Presentation PDF (7 slides): https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/Verigate-PortalDot-Presentation.pdf
 - The PDF is the original deck retained with the published demo. It predates the separate native Substrate transfer recorded on 24 October 2026; see the later evidence links above.
 - Architecture and trust boundaries: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/architecture.md
