@@ -6,6 +6,10 @@ An AI agent can propose an action, but a proposal is not authority. Verigate eva
 
 **Canonical live demo (keep this URL unchanged):** https://rudimentall1.github.io/verigate-portaldot/?guard=0x87C494a5e4B0A8E055F283767579667E10E046C6
 
+## Project presentation
+
+[Read the Verigate + PortalDot presentation](docs/VERIGATE-PORTALDOT-PRESENTATION.md) — architecture, execution flow, testnet transaction evidence, policy rejection checks and current scope.
+
 ## Verigate's role in the PortalDot integration
 
 Verigate is the independent policy and authority layer between an autonomous agent's proposed action and the execution mechanism. The PortalDot integration demonstrates how a signed policy decision can be bound to one exact payment and checked at the execution boundary. The repository provides a concrete reference integration for developers building agent-driven payment flows.
