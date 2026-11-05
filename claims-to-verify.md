@@ -71,7 +71,7 @@ Do not claim:
 
 ## Demo-video review
 
-The user reports that the revised demo is published on the DoraHacks BUIDL at [YouTube](https://www.youtube.com/watch?v=9WhBdwGgXLk). The working render inspected in this conversation is 174.733 seconds (2:54.7), 1920×1080 at 30 fps, H.264 High/yuv420p with AAC-LC stereo at 48 kHz. It is 5.267 seconds below the three-minute cap. The supplied working file was checked with ffprobe; an FFmpeg scan measured peak -4.2 dBFS and integrated loudness -17.3 LUFS. A black-frame scan found no black segment lasting 0.5 seconds or longer.
+Published demo video: [Verigate PortalDot Hacker House Demo](https://www.youtube.com/watch?v=9WhBdwGgXLk). The working render inspected in this conversation is 174.733 seconds (2:54.7), 1920×1080 at 30 fps, H.264 High/yuv420p with AAC-LC stereo at 48 kHz. It is 5.267 seconds below the three-minute cap. The supplied working file was checked with ffprobe; an FFmpeg scan measured peak -4.2 dBFS and integrated loudness -17.3 LUFS. A black-frame scan found no black segment lasting 0.5 seconds or longer.
 
 The supplied SRT contains 49 cues and its last cue ends at 172.716 seconds, approximately 2.017 seconds before the MP4 ends. However, that attached SRT still contains the earlier wording at cues 4–8 (“Here is the live, read-only console…”) and cue 46 (“Verigate and PortalDot demonstrate…”). It may predate the current YouTube upload. The exact public cut has not been listened to continuously here, so do not claim these wording issues are either fixed or present in the public upload until playback confirms it.
 
