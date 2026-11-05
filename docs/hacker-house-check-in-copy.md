@@ -50,6 +50,7 @@ The URL opens the deployed V2 guard dashboard directly. It is read-only and does
 - Recorded transaction evidence: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/portaldot-v2-live-transfer-2026-10-22.json
 - Live denial-probe evidence (read-only `eth_call`, not mined reverts): https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/evidence/published-dapp-browser-smoke-2026-10-24.json
 - Presentation PDF (7 slides): https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/Verigate-PortalDot-Presentation.pdf
+- The PDF is the original deck retained with the published demo. It predates the separate native Substrate transfer recorded on 24 October 2026; see the later evidence links above.
 - Architecture and trust boundaries: https://github.com/rudimentall1/verigate-portaldot/blob/main/docs/architecture.md
 
 ## Current progress
