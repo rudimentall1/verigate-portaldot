@@ -28,6 +28,18 @@ Sources:
 
 **Required caveat:** all of those reads used the same configured RPC. No second EVM provider authenticated the result, and no EVM genesis hash pin was configured for these transfers. The sender's gross debit reconciles, but the precise split between runtime execution fee and any refundable storage deposit has not been determined.
 
+### Native Substrate transfer — block 175489
+
+**Use this wording:**
+
+> A separate native Substrate adapter completed a Verigate-authorized `Balances.transfer_keep_alive` on PortalDot V3 testnet. The saved record includes a successful pre-broadcast `system_dryRun`, a reported finalized transaction, and one matching `balances.Transfer` event. A read-only re-query matched the saved transaction to finalized block `175489` through the same configured RPC.
+
+**Required caveats:** this is a separate adapter path, not the EVM guard. The original Substrate transaction record and its later re-query use one configured RPC; there is no second-provider confirmation or fresh re-verification of the original Ed25519 artifacts. The Substrate runtime itself does not verify Verigate's signature; the adapter performs that check. Direct transactions submitted outside the adapter are not covered.
+
+Sources:
+- [Native Substrate transfer record](docs/evidence/portaldot-native-substrate-live-transfer-2026-10-24.json)
+- [27 October read-only re-verification](docs/evidence/portaldot-native-substrate-reverification-2026-10-27.json)
+
 ### Supported wording for the live read-only denial probes
 
 > On 24 October 2026, the published DApp's browser smoke test called the deployed V2 guard using read-only `eth_call` against the configured PortalDot V3 RPC. The contract returned `InvalidRecipient()` for an unlisted recipient and `AmountExceedsCap(amount, cap)` for a request one wei above the current per-transfer cap. The test first checked chain ID and the expected runtime code hash. No signature or transaction was broadcast, and no fee was paid. This is a live endpoint-reported simulation, not a mined revert transaction or independent RPC authentication.
@@ -71,7 +83,7 @@ Do not claim:
 
 ## Demo-video review
 
-The user reports that the revised demo is published on the DoraHacks BUIDL at [YouTube](https://www.youtube.com/watch?v=9WhBdwGgXLk). The working render inspected in this conversation is 174.733 seconds (2:54.7), 1920×1080 at 30 fps, H.264 High/yuv420p with AAC-LC stereo at 48 kHz. It is 5.267 seconds below the three-minute cap. The supplied working file was checked with ffprobe; an FFmpeg scan measured peak -4.2 dBFS and integrated loudness -17.3 LUFS. A black-frame scan found no black segment lasting 0.5 seconds or longer.
+The BUIDL submission links to [Verigate PortalDot Hacker House Demo](https://www.youtube.com/watch?v=9WhBdwGgXLk). The supplied local render is 174.733 seconds (2:54.7), 1920×1080 at 30 fps, H.264 High/yuv420p with AAC-LC stereo at 48 kHz. It is 5.267 seconds below the three-minute cap. The supplied render was checked with ffprobe; an FFmpeg scan measured peak -4.2 dBFS and integrated loudness -17.3 LUFS. A black-frame scan found no black segment lasting 0.5 seconds or longer. These checks describe the supplied render; they do not establish that the YouTube upload is byte-for-byte identical.
 
 The supplied SRT contains 49 cues and its last cue ends at 172.716 seconds, approximately 2.017 seconds before the MP4 ends. However, that attached SRT still contains the earlier wording at cues 4–8 (“Here is the live, read-only console…”) and cue 46 (“Verigate and PortalDot demonstrate…”). It may predate the current YouTube upload. The exact public cut has not been listened to continuously here, so do not claim these wording issues are either fixed or present in the public upload until playback confirms it.
 

@@ -61,11 +61,11 @@ Potential models to validate, not existing revenue:
 - Self-hosted or enterprise deployments for teams that need policy data and execution controls in their own environment.
 - Support or integration work for teams embedding policy-bound payments into agents.
 
-The project currently has no verified paying customers, revenue, production deployment, or measured demand. The next credible commercial signal would be an external developer who reproduces the example, requests an integration, or commits to a pilot. Until then, describe this only as a monetization hypothesis.
+The project currently has no verified paying customers, revenue, production deployment or measured demand. The next credible commercial signal would be an external developer who reproduces the integration, requests an implementation or commits to a pilot. Until then, potential delivery models remain hypotheses.
 
 ## 3. Innovation and differentiation
 
-The project does not claim that address allowlists, spending caps, EIP-712 signatures, fee estimation or transaction simulation are novel in isolation.
+The project does not claim that recipient allowlists, spending caps, EIP-712 signatures, fee estimation or transaction simulation are novel in isolation.
 
 ### Comparison with adjacent tooling
 
@@ -89,7 +89,7 @@ The proposed differentiation is their composition into a policy-to-execution pat
 
 The EVM path demonstrates a contract-enforced native-token transfer from a dedicated guard balance. The native Substrate path demonstrates the PortalDot-specific extension: policy-bound authorization and fail-closed checks before `Balances.transfer_keep_alive`. The two paths are separate adapters; the EVM guard does not secure native Substrate wallet operations.
 
-This architecture is a defensible integration contribution, not proof of market uniqueness. Any stronger novelty claim requires a cited comparison with existing policy engines, wallet guards and Substrate transaction authorization tools.
+This architecture is a defensible integration contribution, not proof of market uniqueness. Any stronger novelty claim requires a cited comparison with existing policy engines, wallet guards and Substrate transaction-authorization tools.
 
 ## 4. Prioritized delivery order
 

@@ -1,6 +1,6 @@
 # PortalPilot integration spike: native transfer gate
 
-Status: **fail-closed integration boundary and tests prepared; not integrated into PortalPilot or verified against live Verigate credentials**.
+Status: **not integrated into PortalPilot and not verified against live Verigate credentials**. The repository contains a fail-closed integration boundary and regression tests. Upstream wiring and a verified signing callback are still required.
 
 ## Code findings
 
