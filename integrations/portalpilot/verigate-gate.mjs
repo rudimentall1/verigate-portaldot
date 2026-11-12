@@ -29,6 +29,9 @@ export function assertPortalPilotTransferMatchesAuthorization(action, binding) {
   if (typeof binding.expiresAt !== "number" || !Number.isSafeInteger(binding.expiresAt)) {
     fail("Verified Verigate authorization has no valid expiry.");
   }
+  if (typeof binding.maxFeeBaseUnits !== "string" || !/^[1-9][0-9]*$/.test(binding.maxFeeBaseUnits)) {
+    fail("Verified Verigate authorization has no valid signed native fee ceiling.");
+  }
   const amountBaseUnits = potToBaseUnits(action.amountPot);
   if (action.to !== binding.recipient) fail("PortalPilot recipient differs from the recipient in Verigate authorization.");
   if (amountBaseUnits !== String(binding.amountBaseUnits)) fail("PortalPilot amount differs from the exact base-unit amount in Verigate authorization.");
@@ -72,6 +75,19 @@ export function assertPortalPilotPlanAuthorized({
     fail("Verigate PortalPilot integration is restricted to the pinned PortalDot V3 Substrate testnet endpoint.");
   }
   assertPortalPilotTransferMatchesAuthorization(plan.action, binding);
+
+  // PortalPilot may return a warning and a zero placeholder if paymentInfo fails.
+  // Never treat that placeholder as a valid fee quote under a signed ceiling.
+  if (typeof plan.feePlanck !== "string" || !/^(?:0|[1-9][0-9]*)$/.test(plan.feePlanck)) {
+    fail("PortalPilot fee estimate is missing or non-canonical; refusing execution.");
+  }
+  if (BigInt(plan.feePlanck) > BigInt(binding.maxFeeBaseUnits)) {
+    fail("PortalPilot estimated fee exceeds the signed Verigate fee ceiling; refusing execution.");
+  }
+  if (plan.warnings?.some((warning) => /Fee estimate unavailable/i.test(String(warning)))) {
+    fail("PortalPilot fee estimate is unavailable; refusing execution under the signed Verigate fee ceiling.");
+  }
+
   if (typeof expectedCallHex !== "string" || !/^0x[0-9a-f]+$/i.test(expectedCallHex)) {
     fail("Expected SCALE call bytes must be computed from the connected PortalDot API.");
   }

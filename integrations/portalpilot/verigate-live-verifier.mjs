@@ -42,6 +42,7 @@ export async function verifyPortalPilotVerigateResponse(response, options = {}) 
     decision: "ALLOW",
     recipient: transfer.recipient,
     amountBaseUnits: transfer.amountBaseUnits,
+    maxFeeBaseUnits: transfer.maxFeeBaseUnits,
     expiresAt: transfer.expiresAt,
     expectedGenesisHash: transfer.expectedGenesisHash,
     authorizationId: transfer.authorizationId,
